@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
 
 interface Category {
@@ -169,7 +169,7 @@ const ProductsSection: React.FC = () => {
 
         {/* Grille de produits */}
         {selectedCategory && products[selectedCategory] && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fadeIn">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" style={{ animation: 'fadeIn 0.5s ease-out' }}>
             {products[selectedCategory].map((product) => (
               <div 
                 key={product.id}
@@ -239,7 +239,7 @@ const ProductsSection: React.FC = () => {
       {/* Modal Panier - Style comme l'image */}
       {isCartOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl animate-slideUp">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl" style={{ animation: 'slideUp 0.3s ease-out' }}>
             
             {/* Header */}
             <div className="bg-white border-b border-gray-200 p-6 flex items-center justify-between">
@@ -324,7 +324,8 @@ const ProductsSection: React.FC = () => {
         </div>
       )}
 
-      <style jsx>{`
+      {/* Styles inline pour éviter l'erreur jsx */}
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -345,14 +346,6 @@ const ProductsSection: React.FC = () => {
             opacity: 1;
             transform: translateY(0) scale(1);
           }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
-        }
-
-        .animate-slideUp {
-          animation: slideUp 0.3s ease-out;
         }
       `}</style>
     </section>

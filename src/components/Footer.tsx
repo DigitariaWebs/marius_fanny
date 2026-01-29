@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Instagram, Phone, MapPin } from 'lucide-react';
 
 const Footer: React.FC = () => {

@@ -2,42 +2,53 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 
 const Hero = () => {
-  const containerRef = useRef(null);
-  const titleRef = useRef(null);
-  const imageRef = useRef(null);
-  const stickerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
+  const stickerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const tl = gsap.timeline();
 
-    tl.fromTo(imageRef.current, 
-      { y: 100, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }
-    );
+    // Vérifier que les refs existent avant de les utiliser
+    if (imageRef.current) {
+      tl.fromTo(imageRef.current, 
+        { y: 100, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }
+      );
+    }
 
-    tl.fromTo(titleRef.current.children, 
-      { x: -50, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power2.out" },
-      "-=0.6"
-    );
+    if (titleRef.current && titleRef.current.children) {
+      tl.fromTo(titleRef.current.children, 
+        { x: -50, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power2.out" },
+        "-=0.6"
+      );
+    }
 
-    tl.fromTo(stickerRef.current,
-      { scale: 0, rotation: -45 },
-      { scale: 1, rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" },
-      "-=0.2"
-    );
+    if (stickerRef.current) {
+      tl.fromTo(stickerRef.current,
+        { scale: 0, rotation: -45 },
+        { scale: 1, rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" },
+        "-=0.2"
+      );
+    }
   }, []);
 
   const handleStickerClick = () => {
-    gsap.to(stickerRef.current, {
-      scale: 1.5,
-      opacity: 0,
-      duration: 0.3,
-      ease: "power1.in",
-      onComplete: () => {
-        stickerRef.current.style.display = 'none';
-      }
-    });
+    if (stickerRef.current) {
+      gsap.to(stickerRef.current, {
+        scale: 1.5,
+        opacity: 0,
+        duration: 0.3,
+        ease: "power1.in",
+        onComplete: () => {
+          if (stickerRef.current) {
+            stickerRef.current.style.display = 'none';
+          }
+        }
+      });
+    }
   };
 
   return (

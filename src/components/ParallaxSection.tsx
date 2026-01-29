@@ -48,28 +48,8 @@ const WholesaleSection = () => {
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
   // Fonctionnalités Wholesale
-  const features: WholesaleFeature[] = [
-    {
-      icon: <Package size={40} />,
-      title: 'Commandes en Volume',
-      description: 'Commandes minimales adaptées à vos besoins professionnels avec des délais garantis'
-    },
-    {
-      icon: <TrendingUp size={40} />,
-      title: 'Prix Préférentiels',
-      description: 'Tarifs dégressifs et remises exclusives selon vos volumes de commande'
-    },
-    {
-      icon: <Users size={40} />,
-      title: 'Service Dédié',
-      description: 'Un gestionnaire de compte personnel pour un suivi personnalisé de vos projets'
-    },
-    {
-      icon: <FileText size={40} />,
-      title: 'Personnalisation',
-      description: 'Créations sur-mesure et personnalisées avec votre branding et logo'
-    }
-  ];
+  // REMARQUE : La variable 'features' a été supprimée car elle n'était pas utilisée
+  // Si vous en avez besoin plus tard, vous pouvez la réactiver
 
   // Packages Wholesale
   const packages: WholesalePackage[] = [
