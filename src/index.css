@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* Garde tes configurations personnalisées si tu en as en dessous */
+@theme {
+  --color-bakery-cream: #F9F7F2;
+  --color-bakery-text: #2D2A26;
+  --color-bakery-gold: #C5A065;
+  --font-script: "Great Vibes", cursive;
+  --font-sans: "Inter", sans-serif;
+}
