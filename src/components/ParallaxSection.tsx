@@ -1,22 +1,12 @@
 import { useState } from 'react';
-import type { ReactNode, ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import {
-  Package,
-  Users,
-  TrendingUp,
   Mail,
   Phone,
-  FileText,
   CheckCircle
 } from 'lucide-react';
 
 // Types
-interface WholesaleFeature {
-  icon: ReactNode;
-  title: string;
-  description: string;
-}
-
 interface WholesalePackage {
   id: string;
   name: string;
@@ -46,10 +36,6 @@ const WholesaleSection = () => {
   });
 
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-
-  // Fonctionnalités Wholesale
-  // REMARQUE : La variable 'features' a été supprimée car elle n'était pas utilisée
-  // Si vous en avez besoin plus tard, vous pouvez la réactiver
 
   // Packages Wholesale
   const packages: WholesalePackage[] = [

@@ -1,23 +1,38 @@
 import { useRef } from 'react';
 import { gsap } from 'gsap';
 
+// Définir le type Product
+interface Product {
+  id: number;
+  name: string;
+  price: string;
+  img: string;
+}
+
 const products = [
   { id: 1, name: "Pain au Chocolat", price: "$4.50", img: "https://images.unsplash.com/photo-1530610476181-d8ceb28bc272?auto=format&fit=crop&w=800&q=80" },
   { id: 2, name: "Classic Croissant", price: "$3.75", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80" },
   { id: 3, name: "Sourdough Loaf", price: "$8.00", img: "https://images.unsplash.com/photo-1585478474936-e248a3181812?auto=format&fit=crop&w=800&q=80" },
 ];
 
-const ProductCard = ({ product }) => {
-  const buttonRef = useRef(null);
+// Définir les props avec le type Product
+interface ProductCardProps {
+  product: Product;
+}
+
+const ProductCard = ({ product }: ProductCardProps) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleAddToCart = () => {
     // Micro-animation for button click
-    gsap.to(buttonRef.current, { 
-      scale: 0.95, 
-      duration: 0.1, 
-      yoyo: true, 
-      repeat: 1 
-    });
+    if (buttonRef.current) {
+      gsap.to(buttonRef.current, { 
+        scale: 0.95, 
+        duration: 0.1, 
+        yoyo: true, 
+        repeat: 1 
+      });
+    }
     // Add cart logic here
   };
 
