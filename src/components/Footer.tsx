@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Instagram, Mail, Phone, MapPin } from 'lucide-react';
+import { Instagram, Phone, MapPin } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const [email, setEmail] = useState<string>('');

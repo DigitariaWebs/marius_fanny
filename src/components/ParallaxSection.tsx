@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
-import { Package, Users, TrendingUp, Mail, Phone, FileText, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import type { ReactNode, ChangeEvent, FormEvent } from 'react';
+import {
+  Package,
+  Users,
+  TrendingUp,
+  Mail,
+  Phone,
+  FileText,
+  CheckCircle
+} from 'lucide-react';
 
 // Types
 interface WholesaleFeature {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
 }
@@ -26,7 +35,7 @@ interface FormData {
   message: string;
 }
 
-const WholesaleSection: React.FC = () => {
+const WholesaleSection = () => {
   const [formData, setFormData] = useState<FormData>({
     companyName: '',
     contactName: '',
@@ -119,18 +128,18 @@ const WholesaleSection: React.FC = () => {
     'Autre'
   ];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // Ici vous ajouteriez la logique d'envoi du formulaire
     console.log('Form submitted:', formData);
     setIsSubmitted(true);
-    
-    // Reset après 3 secondes
+
     setTimeout(() => {
       setIsSubmitted(false);
       setFormData({
@@ -411,7 +420,8 @@ const WholesaleSection: React.FC = () => {
 
       </div>
 
-      <style jsx>{`
+      {/* Animations */}
+      <style>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;
