@@ -310,7 +310,7 @@ const WholesaleSection = () => {
                       onChange={handleInputChange}
                       required
                       className="w-full bg-[#F9F7F2] border-2 border-gray-300 rounded-xl px-6 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#C5A065] focus:outline-none focus:ring-2 focus:ring-[#C5A065]/30 transition-all"
-                      placeholder="+33 6 00 00 00 00"
+                      placeholder="+1 XXX XXX XXXX"
                     />
                   </div>
                 </div>
@@ -367,7 +367,7 @@ const WholesaleSection = () => {
               </div>
               <div>
                 <div className="text-sm text-[#2D2A26]/70 uppercase tracking-wider font-medium mb-1">Email</div>
-                <div className="font-bold text-[#2D2A26]">wholesale@bakery.com</div>
+                <div className="font-bold text-[#2D2A26]">fanny.chiecchio@gmail.com</div>
               </div>
             </div>
 

@@ -23,11 +23,10 @@ type ProductsData = {
 }
 
 const ProductsSection: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>('pains');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
-  // Catégories de produits
   const categories: Category[] = [
     { id: 'pains', name: 'PAINS', color: 'bg-[#E8DCC4]' },
     { id: 'viennoiseries', name: 'VIENNOISERIES', color: 'bg-[#FFB6C1]' },
@@ -324,7 +323,6 @@ const ProductsSection: React.FC = () => {
         </div>
       )}
 
-      {/* Styles inline pour éviter l'erreur jsx */}
       <style>{`
         @keyframes fadeIn {
           from {

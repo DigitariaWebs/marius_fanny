@@ -82,7 +82,7 @@ const Footer: React.FC = () => {
               <p className="text-sm font-bold mb-3 text-[#C5A065]">Suivez-nous</p>
               <div className="flex gap-4">
                 <a 
-                  href="https://instagram.com" 
+                  href="https://www.instagram.com/patisseriemariusetfanny/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
@@ -90,7 +90,7 @@ const Footer: React.FC = () => {
                   <Instagram size={24} className="text-white" />
                 </a>
                 <a 
-                  href="https://facebook.com" 
+                  href="https://www.facebook.com/mariusetfanny" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
@@ -103,7 +103,6 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Colonne 2 - Navigation */}
           <div>
             <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
               Navigation
@@ -137,7 +136,6 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Colonne 3 - Newsletter */}
           <div>
             <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
               Abonnez-vous à notre infolettre
@@ -171,14 +169,12 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Grand nom de la marque */}
         <div className="relative overflow-hidden py-12">
           <h2 className="text-[4rem] md:text-[6rem] lg:text-[8rem] font-black uppercase leading-none text-[#C5A065] tracking-tighter opacity-20">
             PATISSERIE<br/>PROVENCALE
           </h2>
         </div>
 
-        {/* Ligne de séparation */}
         <div className="border-t-2 border-[#C5A065]/30 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
             <p className="text-[#2D2A26]/70">

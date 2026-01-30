@@ -10,7 +10,6 @@ const Hero = () => {
   useEffect(() => {
     const tl = gsap.timeline();
 
-    // Vérifier que les refs existent avant de les utiliser
     if (imageRef.current) {
       tl.fromTo(imageRef.current, 
         { y: 100, opacity: 0 },

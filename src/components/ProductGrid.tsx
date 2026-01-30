@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { gsap } from 'gsap';
 
-// Définir le type Product
+
 interface Product {
   id: number;
   name: string;
@@ -15,7 +15,6 @@ const products = [
   { id: 3, name: "Sourdough Loaf", price: "$8.00", img: "https://images.unsplash.com/photo-1585478474936-e248a3181812?auto=format&fit=crop&w=800&q=80" },
 ];
 
-// Définir les props avec le type Product
 interface ProductCardProps {
   product: Product;
 }
@@ -24,7 +23,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleAddToCart = () => {
-    // Micro-animation for button click
     if (buttonRef.current) {
       gsap.to(buttonRef.current, { 
         scale: 0.95, 
@@ -33,7 +31,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
         repeat: 1 
       });
     }
-    // Add cart logic here
   };
 
   return (

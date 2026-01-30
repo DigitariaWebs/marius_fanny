@@ -8,10 +8,11 @@ const Navbar: React.FC = () => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const links = [
-    { name: 'Shop', id: 'hero' },
+    { name: 'Shop', id: 'shop' },
     { name: 'Les favoris', id: 'best-sellers' },
-    { name: 'Viennoiseries', id: 'produits' },
-    { name: 'Contact', id: 'footer' }
+    { name: 'Produits', id: 'produits' },
+    { name: 'Notre histoire', id: 'timeline' },
+    { name: 'Contact', id: 'footer' },
   ];
 
   useEffect(() => {
@@ -29,23 +30,19 @@ const Navbar: React.FC = () => {
     if (target && overlayRef.current) {
       const tl = gsap.timeline();
 
-      // 1. L'écran noir monte pour couvrir
       tl.to(overlayRef.current, {
         yPercent: 100,
         duration: 0.5,
         ease: "power2.inOut"
       })
-      // 2. On scrolle pendant que c'est noir
       .add(() => {
         target.scrollIntoView({ behavior: 'auto' });
       })
-      // 3. L'écran noir continue de descendre pour disparaître
       .to(overlayRef.current, {
         yPercent: 200,
         duration: 0.5,
         ease: "power2.inOut",
         onComplete: () => {
-          // On remet l'overlay en haut (caché) pour le prochain clic
           gsap.set(overlayRef.current, { yPercent: -100 });
         }
       });
