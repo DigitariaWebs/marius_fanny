@@ -16,8 +16,10 @@ interface Category {
   size: 'large' | 'small';
 }
 
+// On met à jour l'interface pour accepter onAddToCart, même si on ne l'utilise pas ici
 interface CategoryShowcaseProps {
   onCategoryClick?: (categoryId: number, categoryTitle: string) => void;
+  onAddToCart?: (product: any) => void; // Ajout crucial pour le build Netlify
 }
 
 const categories: Category[] = [
@@ -37,6 +39,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick }) => {
       onCategoryClick(categoryId, categoryTitle);
     }
     
+    // On redirige vers la page de sélection de produits
     navigate(`/products?category=${categoryId}&title=${encodeURIComponent(categoryTitle)}`);
   };
 

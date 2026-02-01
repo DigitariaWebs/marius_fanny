@@ -133,7 +133,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
               className="ml-4 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white rounded-full hover:bg-[#C5A065] transition-all duration-300 focus:outline-none" 
               style={{ backgroundColor: styles.text }}
             >
-              Contact
+              Contacter
             </button>
           </div>
 
