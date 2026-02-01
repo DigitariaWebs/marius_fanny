@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// Importation de tes composants
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import BestSellers from './components/BestSellers';
@@ -14,9 +13,7 @@ import Politique from './components/Politique';
 import Video from './components/Videoclient';
 import GoldenBackground from './components/GoldenBackground';
 import CartDrawer from './components/Cart'; 
-import CategoryShowcase from './components/CategoryShowcase';
 
-// Interface pour le panier
 interface CartItem {
   id: number;
   name: string;
@@ -29,7 +26,6 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // --- FONCTIONS DU PANIER ---
   const addToCart = (product: any) => {
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id);
@@ -57,14 +53,13 @@ const App: React.FC = () => {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
-  // --- COMPOSANTS DE PAGE ---
   const HomePage: React.FC = () => (
     <>
       <Navbar onCartClick={() => setIsCartOpen(true)} cartCount={cartItems.length} />
       <main className="relative z-10">
         <Hero />
         <section id="shop">
-          <CategoryShowcase onAddToCart={addToCart} />
+          <Shop onAddToCart={addToCart} />
         </section>
         <Video />
         <section id="best-sellers">
@@ -87,7 +82,6 @@ const App: React.FC = () => {
     </>
   );
 
-  // --- RENDU PRINCIPAL ---
   return (
     <Router>
       <GoldenBackground />
