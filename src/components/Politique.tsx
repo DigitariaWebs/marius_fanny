@@ -1,29 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Phone, Instagram } from 'lucide-react';
+import GoldenBackground from './GoldenBackground';
 
 const Politique: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F9F7F2] to-white relative overflow-hidden">
-      {/* Arrière-plan décoratif avec traits dorés */}
-      <div className="absolute inset-0 pointer-events-none">
-        <svg className="absolute w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="golden-lines" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-              <line x1="0" y1="0" x2="60" y2="60" stroke="#C5A065" strokeWidth="2"/>
-              <line x1="60" y1="0" x2="0" y2="60" stroke="#C5A065" strokeWidth="2"/>
-              <circle cx="30" cy="30" r="4" fill="#C5A065"/>
-              <line x1="0" y1="30" x2="60" y2="30" stroke="#C5A065" strokeWidth="1" opacity="0.5"/>
-              <line x1="30" y1="0" x2="30" y2="60" stroke="#C5A065" strokeWidth="1" opacity="0.5"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#golden-lines)"/>
-        </svg>
-      </div>
+    <div className="min-h-screen bg-linear-to-b from-[#F9F7F2] to-white relative overflow-hidden">
+      <GoldenBackground />
 
-      {/* Navigation simplifiée - Retour seulement */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-[#C5A065]/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-16">
@@ -70,7 +56,6 @@ const Politique: React.FC = () => {
             notre politique de retour pour savoir comment procéder.
           </p>
 
-          {/* Section non retournables */}
           <section className="mb-12">
             <div className="flex items-start gap-3 mb-6">
               <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
@@ -95,7 +80,6 @@ const Politique: React.FC = () => {
             </ul>
           </section>
 
-          {/* Section problèmes de qualité */}
           <section className="mb-12">
             <div className="flex items-start gap-3 mb-6">
               <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center flex-shrink-0">
@@ -131,7 +115,6 @@ const Politique: React.FC = () => {
             </div>
           </section>
 
-          {/* Section procédure */}
           <section className="mb-12">
             <div className="flex items-start gap-3 mb-6">
               <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
@@ -184,7 +167,6 @@ const Politique: React.FC = () => {
             </div>
           </section>
 
-          {/* Autres sections */}
           {[
             {
               number: 4,
@@ -213,7 +195,6 @@ const Politique: React.FC = () => {
             </section>
           ))}
 
-          {/* Message final */}
           <div className="mt-12 pt-8 border-t border-[#C5A065]/20 text-center">
             <p className="text-lg text-[#2D2A26] mb-4">
               Nous vous remercions de votre compréhension et de votre fidélité.
@@ -225,27 +206,16 @@ const Politique: React.FC = () => {
         </div>
       </main>
 
-      {/* Footer du site */}
+      {/* Footer */}
       <footer className="relative bg-[#F9F7F2] text-[#2D2A26] overflow-hidden">
-        {/* Section principale du footer */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
-          
-          {/* Grid layout */}
           <div className="grid lg:grid-cols-3 gap-12 mb-16">
-            
-            {/* Colonne 1 - Info entreprise */}
             <div>
-              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
-                Nos Boutiques
-              </h3>
+              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">Nos Boutiques</h3>
               <div className="space-y-6 text-sm">
-                {/* Laval */}
                 <div>
                   <div className="flex items-start gap-3 mb-2">
-                    <svg className="w-5 h-5 flex-shrink-0 mt-1 text-[#C5A065]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                    <svg className="w-5 h-5 flex-shrink-0 mt-1 text-[#C5A065]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     <div>
                       <p className="font-black text-[#C5A065] uppercase mb-1">Laval</p>
                       <p className="font-bold">239-E Boulevard Samson, Laval</p>
@@ -258,19 +228,12 @@ const Politique: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3 ml-8 mt-2">
                     <Phone className="w-[18px] h-[18px] flex-shrink-0 text-[#C5A065]" />
-                    <a href="tel:+14506890655" className="hover:text-[#C5A065] transition-colors font-bold">
-                      450-689-0655
-                    </a>
+                    <a href="tel:+14506890655" className="hover:text-[#C5A065] transition-colors font-bold">450-689-0655</a>
                   </div>
                 </div>
-
-                {/* Montreal */}
                 <div>
                   <div className="flex items-start gap-3 mb-2">
-                    <svg className="w-5 h-5 flex-shrink-0 mt-1 text-[#C5A065]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                    <svg className="w-5 h-5 flex-shrink-0 mt-1 text-[#C5A065]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     <div>
                       <p className="font-black text-[#C5A065] uppercase mb-1">Montréal</p>
                       <p className="font-bold">2006 rue St-Hubert, Montréal</p>
@@ -283,92 +246,31 @@ const Politique: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3 ml-8 mt-2">
                     <Phone className="w-[18px] h-[18px] flex-shrink-0 text-[#C5A065]" />
-                    <a href="tel:+15143791898" className="hover:text-[#C5A065] transition-colors font-bold">
-                      514-379-1898
-                    </a>
+                    <a href="tel:+15143791898" className="hover:text-[#C5A065] transition-colors font-bold">514-379-1898</a>
                   </div>
                 </div>
               </div>
-
-              <div className="mt-8">
-                <p className="text-sm font-bold mb-3 text-[#C5A065]">Suivez-nous</p>
-                <div className="flex gap-4">
-                  <a 
-                    href="https://www.instagram.com/patisseriemariusetfanny/" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
-                  >
-                    <Instagram className="w-6 h-6 text-white" />
-                  </a>
-                  <a 
-                    href="https://www.facebook.com/mariusetfanny" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
-                  >
-                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                  </a>
-                </div>
+              <div className="mt-8 flex gap-4">
+                <a href="https://www.instagram.com/patisseriemariusetfanny/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"><Instagram className="w-6 h-6 text-white" /></a>
               </div>
             </div>
 
             <div>
-              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
-                Navigation
-              </h3>
+              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">Navigation</h3>
               <ul className="space-y-3">
-                <li>
-                  <a href="#biscuits" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">
-                    Biscuits
-                  </a>
-                </li>
-                <li>
-                  <a href="#gateaux" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">
-                    Gâteaux
-                  </a>
-                </li>
-                <li>
-                  <a href="#apropos" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">
-                    À propos
-                  </a>
-                </li>
-                <li>
-                  <a href="#contact" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a href="#wholesale" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">
-                    Wholesale
-                  </a>
-                </li>
+                <li><a href="#biscuits" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">Biscuits</a></li>
+                <li><a href="#gateaux" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">Gâteaux</a></li>
+                <li><a href="#apropos" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">À propos</a></li>
+                <li><a href="#contact" className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase">Contact</a></li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
-                Abonnez-vous à notre infolettre
-              </h3>
-              <p className="text-sm mb-6 leading-relaxed text-[#2D2A26]/70">
-                Recevez nos nouveautés, promotions exclusives et nos meilleures recettes directement dans votre boîte mail.
-              </p>
-              
+              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">Abonnez-vous à notre infolettre</h3>
+              <p className="text-sm mb-6 leading-relaxed text-[#2D2A26]/70">Recevez nos nouveautés et promotions exclusives.</p>
               <form className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="EMAIL"
-                  required
-                  className="flex-1 bg-white border-2 border-[#C5A065] text-[#2D2A26] placeholder-[#2D2A26]/50 px-6 py-4 rounded-full font-bold uppercase text-sm focus:outline-none focus:ring-4 focus:ring-[#C5A065]/30 transition-all"
-                />
-                <button
-                  type="submit"
-                  className="bg-[#C5A065] text-white px-8 py-4 rounded-full font-black uppercase text-sm hover:bg-[#B59055] transition-all duration-300 hover:scale-105"
-                >
-                  S&apos;abonner
-                </button>
+                <input type="email" placeholder="EMAIL" required className="flex-1 bg-white border-2 border-[#C5A065] text-[#2D2A26] px-6 py-4 rounded-full font-bold uppercase text-sm focus:outline-none" />
+                <button type="submit" className="bg-[#C5A065] text-white px-8 py-4 rounded-full font-black uppercase text-sm hover:scale-105 transition-all">S'abonner</button>
               </form>
             </div>
           </div>
@@ -379,24 +281,13 @@ const Politique: React.FC = () => {
             </h2>
           </div>
 
-          <div className="border-t-2 border-[#C5A065]/30 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-              <p className="text-[#2D2A26]/70">
-                Copyright {currentYear} | Pâtisserie Provençale
-              </p>
-              
-              <div className="flex gap-6">
-                <a href="#conditions" className="text-[#2D2A26]/70 hover:text-[#C5A065] transition-colors">
-                  Conditions d&apos;utilisation
-                </a>
-                <span className="text-[#2D2A26]/40">|</span>
-                <a href="#confidentialite" className="text-[#2D2A26]/70 hover:text-[#C5A065] transition-colors">
-                  Politique de confidentialité
-                </a>
-              </div>
+          <div className="border-t-2 border-[#C5A065]/30 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+            <p className="text-[#2D2A26]/70">Copyright {currentYear} | Pâtisserie Provençale</p>
+            <div className="flex gap-6">
+              <span className="text-[#2D2A26]/70">Conditions d'utilisation</span>
+              <span className="text-[#2D2A26]/70">Politique de confidentialité</span>
             </div>
           </div>
-
         </div>
       </footer>
     </div>

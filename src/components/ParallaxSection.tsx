@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
+import GoldenBackground from './GoldenBackground'; // Assurez-vous que le chemin est bon
+
 import {
   Mail,
   Phone,
@@ -93,14 +95,16 @@ const WholesaleSection = () => {
   return (
     <section className="relative min-h-screen bg-[#F9F7F2] text-[#2D2A26] overflow-hidden selection:bg-[#C5A065] selection:text-white">
       
-      
-      <div className="absolute inset-0 opacity-40 pointer-events-none z-0" 
-           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E")` }}>
+      {/* --- INTÉGRATION DU BACKGROUND --- */}
+      {/* On place le composant ici. Il doit être en absolute inset-0 dans son propre code 
+          ou contenu dans une div absolute ici si besoin. 
+          Je suppose ici qu'il gère son propre positionnement ou qu'il remplit le conteneur relative. */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <GoldenBackground />
       </div>
-
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#C5A065]/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[-5%] w-[600px] h-[600px] bg-[#D4C5A5]/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] bg-white rounded-full blur-[80px] pointer-events-none opacity-60" />
+      
+      {/* J'ai supprimé les anciens divs de bruit (SVG) et les cercles flous 
+          pour laisser la place à votre GoldenBackground */}
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-24">
 
@@ -144,7 +148,7 @@ const WholesaleSection = () => {
             {valueProps.map((prop, idx) => (
               <div 
                 key={idx} 
-                className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl border border-[#C5A065]/20 hover:border-[#C5A065] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group"
+                className="bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-[#C5A065]/20 hover:border-[#C5A065] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group"
               >
                 <div className="w-16 h-16 bg-[#C5A065]/10 rounded-2xl flex items-center justify-center text-[#C5A065] mb-6 group-hover:bg-[#C5A065] group-hover:text-white transition-colors duration-300">
                   {prop.icon}
@@ -161,7 +165,7 @@ const WholesaleSection = () => {
         </div>
 
         <div id="inscription" className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-[2.5rem] p-8 md:p-16 shadow-2xl border border-gray-100 relative overflow-hidden">
+          <div className="bg-white/95 backdrop-blur-sm rounded-[2.5rem] p-8 md:p-16 shadow-2xl border border-gray-100 relative overflow-hidden">
             
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A065] opacity-5 rounded-bl-full pointer-events-none"></div>
 

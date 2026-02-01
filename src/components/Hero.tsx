@@ -53,7 +53,8 @@ const Hero = () => {
   return (
     <section 
       ref={containerRef} 
-      className="relative min-h-screen bg-[#1A1A1A] text-bakery-cream overflow-hidden flex items-center justify-center pt-20 md:pt-0"
+      className="relative min-h-screen text-bakery-cream overflow-hidden flex items-center justify-center pt-20 md:pt-0"
+      style={{ backgroundColor: 'rgba(26, 26, 26, 0.85)' }}
     >
       <div className="absolute inset-0 opacity-10">
         <img 
@@ -97,8 +98,6 @@ const Hero = () => {
             
             <div className="absolute inset-0 bg-black/10"></div>
           </div>
-
-       
 
         </div>
       </div>
