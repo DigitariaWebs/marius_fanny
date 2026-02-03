@@ -24,7 +24,8 @@ const ForgotPasswordPage: React.FC = () => {
     setError(null);
 
     try {
-      const { error } = await authClient.forgetPassword({
+      // CORRECTION : Utilisation de la méthode correcte de Better-Auth
+      const { error } = await authClient.forgetPassword.sendForgotPasswordEmail({
         email,
         redirectTo: window.location.origin + '/reset-password',
       });
