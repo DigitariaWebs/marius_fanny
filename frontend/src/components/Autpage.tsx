@@ -61,8 +61,7 @@ const AuthPage: React.FC = () => {
         const { data, error: signInError } = await authClient.signIn.email({
           email,
           password,
-          // Note: Si votre configuration Better-Auth ne supporte pas explicitement 'rememberMe'
-          // dans l'appel .email(), vous pouvez le supprimer.
+          // Note: rememberMe est géré par Better-Auth si configuré dans le client
         });
 
         if (signInError) throw new Error(signInError.message || 'Connexion échouée');
@@ -70,7 +69,7 @@ const AuthPage: React.FC = () => {
         const isVerified = data?.user?.emailVerified ?? false; 
         
         if (isVerified) {
-            const from = location.state?.from?.pathname || '/user';
+            const from = (location.state as any)?.from?.pathname || '/user';
             navigate(from);
         } else {
             navigate('/email-verified');
@@ -88,7 +87,7 @@ const AuthPage: React.FC = () => {
         setIsVerificationSent(true);
 
       } else if (view === 'forgot-password') {
-        // --- CORRECTION ICI ---
+        // --- CORRECTION CRUCIALE POUR LE BUILD ---
         const { error: forgotError } = await authClient.forgetPassword.sendForgotPasswordEmail({
             email,
             redirectTo: window.location.origin + '/reset-password', 
@@ -114,9 +113,7 @@ const AuthPage: React.FC = () => {
   if (isVerificationSent) {
     return (
       <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#F9F7F2]">
-        <div className="absolute inset-0 z-0">
-          <GoldenBackground />
-        </div>
+        <div className="absolute inset-0 z-0"><GoldenBackground /></div>
         <div className="relative z-10 w-full max-w-md px-6 text-center">
           <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
             <div className="w-20 h-20 bg-[#C5A065]/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -127,8 +124,7 @@ const AuthPage: React.FC = () => {
             </h2>
             <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500 leading-relaxed mb-8">
               Un lien de confirmation a été envoyé à <br />
-              <span className="text-[#2D2A26] underline">{email}</span>. <br />
-              <br />
+              <span className="text-[#2D2A26] underline">{email}</span>. <br /><br />
               Veuillez cliquer sur ce lien pour activer votre compte.
             </p>
             <button
@@ -148,24 +144,15 @@ const AuthPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#F9F7F2]">
-      <div className="absolute inset-0 z-0">
-        <GoldenBackground />
-      </div>
-
+      <div className="absolute inset-0 z-0"><GoldenBackground /></div>
       <div className="relative z-10 w-full max-w-md px-6">
         <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
           
           <div className="text-center mb-8">
-            <h2
-              className="text-5xl mb-2"
-              style={{ fontFamily: styles.fontScript, color: styles.gold }}
-            >
+            <h2 className="text-5xl mb-2" style={{ fontFamily: styles.fontScript, color: styles.gold }}>
               Marius & Fanny
             </h2>
-            <h1
-              className="text-[10px] font-black uppercase tracking-[0.4em] mt-4"
-              style={{ color: styles.text }}
-            >
+            <h1 className="text-[10px] font-black uppercase tracking-[0.4em] mt-4" style={{ color: styles.text }}>
               {view === 'login' && 'Connexion'}
               {view === 'signup' && 'Inscription'}
               {view === 'forgot-password' && 'Récupération'}
@@ -174,30 +161,18 @@ const AuthPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div
-                className="text-[10px] font-bold uppercase tracking-widest py-3 px-4 rounded-lg border text-center animate-pulse"
-                style={{
-                  borderColor: '#ef4444',
-                  backgroundColor: '#fef2f2',
-                  color: '#b91c1c',
-                }}
-                role="alert"
-              >
+              <div className="text-[10px] font-bold uppercase tracking-widest py-3 px-4 rounded-lg border text-center animate-pulse"
+                style={{ borderColor: '#ef4444', backgroundColor: '#fef2f2', color: '#b91c1c' }}
+                role="alert">
                 {error}
               </div>
             )}
 
             {successMessage && (
-               <div
-               className="text-[10px] font-bold uppercase tracking-widest py-3 px-4 rounded-lg border text-center"
-               style={{
-                 borderColor: '#22c55e',
-                 backgroundColor: '#f0fdf4',
-                 color: '#15803d',
-               }}
-             >
-               {successMessage}
-             </div>
+               <div className="text-[10px] font-bold uppercase tracking-widest py-3 px-4 rounded-lg border text-center"
+                 style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4', color: '#15803d' }}>
+                 {successMessage}
+               </div>
             )}
 
             {view === 'signup' && (
