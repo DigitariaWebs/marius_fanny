@@ -121,7 +121,7 @@ const App: React.FC = () => {
           
           {/* Protected/User Routes */}
           <Route path="/user" element={<User />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/panneau" element={<AdminDashboard />} />
         </Routes> 
       </div>
     </Router>
