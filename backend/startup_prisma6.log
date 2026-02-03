@@ -1,0 +1,22 @@
+[dotenv@17.2.3] injecting env (6) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+node:path:213
+        validateString(path, `paths[${i}]`);
+        ^
+
+TypeError [ERR_INVALID_ARG_TYPE]: The "paths[1]" argument must be of type string. Received undefined
+    at Object.resolve (node:path:213:9)
+    at new t (C:\Users\HP\marius_fanny\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:339:24)
+    at dotenv (C:\Users\HP\marius_fanny\backend\src\utils\auth.ts:17:16)
+    at Object.<anonymous> (C:\Users\HP\marius_fanny\backend\src\utils\auth.ts:58:2)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Object.transformer (C:\Users\Hp\AppData\Roaming\npm\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18) {
+  code: 'ERR_INVALID_ARG_TYPE',
+  clientVersion: '7.3.0'
+}
+
+Node.js v20.19.5

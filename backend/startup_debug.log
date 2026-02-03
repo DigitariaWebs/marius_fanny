@@ -1,0 +1,21 @@
+[dotenv@17.2.3] injecting env (6) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+C:\Users\HP\marius_fanny\backend\node_modules\@prisma\client\src\runtime\utils\validatePrismaClientOptions.ts:229
+    throw new PrismaClientConstructorValidationError(
+          ^
+
+
+PrismaClientConstructorValidationError: Using engine type "client" requires either "adapter" or "accelerateUrl" to be provided to PrismaClient constructor.
+Read more at https://pris.ly/d/client-constructor
+    at validateDependentOptions (C:\Users\HP\marius_fanny\backend\node_modules\@prisma\client\src\runtime\utils\validatePrismaClientOptions.ts:229:11)
+    at validatePrismaClientOptions (C:\Users\HP\marius_fanny\backend\node_modules\@prisma\client\src\runtime\utils\validatePrismaClientOptions.ts:246:3)
+    at new t (C:\Users\HP\marius_fanny\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:281:7)
+    at dotenv (C:\Users\HP\marius_fanny\backend\src\utils\auth.ts:17:16)
+    at Object.<anonymous> (C:\Users\HP\marius_fanny\backend\src\utils\auth.ts:60:2)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Object.transformer (C:\Users\Hp\AppData\Roaming\npm\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+
+Node.js v20.19.5
