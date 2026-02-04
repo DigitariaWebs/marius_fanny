@@ -1,29 +1,29 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Components
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import BestSellers from './components/BestSellers';
-import ParallaxSection from './components/ParallaxSection';
-import Time from './components/Timeline';
-import Footer from './components/Footer';
-import Shop from './components/Shop';
-import ProductSelection from './components/ProductSelection';
-import Politique from './components/Politique';
-import Video from './components/Videoclient';
-import GoldenBackground from './components/GoldenBackground';
-import CartDrawer from './components/Cart'; 
-import AuthPage from './components/Autpage';
-import AdminDashboard from './components/Dashboard';
-import Contact from './components/Contact';
+import Navbar from "./components/Navbar";
+import Hero from "./components/Hero";
+import BestSellers from "./components/BestSellers";
+import ParallaxSection from "./components/ParallaxSection";
+import Time from "./components/Timeline";
+import Footer from "./components/Footer";
+import Shop from "./components/Shop";
+import ProductSelection from "./components/ProductSelection";
+import Politique from "./components/Politique";
+import Video from "./components/Videoclient";
+import GoldenBackground from "./components/GoldenBackground";
+import CartDrawer from "./components/Cart";
+import AuthPage from "./components/Autpage";
+import AdminDashboard from "./components/Dashboard";
+import Contact from "./components/Contact";
 
 // Pages
-import User from './pages/user';
-import VerifyEmailPage from './pages/Emailverified'; 
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPassword';
-import StaffManagement from './pages/Stuff';
+import User from "./pages/user";
+import VerifyEmailPage from "./pages/Emailverified";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPassword";
+import StaffManagement from "./pages/Stuff";
 
 interface CartItem {
   id: number;
@@ -38,46 +38,58 @@ const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   const addToCart = (product: any) => {
-    setCartItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
+    setCartItems((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
       if (existing) {
-        return prev.map(item => 
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item,
         );
       }
-      return [...prev, { ...product, quantity: 1, image: product.image || product.img }];
+      return [
+        ...prev,
+        { ...product, quantity: 1, image: product.image || product.img },
+      ];
     });
     setIsCartOpen(true);
   };
 
   const updateQuantity = (id: number, delta: number) => {
-    setCartItems(prev => prev.map(item => {
-      if (item.id === id) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    }));
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const newQty = Math.max(1, item.quantity + delta);
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      }),
+    );
   };
 
   const removeItem = (id: number) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   const HomePage: React.FC = () => (
     <>
-      <Navbar onCartClick={() => setIsCartOpen(true)} cartCount={cartItems.length} />
+      <Navbar
+        onCartClick={() => setIsCartOpen(true)}
+        cartCount={cartItems.length}
+      />
       <main className="relative z-10">
         <Hero />
         <section id="shop">
           <Shop onAddToCart={addToCart} />
         </section>
-       
+
         <section id="best-sellers">
-           <BestSellers onAddToCart={addToCart} />
+          <BestSellers onAddToCart={addToCart} />
         </section>
-         <Video />
-        <section id="timeline"><Time /></section>
+        <Video />
+        <section id="timeline">
+          <Time />
+        </section>
         <ParallaxSection />
       </main>
       <Footer />
@@ -86,7 +98,10 @@ const App: React.FC = () => {
 
   const ProductsPage: React.FC = () => (
     <>
-      <Navbar onCartClick={() => setIsCartOpen(true)} cartCount={cartItems.length} />
+      <Navbar
+        onCartClick={() => setIsCartOpen(true)}
+        cartCount={cartItems.length}
+      />
       <main className="pt-24 min-h-screen relative z-10">
         <ProductSelection onAddToCart={addToCart} />
       </main>
@@ -97,10 +112,10 @@ const App: React.FC = () => {
   return (
     <Router>
       <GoldenBackground />
-      
-      <CartDrawer 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
+
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
         items={cartItems}
         onUpdateQuantity={updateQuantity}
         onRemove={removeItem}
@@ -113,22 +128,21 @@ const App: React.FC = () => {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/politique-retour" element={<Politique />} />
           <Route path="/contact" element={<Contact />} />
-          
+          <Route path="/dashboard" element={<AdminDashboard />} />
+
           {/* Auth Routes */}
           <Route path="/se-connecter" element={<AuthPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/panneau" element={<AdminDashboard />} />
 
           {/* Protected/User Routes */}
           <Route path="/user" element={<User />} />
           <Route path="/stuff" element={<StaffManagement />} />
-
-        </Routes> 
+        </Routes>
       </div>
     </Router>
   );
-}
+};
 
 export default App;
