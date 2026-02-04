@@ -1,12 +1,12 @@
-import * as nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import * as nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_PORT === '465', // true pour 465, false pour 587
+  port: parseInt(process.env.EMAIL_PORT || "587"),
+  secure: process.env.EMAIL_PORT === "465", // true pour 465, false pour 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -16,9 +16,9 @@ const transporter = nodemailer.createTransport({
 // Tester la connexion
 transporter.verify((error, success) => {
   if (error) {
-    console.error('❌ Erreur de configuration email:', error);
+    console.error("❌ Erreur de configuration email:", error);
   } else {
-    console.log('✅ Serveur email prêt à envoyer');
+    console.log("✅ Serveur email prêt à envoyer");
   }
 });
 
@@ -27,19 +27,20 @@ export async function sendVerificationEmail(
   email: string,
   name: string,
   verificationUrl: string,
-  verificationCode?: string
+  verificationCode?: string,
 ): Promise<void> {
   // Use the provided code or generate a mock one
-  const code = verificationCode || Math.floor(100000 + Math.random() * 900000).toString();
+  const code =
+    verificationCode || Math.floor(100000 + Math.random() * 900000).toString();
 
   try {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: '✨ Confirmez votre email - Marius & Fanny',
+      subject: "✨ Confirmez votre email - Marius & Fanny",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
-          
+
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #C5A065; font-family: 'Great Vibes', cursive; font-size: 40px; margin: 0;">
               Marius & Fanny
@@ -48,11 +49,11 @@ export async function sendVerificationEmail(
 
           <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <h2 style="color: #2D2A26; text-align: center; margin-bottom: 20px;">
-              Bienvenue ${name || 'ami'} ! 👋
+              Bienvenue ${name || "ami"} ! 👋
             </h2>
 
             <p style="color: #555; line-height: 1.6; text-align: center; margin-bottom: 30px;">
-              Merci de vous être inscrit. Pour activer votre compte et commencer à utiliser nos services, 
+              Merci de vous être inscrit. Pour activer votre compte et commencer à utiliser nos services,
               veuillez confirmer votre adresse email en utilisant le code de vérification ci-dessous.
             </p>
 
@@ -83,27 +84,27 @@ export async function sendVerificationEmail(
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email de vérification envoyé:', info.response);
+    console.log("✅ Email de vérification envoyé:", info.response);
     return { success: true } as any;
   } catch (error) {
-    console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+    console.error("❌ Erreur lors de l'envoi de l'email:", error);
     throw error;
   }
-};
+}
 
 // Template pour email de réinitialisation de mot de passe
 export async function sendPasswordResetEmail(
   email: string,
-  resetUrl: string
+  resetUrl: string,
 ): Promise<void> {
   try {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: '🔐 Réinitialiser votre mot de passe - Marius & Fanny',
+      subject: "🔐 Réinitialiser votre mot de passe - Marius & Fanny",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
-          
+
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #C5A065; font-family: 'Great Vibes', cursive; font-size: 40px; margin: 0;">
               Marius & Fanny
@@ -116,13 +117,13 @@ export async function sendPasswordResetEmail(
             </h2>
 
             <p style="color: #555; line-height: 1.6; text-align: center; margin-bottom: 30px;">
-              Vous avez demandé la réinitialisation de votre mot de passe. 
+              Vous avez demandé la réinitialisation de votre mot de passe.
               Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.
             </p>
 
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${url}" 
-                 style="display: inline-block; padding: 15px 40px; background-color: #C5A065; color: white; 
+              <a href="${URL}"
+                 style="display: inline-block; padding: 15px 40px; background-color: #C5A065; color: white;
                         text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; transition: opacity 0.3s;">
                 🔐 Réinitialiser le mot de passe
               </a>
@@ -142,12 +143,11 @@ export async function sendPasswordResetEmail(
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email de réinitialisation envoyé:', info.response);
-    return { success: true };
+    console.log("✅ Email de réinitialisation envoyé:", info.response);
   } catch (error) {
-    console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+    console.error("❌ Erreur lors de l'envoi de l'email:", error);
     throw error;
   }
-};
+}
 
 export default transporter;
