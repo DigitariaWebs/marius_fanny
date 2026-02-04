@@ -64,7 +64,6 @@ const App: React.FC = () => {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
-  // --- Layout Helpers ---
   const HomePage: React.FC = () => (
     <>
       <Navbar onCartClick={() => setIsCartOpen(true)} cartCount={cartItems.length} />
@@ -73,10 +72,11 @@ const App: React.FC = () => {
         <section id="shop">
           <Shop onAddToCart={addToCart} />
         </section>
-        <Video />
+       
         <section id="best-sellers">
            <BestSellers onAddToCart={addToCart} />
         </section>
+         <Video />
         <section id="timeline"><Time /></section>
         <ParallaxSection />
       </main>
