@@ -17,7 +17,8 @@ import {
   Eye,
   Filter,
   Download,
-  BarChart3
+  BarChart3,
+  Menu
 } from 'lucide-react';
 
 interface Product {
@@ -74,6 +75,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('Tous');
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     category: 'Gâteaux',
@@ -187,11 +189,32 @@ export default function AdminDashboard() {
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-[#2D2A26]">
       
+      {/* --- MOBILE MENU OVERLAY --- */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* --- SIDEBAR --- */}
-      <aside className="w-64 bg-[#2D2A26] text-white hidden md:flex flex-col">
-        <div className="p-6 border-b border-gray-700">
-          <h1 className="text-2xl font-serif tracking-widest text-[#C5A065]">MARIUS & FANNY</h1>
-          <p className="text-xs text-gray-400 mt-1 tracking-wider uppercase">Administration</p>
+      <aside className={`
+        fixed md:static inset-y-0 left-0 z-50
+        w-64 bg-[#2D2A26] text-white flex flex-col
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-serif tracking-widest text-[#C5A065]">MARIUS & FANNY</h1>
+            <p className="text-xs text-gray-400 mt-1 tracking-wider uppercase">Administration</p>
+          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="md:hidden text-gray-400 hover:text-white"
+          >
+            <X size={24} />
+          </button>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
@@ -199,267 +222,249 @@ export default function AdminDashboard() {
             icon={<LayoutDashboard size={20} />} 
             label="Vue d'ensemble" 
             active={viewMode === 'overview'}
-            onClick={() => setViewMode('overview')}
+            onClick={() => {
+              setViewMode('overview');
+              setIsMobileMenuOpen(false);
+            }}
           />
           <NavItem 
             icon={<Package size={20} />} 
             label="Produits" 
             active={viewMode === 'products'}
-            onClick={() => setViewMode('products')}
+            onClick={() => {
+              setViewMode('products');
+              setIsMobileMenuOpen(false);
+            }}
           />
           <NavItem 
             icon={<Settings size={20} />} 
             label="Paramètres" 
             active={viewMode === 'settings'}
-            onClick={() => setViewMode('settings')}
+            onClick={() => {
+              setViewMode('settings');
+              setIsMobileMenuOpen(false);
+            }}
           />
         </nav>
 
         <div className="p-4 border-t border-gray-700">
-          <button className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors w-full p-2">
+          <button className="flex items-center gap-3 w-full p-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-all">
             <LogOut size={20} />
-            <span>Déconnexion</span>
+            <span className="font-medium">Déconnexion</span>
           </button>
         </div>
       </aside>
 
-      {/* --- CONTENU PRINCIPAL --- */}
-      <main className="flex-1 overflow-y-auto">
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 overflow-auto">
         
+        {/* Mobile Header with Hamburger */}
+        <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-between sticky top-0 z-30">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-lg font-serif text-[#2D2A26]">MARIUS & FANNY</h1>
+          <div className="w-6" /> {/* Spacer for centering */}
+        </div>
+
         {/* VUE D'ENSEMBLE */}
         {viewMode === 'overview' && (
           <>
-            <header className="bg-white shadow-sm border-b border-gray-100 p-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-3xl font-serif text-[#2D2A26]">Vue d'ensemble</h2>
-                  <p className="text-gray-500 mt-1">Tableau de bord et statistiques</p>
-                </div>
-                <div className="flex gap-3">
-                  <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                    <Download size={18} />
-                    <span>Exporter</span>
-                  </button>
-                </div>
-              </div>
+            <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
+              <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">Vue d'ensemble</h2>
+              <p className="text-sm md:text-base text-gray-500 mt-1">Tableau de bord administrateur</p>
             </header>
 
-            <div className="p-8 space-y-6">
-              {/* Cartes statistiques */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                  title="Produits Total"
-                  value={stats.totalProducts}
+            <div className="p-4 md:p-8">
+              {/* Stats Grid - Responsive */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+                <StatCard 
+                  title="Produits" 
+                  value={stats.totalProducts} 
                   icon={<Package size={24} />}
                   color="blue"
                 />
-                <StatCard
-                  title="Chiffre d'Affaires"
-                  value={`${stats.totalRevenue.toLocaleString()} €`}
+                <StatCard 
+                  title="Chiffre d'affaires" 
+                  value={`${stats.totalRevenue.toFixed(2)} €`} 
                   change={stats.revenueChange}
                   icon={<DollarSign size={24} />}
                   color="green"
                 />
-                <StatCard
-                  title="Ventes Totales"
-                  value={stats.totalSales}
+                <StatCard 
+                  title="Ventes totales" 
+                  value={stats.totalSales} 
                   change={stats.salesChange}
                   icon={<ShoppingCart size={24} />}
                   color="purple"
                 />
-                <StatCard
-                  title="Alertes Stock"
-                  value={stats.lowStock}
+                <StatCard 
+                  title="Alertes stock" 
+                  value={stats.lowStock} 
                   icon={<AlertCircle size={24} />}
                   color="red"
                   alert={stats.lowStock > 0}
                 />
               </div>
 
-              {/* Graphique et Top Produits */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Graphique des ventes */}
-                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-serif text-[#2D2A26]">Performance des Ventes</h3>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <BarChart3 size={20} />
-                    </button>
+              {/* Top Products & Charts - Responsive Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                {/* Top Products */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+                  <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <h3 className="text-lg md:text-xl font-serif text-[#2D2A26]">Produits les plus vendus</h3>
+                    <BarChart3 className="text-[#C5A065]" size={20} />
                   </div>
-                  <div className="h-64 flex items-end justify-between gap-2">
-                    {CATEGORIES.map((cat, idx) => {
-                      const catProducts = products.filter(p => p.category === cat);
-                      const catRevenue = catProducts.reduce((sum, p) => sum + p.revenue, 0);
-                      const maxRevenue = Math.max(...CATEGORIES.map(c => 
-                        products.filter(p => p.category === c).reduce((s, p) => s + p.revenue, 0)
-                      ));
-                      const height = (catRevenue / maxRevenue) * 100;
-                      
-                      return (
-                        <div key={cat} className="flex-1 flex flex-col items-center gap-2">
-                          <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden relative" style={{ height: '200px' }}>
-                            <div 
-                              className="absolute bottom-0 w-full bg-gradient-to-t from-[#C5A065] to-[#D4B886] transition-all duration-500 hover:from-[#2D2A26] hover:to-[#3D3A36]"
-                              style={{ height: `${height}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-500 text-center">{cat}</span>
-                          <span className="text-sm font-semibold text-[#2D2A26]">{catRevenue.toLocaleString()}€</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Top 5 Produits */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="text-lg font-serif text-[#2D2A26] mb-6">Top 5 Ventes</h3>
-                  <div className="space-y-4">
-                    {topProducts.map((product, idx) => (
-                      <div key={product.id} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#C5A065] text-white flex items-center justify-center text-sm font-bold">
-                          {idx + 1}
+                  <div className="space-y-3 md:space-y-4">
+                    {topProducts.map((product, index) => (
+                      <div key={product.id} className="flex items-center gap-3 md:gap-4">
+                        <div className="w-8 h-8 rounded-full bg-[#C5A065] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                          {index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#2D2A26] truncate">{product.name}</p>
-                          <p className="text-xs text-gray-500">{product.sales} ventes</p>
+                          <p className="font-medium text-[#2D2A26] text-sm md:text-base truncate">{product.name}</p>
+                          <p className="text-xs md:text-sm text-gray-500">{product.category}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-[#2D2A26]">{product.revenue.toLocaleString()}€</p>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-[#2D2A26] text-sm md:text-base">{product.sales}</p>
+                          <p className="text-xs text-gray-500">ventes</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Produits en alerte */}
-              {stats.lowStock > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-                  <div className="flex items-start gap-4">
-                    <AlertCircle className="text-red-600 mt-1" size={24} />
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-red-900 mb-2">Alertes de Stock</h3>
-                      <p className="text-red-700 mb-4">
-                        {stats.lowStock} produit{stats.lowStock > 1 ? 's' : ''} nécessite{stats.lowStock > 1 ? 'nt' : ''} votre attention
-                      </p>
-                      <div className="space-y-2">
-                        {products
-                          .filter(p => p.status === 'Stock bas' || p.status === 'Rupture')
-                          .map(product => (
-                            <div key={product.id} className="flex items-center justify-between bg-white rounded-lg p-3">
-                              <div>
-                                <p className="font-medium text-[#2D2A26]">{product.name}</p>
-                                <p className="text-sm text-gray-600">{product.stock} unités restantes</p>
-                              </div>
-                              <StatusBadge status={product.status} />
-                            </div>
-                          ))}
+                {/* Recent Activity */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+                  <h3 className="text-lg md:text-xl font-serif text-[#2D2A26] mb-4 md:mb-6">Activité récente</h3>
+                  <div className="space-y-3 md:space-y-4">
+                    {[
+                      { action: 'Nouveau produit ajouté', item: 'Éclair au Chocolat', time: 'Il y a 2h' },
+                      { action: 'Stock mis à jour', item: 'Baguette Tradition', time: 'Il y a 4h' },
+                      { action: 'Produit modifié', item: 'Croissant Pur Beurre', time: 'Il y a 5h' },
+                      { action: 'Alerte stock bas', item: 'Pain au Chocolat', time: 'Il y a 6h' },
+                    ].map((activity, idx) => (
+                      <div key={idx} className="flex items-start gap-3 pb-3 md:pb-4 border-b border-gray-100 last:border-0">
+                        <div className="w-2 h-2 rounded-full bg-[#C5A065] mt-2 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm md:text-base text-[#2D2A26] font-medium">{activity.action}</p>
+                          <p className="text-xs md:text-sm text-gray-500 truncate">{activity.item}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0">{activity.time}</span>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </>
         )}
 
-        {/* VUE PRODUITS */}
+        {/* LISTE DES PRODUITS */}
         {viewMode === 'products' && (
           <>
-            <header className="bg-white shadow-sm border-b border-gray-100 p-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
+              <div className="flex flex-col gap-4">
                 <div>
-                  <h2 className="text-3xl font-serif text-[#2D2A26]">Gestion des Produits</h2>
-                  <p className="text-gray-500 mt-1">Gérez votre catalogue, vos stocks et vos prix.</p>
+                  <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">Gestion des Produits</h2>
+                  <p className="text-sm md:text-base text-gray-500 mt-1">Catalogue et inventaire</p>
                 </div>
                 
-                <button 
-                  onClick={() => {
-                    resetForm();
-                    setIsModalOpen(true);
-                  }}
-                  className="flex items-center gap-2 bg-[#2D2A26] hover:bg-[#C5A065] text-white px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <Plus size={20} />
-                  <span className="font-medium">Nouveau Produit</span>
-                </button>
-              </div>
-            </header>
-
-            <div className="p-8">
-              {/* Filtres et recherche */}
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1 flex items-center gap-4">
-                    <Search className="text-gray-400" size={20} />
+                {/* Search and Filter - Responsive Layout */}
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                     <input 
                       type="text" 
-                      placeholder="Rechercher un produit..." 
-                      className="flex-1 outline-none text-[#2D2A26] placeholder-gray-400"
+                      placeholder="Rechercher un produit..."
+                      className="w-full pl-10 pr-4 py-2.5 md:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Filter size={20} className="text-gray-400" />
+                  
+                  <div className="flex gap-2">
                     <select 
-                      className="px-4 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#C5A065]/50"
+                      className="flex-1 sm:flex-none px-3 md:px-4 py-2.5 md:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base"
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
                     >
-                      <option value="Tous">Toutes catégories</option>
+                      <option value="Tous">Toutes les catégories</option>
                       {CATEGORIES.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
+
+                    <button 
+                      onClick={() => {
+                        resetForm();
+                        setIsModalOpen(true);
+                      }}
+                      className="flex items-center gap-2 bg-[#2D2A26] hover:bg-[#C5A065] text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg transition-colors text-sm md:text-base whitespace-nowrap"
+                    >
+                      <Plus size={20} />
+                      <span className="hidden sm:inline">Ajouter</span>
+                    </button>
                   </div>
                 </div>
               </div>
+            </header>
 
-              {/* Tableau des produits */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 md:p-8">
+              {/* Desktop Table View */}
+              <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500 font-semibold border-b border-gray-100">
-                        <th className="p-6">Produit</th>
-                        <th className="p-6">Catégorie</th>
-                        <th className="p-6">Prix</th>
-                        <th className="p-6">Stock</th>
-                        <th className="p-6">Ventes</th>
-                        <th className="p-6">Revenu</th>
-                        <th className="p-6">Statut</th>
-                        <th className="p-6 text-right">Actions</th>
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left p-4 text-sm font-semibold text-gray-600">Produit</th>
+                        <th className="text-left p-4 text-sm font-semibold text-gray-600">Catégorie</th>
+                        <th className="text-left p-4 text-sm font-semibold text-gray-600">Prix</th>
+                        <th className="text-left p-4 text-sm font-semibold text-gray-600">Stock</th>
+                        <th className="text-left p-4 text-sm font-semibold text-gray-600">Statut</th>
+                        <th className="text-left p-4 text-sm font-semibold text-gray-600">Ventes</th>
+                        <th className="text-left p-4 text-sm font-semibold text-gray-600">Revenus</th>
+                        <th className="text-right p-4 text-sm font-semibold text-gray-600">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody>
                       {filteredProducts.map((product) => (
-                        <tr key={product.id} className="hover:bg-gray-50 transition-colors group">
-                          <td className="p-6 font-medium text-[#2D2A26]">{product.name}</td>
-                          <td className="p-6">
-                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                              {product.category}
-                            </span>
+                        <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                          <td className="p-4">
+                            <p className="font-medium text-[#2D2A26]">{product.name}</p>
                           </td>
-                          <td className="p-6 font-semibold">{product.price} €</td>
-                          <td className="p-6 text-gray-600">{product.stock} unités</td>
-                          <td className="p-6 text-gray-600">{product.sales}</td>
-                          <td className="p-6 font-semibold text-[#C5A065]">{product.revenue.toLocaleString()} €</td>
-                          <td className="p-6">
+                          <td className="p-4">
+                            <span className="text-sm text-gray-600">{product.category}</span>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-semibold text-[#2D2A26]">{product.price.toFixed(2)} €</span>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-sm text-gray-600">{product.stock}</span>
+                          </td>
+                          <td className="p-4">
                             <StatusBadge status={product.status} />
                           </td>
-                          <td className="p-6 text-right">
-                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <td className="p-4">
+                            <span className="text-sm text-gray-600">{product.sales}</span>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-semibold text-green-600">{product.revenue.toFixed(2)} €</span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-end gap-2">
                               <button 
                                 onClick={() => handleEdit(product)}
-                                className="p-2 text-gray-400 hover:text-[#C5A065] hover:bg-orange-50 rounded-lg transition-colors"
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               >
                                 <Edit size={18} />
                               </button>
                               <button 
                                 onClick={() => handleDelete(product.id)}
-                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               >
                                 <Trash2 size={18} />
                               </button>
@@ -470,36 +475,80 @@ export default function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
-                
-                {filteredProducts.length === 0 && (
-                  <div className="p-12 text-center text-gray-400">
-                    <Package size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>Aucun produit trouvé</p>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-[#2D2A26] mb-1">{product.name}</h3>
+                        <p className="text-sm text-gray-500">{product.category}</p>
+                      </div>
+                      <StatusBadge status={product.status} />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+                      <div>
+                        <p className="text-gray-500">Prix</p>
+                        <p className="font-semibold text-[#2D2A26]">{product.price.toFixed(2)} €</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Stock</p>
+                        <p className="font-semibold text-[#2D2A26]">{product.stock}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Ventes</p>
+                        <p className="font-semibold text-[#2D2A26]">{product.sales}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Revenus</p>
+                        <p className="font-semibold text-green-600">{product.revenue.toFixed(2)} €</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 pt-3 border-t border-gray-100">
+                      <button 
+                        onClick={() => handleEdit(product)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <Edit size={16} />
+                        <span>Modifier</span>
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(product.id)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <Trash2 size={16} />
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           </>
         )}
 
-        {/* VUE PARAMÈTRES */}
+        {/* PARAMÈTRES */}
         {viewMode === 'settings' && (
           <>
-            <header className="bg-white shadow-sm border-b border-gray-100 p-8">
-              <h2 className="text-3xl font-serif text-[#2D2A26]">Paramètres</h2>
-              <p className="text-gray-500 mt-1">Configuration de votre boutique</p>
+            <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
+              <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">Paramètres</h2>
+              <p className="text-sm md:text-base text-gray-500 mt-1">Configuration de votre boutique</p>
             </header>
 
-            <div className="p-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 max-w-2xl">
-                <h3 className="text-xl font-serif text-[#2D2A26] mb-6">Informations générales</h3>
-                <div className="space-y-6">
+            <div className="p-4 md:p-8">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-8 max-w-2xl">
+                <h3 className="text-lg md:text-xl font-serif text-[#2D2A26] mb-4 md:mb-6">Informations générales</h3>
+                <div className="space-y-4 md:space-y-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Nom de la boutique</label>
                     <input 
                       type="text" 
                       defaultValue="MARIUS & FANNY"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none" 
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base" 
                     />
                   </div>
                   <div className="space-y-2">
@@ -507,7 +556,7 @@ export default function AdminDashboard() {
                     <input 
                       type="email" 
                       defaultValue="contact@mariusetfanny.com"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none" 
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base" 
                     />
                   </div>
                   <div className="space-y-2">
@@ -515,11 +564,11 @@ export default function AdminDashboard() {
                     <input 
                       type="number" 
                       defaultValue="20"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none" 
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base" 
                     />
                     <p className="text-xs text-gray-500">Les produits avec un stock inférieur à ce seuil seront marqués comme "Stock bas"</p>
                   </div>
-                  <button className="w-full bg-[#2D2A26] hover:bg-[#C5A065] text-white font-medium py-3 rounded-lg transition-colors">
+                  <button className="w-full bg-[#2D2A26] hover:bg-[#C5A065] text-white font-medium py-3 rounded-lg transition-colors text-sm md:text-base">
                     Enregistrer les modifications
                   </button>
                 </div>
@@ -532,9 +581,9 @@ export default function AdminDashboard() {
       {/* --- MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="text-xl font-serif text-[#2D2A26]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 sticky top-0">
+              <h3 className="text-lg md:text-xl font-serif text-[#2D2A26]">
                 {editingProduct ? 'Modifier le produit' : 'Ajouter un produit'}
               </h3>
               <button 
@@ -547,12 +596,12 @@ export default function AdminDashboard() {
                 <X size={24} />
               </button>
             </div>
-            <div className="p-8 space-y-4">
+            <div className="p-4 md:p-8 space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Nom du produit</label>
                 <input 
                   type="text" 
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none" 
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base" 
                   placeholder="Ex: Croissant aux Amandes"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
@@ -562,7 +611,7 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Catégorie</label>
                 <select 
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base"
                   value={formData.category}
                   onChange={(e) => handleInputChange('category', e.target.value)}
                 >
@@ -577,7 +626,7 @@ export default function AdminDashboard() {
                   <label className="text-sm font-medium text-gray-700">Prix (€)</label>
                   <input 
                     type="number" 
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none" 
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base" 
                     placeholder="0.00"
                     value={formData.price}
                     onChange={(e) => handleInputChange('price', e.target.value)}
@@ -587,7 +636,7 @@ export default function AdminDashboard() {
                   <label className="text-sm font-medium text-gray-700">Stock</label>
                   <input 
                     type="number" 
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none" 
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base" 
                     placeholder="0"
                     value={formData.stock}
                     onChange={(e) => handleInputChange('stock', e.target.value)}
@@ -597,7 +646,7 @@ export default function AdminDashboard() {
 
               <button 
                 onClick={handleSubmit}
-                className="w-full bg-[#2D2A26] hover:bg-[#C5A065] text-white font-medium py-3 rounded-lg transition-colors mt-4"
+                className="w-full bg-[#2D2A26] hover:bg-[#C5A065] text-white font-medium py-3 rounded-lg transition-colors mt-4 text-sm md:text-base"
               >
                 {editingProduct ? 'Enregistrer les modifications' : 'Créer le produit'}
               </button>
@@ -643,7 +692,7 @@ function StatusBadge({ status }: { status: string }) {
       : 'bg-red-100 text-red-700 border-red-200';
   
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles}`}>
+    <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-semibold border ${styles} whitespace-nowrap`}>
       {status}
     </span>
   );
@@ -667,26 +716,26 @@ function StatCard({ title, value, change, icon, color, alert }: StatCardProps) {
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 ${alert ? 'ring-2 ring-red-200' : ''}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 ${alert ? 'ring-2 ring-red-200' : ''}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-500 mb-1">{title}</p>
-          <h3 className="text-3xl font-bold text-[#2D2A26]">{value}</h3>
+          <p className="text-xs md:text-sm text-gray-500 mb-1">{title}</p>
+          <h3 className="text-2xl md:text-3xl font-bold text-[#2D2A26]">{value}</h3>
           {change !== undefined && (
             <div className="flex items-center gap-1 mt-2">
               {change >= 0 ? (
-                <TrendingUp size={16} className="text-green-600" />
+                <TrendingUp size={14} className="text-green-600" />
               ) : (
-                <TrendingDown size={16} className="text-red-600" />
+                <TrendingDown size={14} className="text-red-600" />
               )}
-              <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-xs md:text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {change >= 0 ? '+' : ''}{change}%
               </span>
-              <span className="text-xs text-gray-400">vs mois dernier</span>
+              <span className="text-xs text-gray-400 hidden sm:inline">vs mois dernier</span>
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+        <div className={`p-2 md:p-3 rounded-xl ${colorClasses[color]}`}>
           {icon}
         </div>
       </div>
