@@ -131,7 +131,7 @@ export default function StaffManagement() {
           },
         ],
         total: Math.random() * 100 + 20,
-        status: ["pending", "in_production", "ready", "delivered", "cancelled"][i % 5] as any,
+        status: ["pending", "in_production", "ready", "delivered", "cancelled"][i % 5] as Order['status'],
         createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
         notes: i % 3 === 0 ? "Livraison avant 10h" : undefined,
       }));
@@ -544,7 +544,7 @@ export default function StaffManagement() {
                 <div className="flex items-center gap-2">
                   <select
                     value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value as any)}
+                    onChange={(e) => setDateFilter(e.target.value as "today" | "week" | "month")}
                     className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
                   >
                     <option value="today">Aujourd'hui</option>
@@ -558,9 +558,12 @@ export default function StaffManagement() {
                   >
                     <RefreshCw size={18} />
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-[#C5A065] text-white rounded-lg hover:bg-[#b8935a] transition-colors text-sm">
-                    <Download size={16} />
-                    Exporter
+                  <button 
+                    onClick={() => lastOrder ? printOrderPDF(lastOrder) : alert("Aucune commande à imprimer")}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#C5A065] text-white rounded-lg hover:bg-[#b8935a] transition-colors text-sm"
+                  >
+                    <Printer size={16} />
+                    Imprimer dernière commande
                   </button>
                 </div>
               </div>
@@ -570,7 +573,7 @@ export default function StaffManagement() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
               <StatCard
                 title="Commandes aujourd'hui"
-                value={stats.today}
+                value={stats.today.toString()}
                 change={stats.today > 5 ? 12 : -5}
                 icon={<ShoppingCart size={24} />}
                 color="blue"
@@ -584,13 +587,13 @@ export default function StaffManagement() {
               />
               <StatCard
                 title="En production"
-                value={stats.inProduction}
+                value={stats.inProduction.toString()}
                 icon={<Package size={24} />}
                 color="purple"
               />
               <StatCard
                 title="À livrer"
-                value={stats.ready}
+                value={stats.ready.toString()}
                 icon={<Truck size={24} />}
                 color="orange"
                 alert={stats.ready > 3}
@@ -614,7 +617,7 @@ export default function StaffManagement() {
                       <XAxis dataKey="date" stroke="#666" />
                       <YAxis stroke="#666" />
                       <Tooltip 
-                        formatter={(value) => [`${value}`, "Valeur"]}
+                        formatter={(value: any) => [`${value}`, "Valeur"]}
                         labelFormatter={(label) => `Jour: ${label}`}
                       />
                       <Legend />
@@ -661,7 +664,7 @@ export default function StaffManagement() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
@@ -676,7 +679,7 @@ export default function StaffManagement() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`${value} commandes`, "Quantité"]} />
+                      <Tooltip formatter={(value: any) => [`${value} commandes`, "Quantité"]} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
@@ -828,6 +831,7 @@ export default function StaffManagement() {
                                 onClick={() => updateOrderStatus(order.id, 'in_production')}
                                 className="p-2 text-gray-600 hover:text-green-600 transition-colors"
                                 title="Passer en production"
+                                disabled={order.status === 'cancelled' || order.status === 'delivered'}
                               >
                                 <Package size={16} />
                               </button>
@@ -908,7 +912,7 @@ export default function StaffManagement() {
             </header>
 
             <OrderForm
-              onOrderCreated={handleOrderCreated}
+              onSubmit={handleOrderCreated}
               onCancel={() => setView("dashboard")}
             />
           </div>
@@ -1114,7 +1118,14 @@ export default function StaffManagement() {
 
 /* ---------------- COMPONENTS ---------------- */
 
-function SidebarItem({ icon, label, active, onClick }: any) {
+interface SidebarItemProps {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}
+
+function SidebarItem({ icon, label, active = false, onClick }: SidebarItemProps) {
   return (
     <button
       onClick={onClick}
@@ -1123,7 +1134,7 @@ function SidebarItem({ icon, label, active, onClick }: any) {
         relative group
         ${
           active
-            ? "bg-linear-to-r from-[#C5A065] to-[#b8935a] text-white shadow-lg shadow-[#C5A065]/20"
+            ? "bg-gradient-to-r from-[#C5A065] to-[#b8935a] text-white shadow-lg shadow-[#C5A065]/20"
             : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
         }
       `}
@@ -1141,7 +1152,16 @@ function SidebarItem({ icon, label, active, onClick }: any) {
   );
 }
 
-function StatCard({ title, value, change, icon, color, alert }: any) {
+interface StatCardProps {
+  title: string;
+  value: string;
+  change?: number;
+  icon: React.ReactNode;
+  color: "blue" | "green" | "purple" | "orange" | "red";
+  alert?: boolean;
+}
+
+function StatCard({ title, value, change, icon, color, alert }: StatCardProps) {
   const colorClasses = {
     blue: "bg-blue-100 text-blue-600",
     green: "bg-green-100 text-green-600",
@@ -1189,20 +1209,23 @@ function StatCard({ title, value, change, icon, color, alert }: any) {
 
 function StatusBadge({ status }: { status: string }) {
   const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return { text: 'En attente', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
-      case 'in_production':
-        return { text: 'En production', color: 'bg-blue-100 text-blue-700 border-blue-200' };
-      case 'ready':
-        return { text: 'Prête', color: 'bg-green-100 text-green-700 border-green-200' };
-      case 'delivered':
-        return { text: 'Livrée', color: 'bg-purple-100 text-purple-700 border-purple-200' };
-      case 'cancelled':
-        return { text: 'Annulée', color: 'bg-red-100 text-red-700 border-red-200' };
-      default:
-        return { text: 'Inconnu', color: 'bg-gray-100 text-gray-700 border-gray-200' };
+    const statusLower = status.toLowerCase();
+    if (statusLower.includes('pending') || statusLower.includes('attente')) {
+      return { text: 'En attente', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
     }
+    if (statusLower.includes('production')) {
+      return { text: 'En production', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+    }
+    if (statusLower.includes('ready') || statusLower.includes('prête')) {
+      return { text: 'Prête', color: 'bg-green-100 text-green-700 border-green-200' };
+    }
+    if (statusLower.includes('delivered') || statusLower.includes('livrée')) {
+      return { text: 'Livrée', color: 'bg-purple-100 text-purple-700 border-purple-200' };
+    }
+    if (statusLower.includes('cancelled') || statusLower.includes('annulée')) {
+      return { text: 'Annulée', color: 'bg-red-100 text-red-700 border-red-200' };
+    }
+    return { text: status, color: 'bg-gray-100 text-gray-700 border-gray-200' };
   };
 
   const info = getStatusInfo(status);
