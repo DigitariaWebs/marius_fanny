@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// Components
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import BestSellers from "./components/BestSellers";
@@ -18,12 +17,12 @@ import AuthPage from "./components/Autpage";
 import AdminDashboard from "./components/Dashboard";
 import Contact from "./components/Contact";
 
-// Pages
 import User from "./pages/user";
 import VerifyEmailPage from "./pages/Emailverified";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPassword from "./pages/ResetPassword";
 import StaffManagement from "./pages/Stuff";
+import StaffDashboard from "./pages/staffDahboard";
 
 interface CartItem {
   id: number;
@@ -149,10 +148,10 @@ const App: React.FC = () => {
     }
   />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-
       
           <Route path="/user" element={<User />} />
-          <Route path="/stuff" element={<StaffManagement />} />
+          <Route path="/staff" element={<StaffManagement />} />
+          <Route path="/staff/managements" element={<StaffDashboard />} />
         </Routes>
       </div>
     </Router>

@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+
 import {
   Users,
   UserPlus,
@@ -53,6 +56,7 @@ interface StaffFormData {
 }
 
 type ViewMode = "staff" | "users" | "settings";
+
 
 const MOCK_STAFF: Staff[] = [
   {
@@ -151,6 +155,7 @@ const MOCK_USERS: User[] = [
 ];
 
 export default function StaffManagement() {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("staff");
   const [staff, setStaff] = useState<Staff[]>(MOCK_STAFF);
   const [users] = useState<User[]>(MOCK_USERS);
@@ -338,6 +343,15 @@ export default function StaffManagement() {
                 />
               </div>
             </div>
+
+<div className="flex justify-end mb-4">
+  <button
+    onClick={() => navigate("/staff/managements")}
+    className="bg-[#C5A065] hover:bg-[#b08f58] text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base"
+  >
+    Gestion du staff
+  </button>
+</div>
 
             {/* Stats Cards - Responsive Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
