@@ -213,6 +213,7 @@ function ClientManagement() {
       ready: "Prête",
       completed: "Complétée",
       cancelled: "Annulée",
+      delivered: "Livrée",
     };
     return labels[status];
   };
@@ -225,6 +226,7 @@ function ClientManagement() {
       ready: "bg-green-100 text-green-800",
       completed: "bg-gray-100 text-gray-800",
       cancelled: "bg-red-100 text-red-800",
+      delivered: "bg-teal-100 text-teal-800",
     };
     return colors[status];
   };
