@@ -73,7 +73,6 @@ export type ClientFormData = Omit<
   "id" | "createdAt" | "updatedAt" | "orders" | "addresses"
 >;
 
-// Order Management Types - VERSION COMPATIBLE STAFF DASHBOARD
 export interface Order {
   id: string; 
   orderNumber: string;

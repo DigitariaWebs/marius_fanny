@@ -33,7 +33,7 @@ import type { Order } from "../types";
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([
     {
-      id: 1,
+      id: "1", // Changed to string
       orderNumber: "ORD-2024-001",
       clientId: 1,
       client: {
@@ -68,7 +68,7 @@ export function OrderManagement() {
       updatedAt: "2024-01-22T14:20:00Z",
     },
     {
-      id: 2,
+      id: "2", // Changed to string
       orderNumber: "ORD-2024-002",
       clientId: 2,
       client: {
@@ -114,7 +114,7 @@ export function OrderManagement() {
       updatedAt: "2024-01-25T09:00:00Z",
     },
     {
-      id: 3,
+      id: "3", // Changed to string
       orderNumber: "ORD-2024-003",
       clientId: 3,
       client: {
@@ -159,7 +159,6 @@ export function OrderManagement() {
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Extract unique clients from orders
   const clients = orders
     .map((order) => order.client)
     .filter(
@@ -329,7 +328,7 @@ export function OrderManagement() {
     }, 500);
   };
 
-  const handleUpdateStatus = (orderId: number, newStatus: Order["status"]) => {
+  const handleUpdateStatus = (orderId: string, newStatus: Order["status"]) => {
     setOrders(
       orders.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
     );
@@ -749,7 +748,7 @@ export function OrderManagement() {
                         selectedOrder.items.map((item) => (
                           <tr key={item.id}>
                             <td className="px-4 py-3 text-sm">
-                              {item.product.name}
+                              {item.product?.name ?? "Produit inconnu"}
                             </td>
                             <td className="px-4 py-3 text-sm">
                               {item.quantity}
