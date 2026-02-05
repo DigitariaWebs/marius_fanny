@@ -382,12 +382,58 @@ export default function StaffManagement() {
     }
   };
 
-  const handleOrderCreated = (order: Order) => {
-    setLastOrder(order);
-    setOrders(prev => [order, ...prev]);
-    setView("dashboard");
-    fetchDashboardData();
+const handleOrderCreated = (formData: any) => {
+  // Créer un objet Order compatible
+  const newOrder: Order = {
+    id: `ORD${Date.now()}`,
+    orderNumber: `ORD${Date.now()}`,
+    clientId: 0,
+    client: {
+      id: 0,
+      firstName: formData.client?.firstName || "Client",
+      lastName: formData.client?.lastName || "Anonyme",
+      email: formData.client?.email || "",
+      phone: formData.client?.phone || "",
+      status: "active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      addresses: [],
+      orders: []
+    },
+    orderDate: new Date().toISOString(),
+    pickupDate: new Date().toISOString(),
+    pickupLocation: "Montreal",
+    deliveryType: "pickup",
+    items: formData.items?.map((item: any, index: number) => ({
+      id: index,
+      orderId: 0,
+      productId: 0,
+      product: item.product,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      subtotal: item.quantity * item.unitPrice,
+      productionStatus: "pending"
+    })) || [],
+    subtotal: formData.total || 0,
+    taxAmount: 0,
+    deliveryFee: 0,
+    total: formData.total || 0,
+    depositAmount: 0,
+    depositPaid: false,
+    balancePaid: false,
+    paymentStatus: "unpaid",
+    status: "pending",
+    source: "in_store",
+    notes: formData.notes,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
+
+  setLastOrder(newOrder);
+  setOrders(prev => [newOrder, ...prev]);
+  setView("dashboard");
+  fetchDashboardData();
+};
 
   if (loading) {
     return (

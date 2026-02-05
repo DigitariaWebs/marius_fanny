@@ -30,6 +30,8 @@ export interface Product {
   image?: string;
   createdAt: string;
   updatedAt: string;
+  sales?: number;
+  revenue?: number;
 }
 
 // Statistics Types
@@ -71,9 +73,9 @@ export type ClientFormData = Omit<
   "id" | "createdAt" | "updatedAt" | "orders" | "addresses"
 >;
 
-// Order Management Types
+// Order Management Types - VERSION COMPATIBLE STAFF DASHBOARD
 export interface Order {
-  id: number;
+  id: string;
   orderNumber: string;
   clientId: number;
   client: Client;
@@ -94,13 +96,14 @@ export interface Order {
   balancePaid: boolean;
   balancePaidAt?: string;
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
-  status:
+  status: 
     | "pending"
     | "confirmed"
     | "in_production"
     | "ready"
     | "completed"
-    | "cancelled";
+    | "cancelled"
+    | "delivered"; // AJOUTÉ pour compatibilité staff dashboard
   source: "online" | "phone" | "in_store";
   notes?: string;
   staffId?: number;
@@ -113,7 +116,7 @@ export interface OrderItem {
   id: number;
   orderId: number;
   productId: number;
-  product: Product;
+  product?: Product; // Optionnel pour compatibilité
   quantity: number;
   unitPrice: number;
   subtotal: number;
@@ -142,6 +145,33 @@ export interface OrderFormData {
   }[];
   notes?: string;
   depositPaid: boolean;
+}
+
+// Version simplifiée pour le staff dashboard
+export interface SimplifiedOrder {
+  id: string;
+  orderNumber: string;
+  client: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  items: Array<{
+    product?: {
+      id: string;
+      name: string;
+      price: number;
+    };
+    quantity: number;
+    unitPrice: number;
+  }>;
+  total: number;
+  status: "pending" | "in_production" | "ready" | "delivered" | "cancelled" | "completed";
+  createdAt: string;
+  notes?: string;
 }
 
 export interface DeliveryZone {
@@ -209,4 +239,43 @@ export interface OrderStatistics {
   weekRevenue: number;
   monthRevenue: number;
   averageOrderValue: number;
+}
+
+// Types pour le staff dashboard
+export interface OrderStats {
+  today: number;
+  thisWeek: number;
+  pending: number;
+  inProduction: number;
+  ready: number;
+  delivered: number;
+  cancelled: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+}
+
+export interface TimeSeriesData {
+  date: string;
+  orders: number;
+  revenue: number;
+}
+
+export interface ProductSales {
+  product: string;
+  sales: number;
+  revenue: number;
+}
+
+export interface ClientActivity {
+  client: string;
+  orders: number;
+  totalSpent: number;
+}
+
+// Type guard pour vérifier si un objet est un Order
+export function isOrder(obj: any): obj is Order {
+  return obj && 
+         typeof obj.id === 'string' && 
+         typeof obj.orderNumber === 'string' &&
+         obj.client !== undefined;
 }
