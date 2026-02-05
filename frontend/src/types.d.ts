@@ -75,7 +75,7 @@ export type ClientFormData = Omit<
 
 // Order Management Types - VERSION COMPATIBLE STAFF DASHBOARD
 export interface Order {
-  id: string; // Changed from string | number to just string for consistency
+  id: string; 
   orderNumber: string;
   clientId: number;
   client: Client;

@@ -3,7 +3,7 @@ import type { Staff, Client, Product } from "./types";
 // Constants
 export const TAX_RATE = 0.14975; // QC tax rate (TPS + TVQ)
 
-// Staff Mock Data
+// ✅ CORRECTION: Staff IDs sont des numbers selon types.d.ts
 export const MOCK_STAFF: Staff[] = [
   {
     id: 1,
@@ -65,7 +65,7 @@ export const DEPARTMENTS = [
   { value: "kitchen_staff", label: "Personnel de Cuisine" },
 ];
 
-// Client Mock Data
+// ✅ CORRECTION: Client IDs sont des numbers, Address IDs sont des numbers, mais Order IDs sont des strings
 export const MOCK_CLIENTS: Client[] = [
   {
     id: 1,
@@ -98,7 +98,7 @@ export const MOCK_CLIENTS: Client[] = [
     ],
     orders: [
       {
-        id: 1,
+        id: "ORD-2024-001",  // ✅ STRING
         orderNumber: "ORD-2024-001",
         clientId: 1,
         client: {} as any,
@@ -121,7 +121,7 @@ export const MOCK_CLIENTS: Client[] = [
         updatedAt: "2024-01-18T10:00:00Z",
       },
       {
-        id: 2,
+        id: "ORD-2024-045",  // ✅ STRING
         orderNumber: "ORD-2024-045",
         clientId: 1,
         client: {} as any,
@@ -157,7 +157,7 @@ export const MOCK_CLIENTS: Client[] = [
     addresses: [],
     orders: [
       {
-        id: 3,
+        id: "ORD-2024-102",  // ✅ STRING
         orderNumber: "ORD-2024-102",
         clientId: 2,
         client: {} as any,
@@ -203,7 +203,7 @@ export const MOCK_CLIENTS: Client[] = [
     ],
     orders: [
       {
-        id: 4,
+        id: "ORD-2024-078",  // ✅ STRING
         orderNumber: "ORD-2024-078",
         clientId: 3,
         client: {} as any,
@@ -250,7 +250,7 @@ export const MOCK_CLIENTS: Client[] = [
   },
 ];
 
-// Product Mock Data
+// ✅ CORRECTION: Product IDs sont des numbers selon types.d.ts
 export const MOCK_PRODUCTS: Product[] = [
   {
     id: 1,
