@@ -21,7 +21,7 @@ const ClientVideo: React.FC = () => {
                 loop 
                 playsInline
               >
-                <source src="/video.mp4" type="video/mp4" />
+                <source src="/v2.mp4" type="video/mp4" />
                 Votre navigateur ne supporte pas la vidéo.
               </video>
             </div>
@@ -37,7 +37,6 @@ const ClientVideo: React.FC = () => {
             </div>
           </div>
 
-          {/* COLONNE DROITE : LE TEXTE */}
           <div className="space-y-8 order-1 lg:order-2">
             <h2 className="text-5xl md:text-6xl font-serif italic text-[#C5A065]">
               Le bonheur se partage

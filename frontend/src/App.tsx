@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -21,12 +21,15 @@ import User from "./pages/user";
 import VerifyEmailPage from "./pages/Emailverified";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPassword from "./pages/ResetPassword";
-import StaffManagement from "./pages/Stuff";
-import StaffDashboard from "./pages/staffDahboard";
 import Checkout from "./pages/Checkout";
+import CustomerServicePage from "./pages/Customerservicepage";
+import StaffDashboardPage from "./pages/staffDahboard"; 
+import Stuff from "./pages/Stuff";
 
+import { ProtectedRoute } from "./components/Protectedroute";
 import { Product } from "./types";
 import { initializeCartSession, loadCart, saveCart } from "./utils/cartPersistence";
+
 
 interface CartItem {
   id: number;
@@ -39,7 +42,7 @@ interface CartItem {
 interface PageProps {
   onCartClick: () => void;
   cartCount: number;
-  onAddToCart: (product: any) => void;
+  onAddToCart: (product: Product) => void;
 }
 
 const HomePage: React.FC<PageProps> = ({
@@ -185,7 +188,6 @@ const App: React.FC = () => {
 
       <div className="min-h-screen relative">
         <Routes>
-          {/* Main Routes */}
           <Route
             path="/"
             element={
@@ -208,7 +210,16 @@ const App: React.FC = () => {
           />
           <Route path="/politique-retour" element={<Politique />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/dashboard" element={<AdminDashboard />} />
+          
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          
           <Route path="/checkout" element={<Checkout />} />
 
           {/* Auth Routes */}
@@ -224,10 +235,36 @@ const App: React.FC = () => {
           />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-
           <Route path="/user" element={<User />} />
-          <Route path="/staff" element={<StaffManagement />} />
-          <Route path="/staff/dashboard" element={<StaffDashboard />} />
+
+          {/* Staff Routes - Protected */}
+          
+          <Route
+            path="/staff/dashboard"
+            element={
+                  <ProtectedRoute allowedRoles={["kitchen_staff", "customer_service"]}>
+                <Stuff />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/staff/production"
+            element={
+              <ProtectedRoute allowedRoles={["kitchen_staff"]}>
+                <StaffDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/staff/commandes"
+            element={
+              <ProtectedRoute allowedRoles={["customer_service"]}>
+                <CustomerServicePage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </Router>

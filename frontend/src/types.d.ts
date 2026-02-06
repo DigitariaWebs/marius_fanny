@@ -146,7 +146,6 @@ export interface OrderFormData {
   depositPaid: boolean;
 }
 
-// Version simplifiée pour le staff dashboard
 export interface SimplifiedOrder {
   id: string;
   orderNumber: string;

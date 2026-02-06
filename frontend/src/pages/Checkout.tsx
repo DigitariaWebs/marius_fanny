@@ -34,7 +34,6 @@ const Checkout: React.FC = () => {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
 
-  // Redirect if no checkout data
   useEffect(() => {
     if (!state || !state.items || state.items.length === 0) {
       console.log("⚠️ [CHECKOUT] No checkout data, redirecting to home");
