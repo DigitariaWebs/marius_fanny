@@ -14,6 +14,18 @@ interface ProtectedRouteProps {
   allowedRoles?: ("admin" | "kitchen_staff" | "customer_service")[];
 }
 
+// ----- Ajout de ce type pour éviter TS2339 -----
+interface UserWithMetadata {
+  id: string;
+  email: string;
+  role?: "admin" | "kitchen_staff" | "customer_service" | "client";
+  user_metadata?: {
+    role?: "admin" | "kitchen_staff" | "customer_service" | "client";
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
 export function ProtectedRoute({
   children,
   allowedRoles,
@@ -38,7 +50,7 @@ export function ProtectedRoute({
         // 🔐 MODE PRODUCTION
         const session = await authClient.getSession();
 
-        if (!session?.data) {
+        if (!session?.data?.user) {
           setIsAuthenticated(false);
           setLoading(false);
           return;
@@ -46,9 +58,11 @@ export function ProtectedRoute({
 
         setIsAuthenticated(true);
 
+        const user = session.data.user as UserWithMetadata;
+
         const role =
-          session.data.user?.user_metadata?.role ||
-          session.data.user?.role ||
+          user.user_metadata?.role ||
+          user.role ||
           "client";
 
         setUserRole(role);
