@@ -52,19 +52,7 @@ mongoose
 // 2. MIDDLEWARES
 
 // Global request logger - logs ALL incoming requests
-app.use((req, res, next) => {
-  const start = Date.now();
-  console.log(`\n➡️  [REQUEST] ${req.method} ${req.originalUrl} from ${req.headers.origin || req.ip}`);
-  
-  // Log response when finished
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    const statusIcon = res.statusCode < 400 ? '✅' : '❌';
-    console.log(`${statusIcon} [RESPONSE] ${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`);
-  });
-  
-  next();
-});
+// Removed request logger for production cleanliness
 
 app.use(
   cors({
@@ -75,10 +63,16 @@ app.use(
 );
 
 // 3. BETTER AUTH (REGISTER BEFORE JSON BODY PARSING)
-app.all("/api/auth/{*any}", async (req, res) => {
+// Initialize auth handler once
+let authHandler: any = null;
+
+app.all("/api/auth/*", async (req, res) => {
   try {
-    const auth = await getAuth();
-    return toNodeHandler(auth)(req, res);
+    if (!authHandler) {
+      const auth = await getAuth();
+      authHandler = toNodeHandler(auth);
+    }
+    return authHandler(req, res);
   } catch (error) {
     console.error("❌ [AUTH] Better Auth error:", error);
     res.status(500).json({ success: false, error: "Auth service error" });

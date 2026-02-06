@@ -44,24 +44,6 @@ const initializeApp = async () => {
         console.error("❌ ERREUR CONNEXION MONGOOSE:", err);
       });
 
-    // Global request logger
-    app.use((req, res, next) => {
-      const start = Date.now();
-      console.log(
-        `\n➡️  [REQUEST] ${req.method} ${req.url} (path: ${req.path}) from ${req.headers.origin || req.ip}`,
-      );
-
-      res.on("finish", () => {
-        const duration = Date.now() - start;
-        const statusIcon = res.statusCode < 400 ? "✅" : "❌";
-        console.log(
-          `${statusIcon} [RESPONSE] ${req.method} ${req.url} → ${res.statusCode} (${duration}ms)`,
-        );
-      });
-
-      next();
-    });
-
     // CORS
     app.use(
       cors({
@@ -72,13 +54,25 @@ const initializeApp = async () => {
     );
 
     // Better Auth routes
-    app.all("/api/auth/*", async (req, res) => {
+    let authHandler: any = null;
+
+    app.use("/api/auth", async (req, res, next) => {
       try {
-        const auth = await getAuth();
-        return toNodeHandler(auth)(req, res);
+        if (!authHandler) {
+          const auth = await getAuth();
+          authHandler = toNodeHandler(auth);
+        }
+        return authHandler(req, res);
       } catch (error) {
-        console.error("❌ [AUTH] Better Auth error:", error);
-        res.status(500).json({ success: false, error: "Auth service error" });
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : "";
+        console.error("❌ [AUTH] Better Auth error:", errorMsg);
+        console.error("❌ [AUTH] Stack:", errorStack);
+        res.status(500).json({
+          success: false,
+          error: "Auth service error",
+          details: errorMsg,
+        });
       }
     });
 
