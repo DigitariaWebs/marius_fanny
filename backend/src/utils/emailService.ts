@@ -21,20 +21,27 @@ export function generateMockVerificationCode(): string {
 export async function sendVerificationCodeEmail(
   email: string,
   name: string,
-  verificationUrl?: string
+  verificationUrl?: string,
+  otp?: string
 ): Promise<{ code: string }> {
   console.log(`\n${'='.repeat(60)}`);
   console.log(`📧 [sendVerificationCodeEmail] Email verification process started`);
   console.log(`📧 [sendVerificationCodeEmail] Recipient: ${email}`);
   console.log(`👤 [sendVerificationCodeEmail] User name: ${name}`);
   
-  const code = generateMockVerificationCode();
-  console.log(`🔐 [sendVerificationCodeEmail] Generated mock verification code: ${code}`);
+  const code = otp || generateMockVerificationCode();
+  console.log(`🔐 [sendVerificationCodeEmail] Verification code: ${code}`);
   console.log(`🔗 [sendVerificationCodeEmail] Verification URL: ${verificationUrl || '#'}`);
   
   try {
     console.log(`⏳ [sendVerificationCodeEmail] Sending email via transporter...`);
-    await sendVerificationEmail(email, name, verificationUrl || '#', code);
+    if (otp) {
+      // Send OTP email
+      await sendVerificationEmail(email, name, verificationUrl || '#', code);
+    } else {
+      // Send link email (legacy)
+      await sendVerificationEmail(email, name, verificationUrl || '#', code);
+    }
     console.log(`✅ [sendVerificationCodeEmail] Verification email sent successfully to ${email}`);
     console.log(`${'='.repeat(60)}\n`);
     return { code };

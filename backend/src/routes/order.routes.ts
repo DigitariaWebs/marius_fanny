@@ -14,7 +14,6 @@ import {
   updateOrderSchema,
   validateDeliverySchema,
   orderQuerySchema,
-} from "../schemas/order.schema.js";
 } from "../schemas/order.schema";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 

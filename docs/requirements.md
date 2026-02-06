@@ -14,9 +14,9 @@
 
 ### 1. Online Ordering System (Client-Facing)
 - [x] Web-based interface
-- [ ] Product browsing and selection
-- [ ] Shopping cart functionality
-- [ ] Secure payment processing
+- [x] Product browsing and selection
+- [x] Shopping cart functionality
+- [x] Secure payment processing
 
 ### 2. Payment Processing
 

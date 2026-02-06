@@ -18,6 +18,8 @@ const AuthPage: React.FC = () => {
     "login"
   );
   const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [pendingSignIn, setPendingSignIn] = useState<{email: string, password: string} | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,6 +51,9 @@ const AuthPage: React.FC = () => {
     setView(newView);
     setError(null);
     setSuccessMessage(null);
+    setIsVerificationSent(false);
+    setVerificationCode("");
+    setPendingSignIn(null);
   };
 
   const validateForm = () => {
@@ -79,22 +84,40 @@ const AuthPage: React.FC = () => {
           password,
         });
 
-        if (signInError)
+        if (signInError) {
+          // Check if email verification is required
+          if (
+            signInError.message?.includes("Email not verified") ||
+            signInError.message?.includes("verification") ||
+            signInError.status === 403
+          ) {
+            console.log(
+              "📧 [AUTH] Email verification required, proceeding to verification...",
+            );
+
+            setPendingSignIn({ email, password });
+            setIsVerificationSent(true);
+            setError(null);
+            return;
+          }
           throw new Error(signInError.message || "Connexion échouée");
+        }
 
         // Check for checkout intent
-        const checkoutIntent = localStorage.getItem('checkout_intent');
+        const checkoutIntent = localStorage.getItem("checkout_intent");
         if (checkoutIntent) {
           try {
             const intent = JSON.parse(checkoutIntent);
             // Clear the intent
-            localStorage.removeItem('checkout_intent');
-            console.log('🛒 [AUTH] Restoring checkout intent and redirecting to checkout');
+            localStorage.removeItem("checkout_intent");
+            console.log(
+              "🛒 [AUTH] Restoring checkout intent and redirecting to checkout",
+            );
             // Navigate to checkout with saved state
-            navigate('/checkout', { state: intent });
+            navigate("/checkout", { state: intent });
             return;
           } catch (e) {
-            console.error('Error parsing checkout intent:', e);
+            console.error("Error parsing checkout intent:", e);
           }
         }
 
@@ -131,8 +154,111 @@ const AuthPage: React.FC = () => {
     await forgotPassword(email);
 
     setSuccessMessage(
-      "Un lien de réinitialisation a été envoyé à votre adresse email."
+      "Un lien de réinitialisation a été envoyé à votre adresse email.",
     );
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (verificationCode.length !== 6) {
+      setError("Le code doit contenir 6 chiffres.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log("🔐 [VERIFY] Verifying email with OTP...");
+      const result = await authClient.emailOtp.verifyEmail({
+        email: pendingSignIn ? pendingSignIn.email : email,
+        otp: verificationCode,
+      });
+
+      if (result.data) {
+        console.log("✅ [VERIFY] Email verification successful");
+
+        if (pendingSignIn) {
+          // Complete the pending sign-in
+          console.log("🔐 [AUTH] Completing pending sign-in...");
+          const { error: signInError } = await authClient.signIn.email({
+            email: pendingSignIn.email,
+            password: pendingSignIn.password,
+          });
+
+          if (signInError) {
+            throw new Error(
+              signInError.message || "Erreur lors de la connexion",
+            );
+          }
+
+          setPendingSignIn(null);
+
+          // Check for checkout intent
+          const checkoutIntent = localStorage.getItem("checkout_intent");
+          if (checkoutIntent) {
+            try {
+              const intent = JSON.parse(checkoutIntent);
+              localStorage.removeItem("checkout_intent");
+              console.log(
+                "🛒 [AUTH] Restoring checkout intent and redirecting to checkout",
+              );
+              navigate("/checkout", { state: intent });
+              return;
+            } catch (e) {
+              console.error("Error parsing checkout intent:", e);
+            }
+          }
+
+          const from = (location.state as any)?.from?.pathname || "/dashboard";
+          navigate(from);
+        } else {
+          // Signup verification completed
+          setSuccessMessage(
+            "Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.",
+          );
+          setTimeout(() => {
+            setIsVerificationSent(false);
+            switchView("login");
+          }, 2000);
+        }
+      } else {
+        throw new Error("Code de vérification invalide");
+      }
+    } catch (err: any) {
+      console.error("❌ [VERIFY] Email verification failed:", err);
+      if (err.message === "Failed to fetch") {
+        setError("Erreur réseau. Vérifiez votre connexion.");
+      } else {
+        setError(err.message || "Code de vérification invalide.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    setError(null);
+    setVerificationCode("");
+    setSuccessMessage(null);
+
+    try {
+      console.log("📧 [RESEND] Resending verification OTP...");
+      await authClient.emailOtp.sendVerificationOtp({
+        email: pendingSignIn ? pendingSignIn.email : email,
+        type: "email-verification",
+      });
+
+      setSuccessMessage("Un nouveau code a été envoyé à votre email.");
+      console.log("✅ [RESEND] Verification OTP resent");
+    } catch (err: any) {
+      console.error("❌ [RESEND] Failed to resend verification OTP:", err);
+      setError("Erreur lors de l'envoi du code. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (isVerificationSent) {
@@ -150,20 +276,73 @@ const AuthPage: React.FC = () => {
               className="text-4xl mb-4"
               style={{ fontFamily: styles.fontScript, color: styles.gold }}
             >
-              Presque terminé...
+              {pendingSignIn ? "Vérifiez votre email" : "Vérifiez votre email"}
             </h2>
             <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500 leading-relaxed mb-8">
-              Un lien de confirmation a été envoyé à <br />
-              <span className="text-[#2D2A26] underline">{email}</span>. <br />
+              {pendingSignIn
+                ? `Un code de vérification a été envoyé à ${pendingSignIn.email} pour compléter votre connexion.`
+                : `Un code de vérification a été envoyé à ${email} pour activer votre compte.`}{" "}
               <br />
-              Veuillez cliquer sur ce lien pour activer votre compte.
+              <br />
+              Veuillez entrer le code à 6 chiffres ci-dessous.
             </p>
+
+            <form onSubmit={handleVerifyCode} className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) =>
+                    setVerificationCode(
+                      e.target.value.replace(/\D/g, "").slice(0, 6),
+                    )
+                  }
+                  placeholder="Entrez le code"
+                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A065] focus:border-transparent"
+                  maxLength={6}
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-red-700 text-sm text-center">{error}</p>
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
+                  <p className="text-green-700 text-sm text-center">
+                    {successMessage}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || verificationCode.length !== 6}
+                className="w-full px-6 py-3 text-sm font-bold text-white bg-[#C5A065] rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Vérification..." : "Vérifier le code"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={loading}
+                className="w-full px-6 py-3 text-sm font-bold text-[#C5A065] bg-white border border-[#C5A065] rounded-xl hover:bg-[#C5A065]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Renvoyer le code
+              </button>
+            </form>
+
             <button
               onClick={() => {
                 setIsVerificationSent(false);
+                setPendingSignIn(null);
                 switchView("login");
               }}
-              className="flex items-center justify-center gap-2 mx-auto text-[10px] font-black uppercase tracking-widest text-[#2D2A26] hover:text-[#C5A065] transition-all"
+              className="flex items-center justify-center gap-2 mx-auto text-[10px] font-black uppercase tracking-widest text-[#2D2A26] hover:text-[#C5A065] transition-all mt-6"
             >
               <ArrowLeft size={14} /> Retour à la connexion
             </button>

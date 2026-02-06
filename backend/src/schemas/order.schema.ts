@@ -7,10 +7,11 @@ export const addressSchema = z.object({
   province: z.string().min(2, "La province est requise").max(2),
   postalCode: z
     .string()
-    .min(3, "Le code postal est requis")
+    .min(3, "Le code postal doit contenir au moins 3 caractères")
+    .max(7, "Le code postal ne peut pas dépasser 7 caractères")
     .regex(
-      /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/i,
-      "Format de code postal invalide (ex: H2L 3Y5)",
+      /^[A-Z]\d[A-Z](\s?\d[A-Z]\d)?$/i,
+      "Format de code postal invalide (ex: H7X ou H2L 3Y5)",
     ),
 });
 
@@ -31,7 +32,7 @@ export const clientInfoSchema = z.object({
   email: z.string().email("Format d'email invalide"),
   phone: z
     .string()
-    .min(10, "Le numéro de téléphone doit contenir au moins 10 chiffres")
+    .min(7, "Le numéro de téléphone doit contenir au moins 7 chiffres")
     .regex(
       /^[\d\s\-().+]+$/,
       "Le numéro de téléphone contient des caractères invalides",

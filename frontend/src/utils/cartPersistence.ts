@@ -61,6 +61,9 @@ export const loadCart = (): CartItem[] => {
  */
 export const clearCart = (): void => {
   localStorage.removeItem(CART_STORAGE_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("cart:updated"));
+  }
 };
 
 /**

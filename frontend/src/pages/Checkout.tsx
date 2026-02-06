@@ -4,6 +4,8 @@ import { ArrowLeft, CreditCard, MapPin, ShoppingBag } from "lucide-react";
 import SquarePaymentForm from "../components/SquarePaymentForm";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { authClient } from "../lib/AuthClient";
+import { clearCart } from "../utils/cartPersistence";
 
 interface CartItem {
   id: number;
@@ -28,7 +30,9 @@ const Checkout: React.FC = () => {
 
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
 
   // Redirect if no checkout data
   useEffect(() => {
@@ -37,6 +41,40 @@ const Checkout: React.FC = () => {
       navigate("/");
     }
   }, [state, navigate]);
+
+  // Load user data for pre-populating contact information
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        console.log("👤 [CHECKOUT] Loading user data for contact information...");
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+        
+        const response = await fetch(`${API_URL}/api/users/me`, {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const user = result.data;
+          
+          // Pre-populate contact information from user account
+          setCustomerName(user.name || "");
+          setCustomerEmail(user.email || "");
+          setCustomerPhone(user.profile?.phoneNumber || "");
+          
+          console.log("✅ [CHECKOUT] User data loaded and contact fields pre-populated");
+        } else {
+          console.log("⚠️ [CHECKOUT] Could not load user data, user may need to fill contact info manually");
+        }
+      } catch (error) {
+        console.error("❌ [CHECKOUT] Failed to load user data:", error);
+      } finally {
+        setIsLoadingUserData(false);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   if (!state || !state.items) {
     return null;
@@ -55,8 +93,18 @@ const Checkout: React.FC = () => {
       return;
     }
 
+    if (!customerPhone.trim()) {
+      alert("Veuillez entrer votre numéro de téléphone.");
+      return;
+    }
+
+    if (customerPhone.replace(/\D/g, "").length < 7) {
+      alert("Le numéro de téléphone doit contenir au moins 7 chiffres.");
+      return;
+    }
+
     console.log(
-      `💳 [CHECKOUT] Customer info collected, showing payment form for ${customerName} (${customerEmail})`
+      `💳 [CHECKOUT] Customer info collected, showing payment form for ${customerName} (${customerEmail}, ${customerPhone})`,
     );
     setShowPaymentForm(true);
   };
@@ -69,32 +117,39 @@ const Checkout: React.FC = () => {
     const status = paymentResult.status;
 
     console.log(
-      `✅ [CHECKOUT] Payment successful! ID: ${paymentId}, Status: ${status}, Amount: ${amount}$`
+      `✅ [CHECKOUT] Payment successful! ID: ${paymentId}, Status: ${status}, Amount: ${amount}$`,
     );
 
     // Save order to backend
     try {
-      console.log('💾 [CHECKOUT] Saving order to backend...');
-      
+      console.log("💾 [CHECKOUT] Saving order to backend...");
+
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-      
+
       // Prepare order data
+      const nameParts = customerName.trim().split(" ");
+      const firstName = nameParts[0] || customerName;
+      const lastName =
+        nameParts.length > 1 ? nameParts.slice(1).join(" ") : "N/A";
+
       const orderData = {
         clientInfo: {
-          firstName: customerName.split(' ')[0] || customerName,
-          lastName: customerName.split(' ').slice(1).join(' ') || '',
+          firstName: firstName,
+          lastName: lastName,
           email: customerEmail,
-          phone: '', // Would need to add phone field to checkout
+          phone: customerPhone,
         },
-        deliveryType: state.postalCode ? 'delivery' : 'pickup',
-        deliveryAddress: state.postalCode ? {
-          street: '', // Would need to add address fields
-          city: '',
-          province: 'QC',
-          postalCode: state.postalCode,
-        } : undefined,
-        pickupLocation: 'Laval', // Default, could be from state
-        items: state.items.map(item => ({
+        deliveryType: state.postalCode ? "delivery" : "pickup",
+        deliveryAddress: state.postalCode
+          ? {
+              street: "À déterminer", // Temporary placeholder
+              city: "À déterminer", // Temporary placeholder
+              province: "QC",
+              postalCode: state.postalCode,
+            }
+          : undefined,
+        pickupLocation: "Laval", // Default, could be from state
+        items: state.items.map((item) => ({
           productId: item.id,
           productName: item.name,
           quantity: item.quantity,
@@ -106,25 +161,25 @@ const Checkout: React.FC = () => {
       };
 
       const response = await fetch(`${API_URL}/api/orders`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include', // Include cookies for auth
+        credentials: "include", // Include cookies for auth
         body: JSON.stringify(orderData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save order');
+        throw new Error(errorData.error || "Failed to save order");
       }
 
       const result = await response.json();
-      console.log('✅ [CHECKOUT] Order saved successfully:', result);
+      console.log("✅ [CHECKOUT] Order saved successfully:", result);
 
-      // Clear cart from localStorage
-      localStorage.removeItem('marius_fanny_cart');
-      
+      // Clear cart from localStorage and notify UI
+      clearCart();
+
       // Show success message
       const successMessage =
         `🎉 Paiement réussi!\n\n` +
@@ -139,11 +194,11 @@ const Checkout: React.FC = () => {
       console.log("🏠 [CHECKOUT] Redirecting to home page");
       navigate("/");
     } catch (error) {
-      console.error('❌ [CHECKOUT] Failed to save order:', error);
+      console.error("❌ [CHECKOUT] Failed to save order:", error);
       alert(
         `⚠️ Le paiement a réussi, mais nous avons rencontré un problème lors de l'enregistrement de votre commande.\n\n` +
-        `ID de paiement: ${paymentId}\n\n` +
-        `Veuillez contacter le support avec cet ID de paiement.`
+          `ID de paiement: ${paymentId}\n\n` +
+          `Veuillez contacter le support avec cet ID de paiement.`,
       );
       // Still redirect but user should contact support
       navigate("/");
@@ -177,7 +232,7 @@ const Checkout: React.FC = () => {
 
     alert(
       errorMessage +
-        "\n\nVeuillez réessayer ou contacter le support si le problème persiste."
+        "\n\nVeuillez réessayer ou contacter le support si le problème persiste.",
     );
 
     setShowPaymentForm(false);
@@ -220,9 +275,14 @@ const Checkout: React.FC = () => {
             <div className="space-y-6">
               {!showPaymentForm ? (
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
-                  <h2 className="text-xl font-serif text-[#2D2A26] mb-4">
+                  <h2 className="text-xl font-serif text-[#2D2A26] mb-2">
                     Informations de contact
                   </h2>
+                  <p className="text-sm text-stone-500 mb-4">
+                    {isLoadingUserData
+                      ? "Chargement de vos informations..."
+                      : "Vos informations de compte ont été pré-remplies. Vous pouvez les modifier si nécessaire."}
+                  </p>
                   <form
                     onSubmit={handleCustomerFormSubmit}
                     className="space-y-4"
@@ -249,6 +309,21 @@ const Checkout: React.FC = () => {
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
                         placeholder="jean.dupont@example.com"
+                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065]"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-stone-600 mb-2">
+                        Téléphone *
+                      </label>
+                      <input
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="(514) 123-4567"
+                        pattern="[0-9\s\-\(\)\.\+]{7,}"
+                        title="Numéro de téléphone (au moins 7 chiffres)"
                         className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065]"
                         required
                       />

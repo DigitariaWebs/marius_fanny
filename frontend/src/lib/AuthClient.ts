@@ -1,9 +1,11 @@
 import { createAuthClient } from "better-auth/react";
+import { emailOTPClient } from "better-auth/client/plugins";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export const authClient = createAuthClient({
-  baseURL: API_URL, 
+  baseURL: API_URL,
+  plugins: [emailOTPClient()],
 });
 
 export const forgotPassword = async (email: string) => {
@@ -27,4 +29,33 @@ export const forgotPassword = async (email: string) => {
   }
 
   return response.json();
+};
+
+// Email verification helper functions
+export const sendVerificationEmail = async (email: string, callbackURL?: string) => {
+  return await authClient.sendVerificationEmail({
+    email,
+    callbackURL: callbackURL || "/",
+  });
+};
+
+export const verifyEmail = async (token: string) => {
+  return await authClient.verifyEmail({
+    query: { token },
+  });
+};
+
+// Email OTP helper functions
+export const sendVerificationOTP = async (email: string, type: "email-verification" | "sign-in" | "forget-password" = "email-verification") => {
+  return await authClient.emailOtp.sendVerificationOtp({
+    email,
+    type,
+  });
+};
+
+export const verifyEmailOTP = async (email: string, otp: string) => {
+  return await authClient.emailOtp.verifyEmail({
+    email,
+    otp,
+  });
 };

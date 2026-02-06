@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { emailOTP } from "better-auth/plugins";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import bcrypt from "bcryptjs";
 import { connectMongoDB } from "./db.js";
@@ -22,6 +23,7 @@ async function initializeAuth() {
       }),
       emailAndPassword: {
         enabled: true,
+        requireEmailVerification: true,
         password: {
           hash: async (password) => {
             return await bcrypt.hash(password, 10);
@@ -31,6 +33,21 @@ async function initializeAuth() {
           },
         },
       },
+      plugins: [
+        emailOTP({
+          overrideDefaultEmailVerification: true,
+          sendVerificationOnSignUp: true,
+          async sendVerificationOTP({ email, otp, type }) {
+            try {
+              console.log(`📧 [EMAIL-OTP] Sending ${type} OTP to ${email}: ${otp}`);
+              await sendVerificationCodeEmail(email, "User", undefined, otp);
+            } catch (error) {
+              console.error(`Failed to send ${type} OTP to ${email}:`, error);
+              // Don't throw - user creation should not be blocked by email failures
+            }
+          },
+        }),
+      ],
       trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:5173"],
       secret:
         process.env.BETTER_AUTH_SECRET ||

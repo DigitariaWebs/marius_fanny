@@ -263,15 +263,16 @@ const OrderSchema = new Schema<IOrder>(
   },
 );
 
-// Generate order number before saving
-OrderSchema.pre("save", async function () {
+// Generate order number before validation to satisfy required field
+OrderSchema.pre("validate", async function () {
   if (this.isNew && !this.orderNumber) {
     // Generate order number format: MF-YYYYMMDD-XXXX
     const date = new Date();
     const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
 
-    // Find the last order of the day
-    const lastOrder = await Order.findOne({
+    // Find the last order of the day using this.constructor to avoid circular dependency
+    const OrderModel = this.constructor as mongoose.Model<IOrder>;
+    const lastOrder = await OrderModel.findOne({
       orderNumber: new RegExp(`^MF-${dateStr}-`),
     })
       .sort({ orderNumber: -1 })

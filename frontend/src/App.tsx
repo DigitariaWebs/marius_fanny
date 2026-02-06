@@ -105,6 +105,28 @@ const App: React.FC = () => {
     }
   }, [cartItems]);
 
+  // Keep cart in sync with storage updates (checkout clears storage)
+  useEffect(() => {
+    const syncCartFromStorage = () => {
+      const savedCart = loadCart();
+      setCartItems(savedCart);
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === "marius_fanny_cart") {
+        syncCartFromStorage();
+      }
+    };
+
+    window.addEventListener("cart:updated", syncCartFromStorage);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("cart:updated", syncCartFromStorage);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
   const addToCart = (product: Product) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
