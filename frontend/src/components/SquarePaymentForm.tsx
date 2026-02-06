@@ -44,14 +44,35 @@ export default function SquarePaymentForm({
         const data = await response.json();
 
         if (data.success) {
-          console.log("✅ [FRONTEND] Square configuration loaded successfully");
+          // Validate that we actually got valid config values
+          if (!data.data.applicationId || !data.data.locationId) {
+            console.error(
+              "❌ [FRONTEND] Square config missing required values:",
+              {
+                hasApplicationId: !!data.data.applicationId,
+                hasLocationId: !!data.data.locationId,
+              }
+            );
+            onPaymentError(
+              new Error(
+                "Payment configuration is incomplete. Please contact support."
+              )
+            );
+            return;
+          }
+
+          console.log("✅ [FRONTEND] Square configuration loaded successfully", {
+            applicationId: `${data.data.applicationId.substring(0, 10)}...`,
+            locationId: `${data.data.locationId.substring(0, 10)}...`,
+            environment: data.data.environment,
+          });
           setSquareConfig(data.data);
         } else {
           console.error(
             "❌ [FRONTEND] Failed to fetch Square config:",
             data.error,
           );
-          onPaymentError(new Error("Failed to load payment configuration"));
+          onPaymentError(new Error(data.error || "Failed to load payment configuration"));
         }
       } catch (error) {
         console.error("💥 [FRONTEND] Error fetching Square config:", error);

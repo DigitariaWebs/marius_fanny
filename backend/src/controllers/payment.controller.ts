@@ -366,6 +366,24 @@ export const getSquareConfig = async (req: Request, res: Response) => {
   console.log(`⚙️ [CONFIG] Square configuration requested`);
 
   try {
+    // Validate that required configuration exists
+    if (!squareConfig.applicationId || !squareConfig.locationId) {
+      console.error(
+        `❌ [CONFIG] Missing required Square configuration:`,
+        {
+          hasApplicationId: !!squareConfig.applicationId,
+          hasLocationId: !!squareConfig.locationId,
+          applicationId: squareConfig.applicationId ? `${squareConfig.applicationId.substring(0, 10)}...` : 'MISSING',
+          locationId: squareConfig.locationId ? `${squareConfig.locationId.substring(0, 10)}...` : 'MISSING',
+        }
+      );
+      
+      return res.status(500).json({
+        success: false,
+        error: "Square payment configuration is incomplete. Please check environment variables: SQUARE_APPLICATION_ID and SQUARE_LOCATION_ID",
+      });
+    }
+
     const config = {
       applicationId: squareConfig.applicationId,
       locationId: squareConfig.locationId,
@@ -374,6 +392,10 @@ export const getSquareConfig = async (req: Request, res: Response) => {
 
     console.log(
       `✅ [CONFIG] Square configuration provided for environment: ${config.environment}`,
+      {
+        applicationId: `${config.applicationId.substring(0, 10)}...`,
+        locationId: `${config.locationId.substring(0, 10)}...`,
+      }
     );
 
     res.json({
