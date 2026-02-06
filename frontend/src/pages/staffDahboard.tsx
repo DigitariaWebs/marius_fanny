@@ -155,7 +155,7 @@ export default function StaffManagement() {
           lastName: ["Dupont", "Martin", "Bernard", "Petit", "Durand"][i % 5],
           email: `client${i % 10}@example.com`,
           phone: `06${Math.floor(Math.random() * 100000000)}`,
-          address: `${Math.floor(Math.random() * 100)} Rue de la République, 1300${i%9} Marseille`,
+          address: `${Math.floor(Math.random() * 100)} Rue de la République, 1300${i%9} laval`,
         },
         items: [
           {
@@ -192,7 +192,7 @@ export default function StaffManagement() {
             id: 1,
             type: "shipping",
             street: order.client.address,
-            city: "Marseille",
+            city: "Laval",
             province: "",
             postalCode: "",
             isDefault: true,
@@ -201,7 +201,7 @@ export default function StaffManagement() {
         },
         orderDate: order.createdAt,
         pickupDate: order.createdAt,
-        pickupLocation: "Marseille",
+        pickupLocation: "Laval",
         deliveryType: "pickup",
         items: order.items.map((item, idx) => ({
           id: idx,
@@ -226,7 +226,7 @@ export default function StaffManagement() {
         subtotal: 0,
         taxAmount: 0,
         deliveryFee: 0,
-        total: 0, // On garde 0 ou le vrai montant, mais on ne l'affiche pas forcément
+        total: 0,
         depositAmount: 0,
         depositPaid: false,
         balancePaid: false,
@@ -299,10 +299,9 @@ export default function StaffManagement() {
         }],
         orders: []
       },
-      // ... reste des champs par défaut
       orderDate: new Date().toISOString(),
       pickupDate: new Date().toISOString(),
-      pickupLocation: "Marseille",
+      pickupLocation: "Laval",
       deliveryType: "pickup",
       items: formData.items?.map((item: any, idx: number) => ({
         id: idx,
@@ -316,7 +315,7 @@ export default function StaffManagement() {
       })) || [],
       subtotal: 0, taxAmount: 0, deliveryFee: 0, total: 0,
       depositAmount: 0, depositPaid: false, balancePaid: false, paymentStatus: "unpaid",
-      status: "pending", // Une nouvelle commande arrive en pending pour la prod
+      status: "pending", 
       source: "in_store",
       notes: formData.notes,
       createdAt: new Date().toISOString(),
