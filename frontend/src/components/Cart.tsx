@@ -1,6 +1,27 @@
 import React, { useState } from "react";
-import { X, Plus, Minus, ShoppingBag, CreditCard, Loader2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  Minus,
+  ShoppingBag,
+  CreditCard,
+  Loader2,
+  MapPin,
+  AlertCircle,
+} from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import {
+  calculateDeliveryFee,
+  validateMinimumOrder,
+  DELIVERY_ZONES,
+} from "../utils/deliveryZones";
 
 const STRIPE_PUBLIC_KEY =
   "pk_test_51Sw4uTHSNIUfvIQ0ghzLgI2l5uLzIqLJ2dF5LiST6Hf5exmZ4UIJ4OiLdlpbk7gkqAA8orrF818zLt1M4P7mjWy700kL1r7AM5";
@@ -30,14 +51,42 @@ const CartDrawer: React.FC<CartProps> = ({
   onRemove,
 }) => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [selectedPostalCode, setSelectedPostalCode] = useState<string>("");
+  const [deliveryZoneInfo, setDeliveryZoneInfo] = useState<{
+    fee: number;
+    minimumOrder: number;
+    zoneName: string;
+    isValid: boolean;
+  } | null>(null);
 
   // Calculs
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const delivery = subtotal > 50 ? 0 : 5.0;
+  const delivery = deliveryZoneInfo?.isValid ? deliveryZoneInfo.fee : 0;
   const total = subtotal + delivery;
+
+  // Validate minimum order
+  const minimumOrderValidation = deliveryZoneInfo?.isValid
+    ? {
+        isValid: subtotal >= deliveryZoneInfo.minimumOrder,
+        shortfall: Math.max(0, deliveryZoneInfo.minimumOrder - subtotal),
+        postalCode: selectedPostalCode,
+        minimumOrder: deliveryZoneInfo.minimumOrder,
+      }
+    : null;
+
+  const handlePostalCodeChange = (postalCode: string) => {
+    setSelectedPostalCode(postalCode);
+
+    if (postalCode) {
+      const zoneInfo = calculateDeliveryFee(postalCode);
+      setDeliveryZoneInfo(zoneInfo);
+    } else {
+      setDeliveryZoneInfo(null);
+    }
+  };
 
   const handleCheckout = async () => {
     setIsCheckingOut(true);
@@ -82,12 +131,12 @@ const CartDrawer: React.FC<CartProps> = ({
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[150] transition-opacity duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-150 transition-opacity duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
 
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-[200] shadow-2xl transform transition-transform duration-500 ease-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-200 shadow-2xl transform transition-transform duration-500 ease-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-stone-100 flex items-center justify-between">
@@ -108,7 +157,7 @@ const CartDrawer: React.FC<CartProps> = ({
             </button>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-6 space-y-6">
+          <div className="grow overflow-y-auto p-6 space-y-6">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
                 <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center text-stone-300">
@@ -137,7 +186,7 @@ const CartDrawer: React.FC<CartProps> = ({
                   </div>
 
                   {/* Infos Produit */}
-                  <div className="flex-grow">
+                  <div className="grow">
                     <div className="flex justify-between mb-1">
                       <h3 className="font-serif text-[#2D2A26]">{item.name}</h3>
                       <button
@@ -160,7 +209,7 @@ const CartDrawer: React.FC<CartProps> = ({
                         >
                           <Minus size={14} />
                         </button>
-                        <span className="px-3 text-sm font-medium">
+                        <span className="px-3 py-1 text-sm font-medium">
                           {item.quantity}
                         </span>
                         <button
@@ -170,7 +219,7 @@ const CartDrawer: React.FC<CartProps> = ({
                           <Plus size={14} />
                         </button>
                       </div>
-                      <span className="text-sm font-medium text-[#2D2A26]">
+                      <span className="text-sm font-bold text-[#C5A065]">
                         {(item.price * item.quantity).toFixed(2)} $
                       </span>
                     </div>
@@ -178,11 +227,80 @@ const CartDrawer: React.FC<CartProps> = ({
                 </div>
               ))
             )}
-          </div>
 
-          {/* Footer - Paiement */}
-          {items.length > 0 && (
-            <div className="p-8 bg-stone-50 border-t border-stone-100 space-y-4">
+            {/* Postal Code Input */}
+            {items.length > 0 && (
+              <div className="bg-white p-4 rounded-lg border border-stone-200">
+                <label className="flex items-center gap-2 text-sm font-medium text-[#2D2A26] mb-2">
+                  <MapPin size={16} className="text-[#C5A065]" />
+                  Code Postal pour Livraison:
+                </label>
+                <Select
+                  value={selectedPostalCode}
+                  onValueChange={handlePostalCodeChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sélectionnez votre code postal" />
+                  </SelectTrigger>
+                  <SelectContent
+                    className="z-300 max-h-60"
+                    side="bottom"
+                    align="start"
+                  >
+                    {DELIVERY_ZONES.flatMap((zone) =>
+                      zone.postalCodes.map((postalCode) => (
+                        <SelectItem
+                          key={`${zone.name}-${postalCode}`}
+                          value={postalCode}
+                        >
+                          {postalCode} ({zone.deliveryFee.toFixed(2)}$
+                          livraison, min. {zone.minimumOrder.toFixed(2)}$)
+                        </SelectItem>
+                      )),
+                    )}
+                  </SelectContent>
+                </Select>
+                {deliveryZoneInfo && (
+                  <div
+                    className={`mt-2 p-2 rounded text-xs ${
+                      deliveryZoneInfo.isValid
+                        ? "bg-green-50 text-green-700"
+                        : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {deliveryZoneInfo.isValid ? (
+                      <>
+                        <div className="font-semibold">
+                          ✓ {selectedPostalCode}
+                        </div>
+                        <div>
+                          Frais: {deliveryZoneInfo.fee.toFixed(2)}$ | Minimum:{" "}
+                          {deliveryZoneInfo.minimumOrder.toFixed(2)}$
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <AlertCircle size={14} />
+                        Code postal non trouvé
+                      </div>
+                    )}
+                  </div>
+                )}
+                {minimumOrderValidation && !minimumOrderValidation.isValid && (
+                  <div className="mt-2 p-2 rounded text-xs bg-amber-50 text-amber-700 flex items-start gap-1">
+                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                    <div>
+                      Minimum de commande non atteint. Il manque{" "}
+                      {minimumOrderValidation.shortfall.toFixed(2)}$ pour{" "}
+                      {minimumOrderValidation.postalCode}.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Totals and Payment */}
+            {items.length > 0 && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-stone-500 font-light">
                   <span>Sous-total</span>
@@ -191,7 +309,11 @@ const CartDrawer: React.FC<CartProps> = ({
                 <div className="flex justify-between text-sm text-stone-500 font-light">
                   <span>Frais de livraison</span>
                   <span>
-                    {delivery === 0 ? "Gratuit" : `${delivery.toFixed(2)} $`}
+                    {delivery === 0
+                      ? selectedPostalCode
+                        ? "Code postal requis"
+                        : "Sélectionnez code postal"
+                      : `${delivery.toFixed(2)} $`}
                   </span>
                 </div>
                 <div className="flex justify-between text-xl font-serif text-[#2D2A26] pt-2">
@@ -199,12 +321,26 @@ const CartDrawer: React.FC<CartProps> = ({
                   <span className="text-[#C5A065]">{total.toFixed(2)} $</span>
                 </div>
               </div>
+            )}
 
-              {/* BOUTON DE PAIEMENT */}
+            {/* Payment Button */}
+            {items.length > 0 && (
               <button
                 onClick={handleCheckout}
-                disabled={isCheckingOut}
+                disabled={
+                  isCheckingOut ||
+                  !deliveryZoneInfo?.isValid ||
+                  (minimumOrderValidation !== null &&
+                    !minimumOrderValidation.isValid)
+                }
                 className="w-full bg-[#2D2A26] text-white py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:bg-[#C5A065] transition-all shadow-lg mt-4 group disabled:opacity-70 disabled:cursor-not-allowed"
+                title={
+                  !deliveryZoneInfo?.isValid
+                    ? "Veuillez entrer un code postal valide"
+                    : minimumOrderValidation && !minimumOrderValidation.isValid
+                      ? "Montant minimum non atteint"
+                      : ""
+                }
               >
                 {isCheckingOut ? (
                   <>
@@ -218,12 +354,15 @@ const CartDrawer: React.FC<CartProps> = ({
                   </>
                 )}
               </button>
+            )}
 
+            {/* Footer */}
+            {items.length > 0 && (
               <p className="text-[10px] text-center text-stone-400 uppercase tracking-tighter">
                 Paiements sécurisés par Stripe • Taxes calculées au checkout
               </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </>

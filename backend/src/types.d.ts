@@ -22,6 +22,85 @@ export interface Session {
   userAgent?: string;
 }
 
+// Order Management Types
+export interface Address {
+  street: string;
+  city: string;
+  province: string;
+  postalCode: string;
+}
+
+export interface OrderItem {
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  notes?: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId?: string; // User ID from better-auth
+  clientInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+  orderDate: Date;
+  pickupDate?: Date;
+  pickupLocation: "Montreal" | "Laval";
+  deliveryType: "pickup" | "delivery";
+  deliveryAddress?: Address;
+  items: OrderItem[];
+  subtotal: number;
+  taxAmount: number;
+  deliveryFee: number;
+  total: number;
+  depositAmount: number;
+  depositPaid: boolean;
+  depositPaidAt?: Date;
+  balancePaid: boolean;
+  balancePaidAt?: Date;
+  paymentStatus: "unpaid" | "deposit_paid" | "paid";
+  status:
+    | "pending"
+    | "confirmed"
+    | "in_production"
+    | "ready"
+    | "completed"
+    | "cancelled"
+    | "delivered";
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateOrderInput {
+  clientInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+  pickupDate?: string;
+  pickupLocation: "Montreal" | "Laval";
+  deliveryType: "pickup" | "delivery";
+  deliveryAddress?: Address;
+  items: OrderItem[];
+  notes?: string;
+  depositPaid?: boolean;
+}
+
+export interface UpdateOrderInput {
+  status?: Order["status"];
+  depositPaid?: boolean;
+  balancePaid?: boolean;
+  notes?: string;
+}
+
 // API Response types
 export interface ApiResponse<T = any> {
   success: boolean;

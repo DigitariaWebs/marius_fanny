@@ -4,6 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Prevent Radix UI from hiding scrollbars */
+[data-radix-popper-content-wrapper] {
+  overflow: visible !important;
+}
+
+body {
+  overflow-x: auto !important;
+}
+
 /* Garde tes configurations personnalisées si tu en as en dessous */
 @theme {
     --color-bakery-cream: #f9f7f2;

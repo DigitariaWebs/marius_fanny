@@ -31,6 +31,11 @@ import {
 } from "./ui/select";
 import type { Client, Address, Product } from "../types";
 import { TAX_RATE, MOCK_PRODUCTS } from "../data";
+import {
+  calculateDeliveryFee,
+  validateMinimumOrder,
+  DELIVERY_ZONES,
+} from "../utils/deliveryZones";
 
 interface OrderFormProps {
   onSubmit: (formData: OrderFormData) => void;
@@ -109,6 +114,13 @@ export default function OrderForm({
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
     null,
   );
+  const [deliveryZoneInfo, setDeliveryZoneInfo] = useState<{
+    zoneName: string;
+    fee: number;
+    minimumOrder: number;
+    isValid: boolean;
+  } | null>(null);
+  const [minimumOrderError, setMinimumOrderError] = useState<string>("");
 
   // Calculate totals whenever items or delivery fee change
   useEffect(() => {
@@ -126,7 +138,30 @@ export default function OrderForm({
       depositAmount,
       balance,
     }));
-  }, [formData.items, formData.deliveryFee]);
+
+    // Validate minimum order when subtotal changes and we have delivery zone info
+    if (
+      formData.deliveryType === "delivery" &&
+      deliveryZoneInfo?.isValid &&
+      subtotal > 0
+    ) {
+      if (subtotal < deliveryZoneInfo.minimumOrder) {
+        const shortfall = deliveryZoneInfo.minimumOrder - subtotal;
+        setMinimumOrderError(
+          `Minimum de commande de ${deliveryZoneInfo.minimumOrder.toFixed(2)}$ requis pour ${formData.deliveryAddress?.postalCode}. Il manque ${shortfall.toFixed(2)}$.`,
+        );
+      } else {
+        setMinimumOrderError("");
+      }
+    } else {
+      setMinimumOrderError("");
+    }
+  }, [
+    formData.items,
+    formData.deliveryFee,
+    deliveryZoneInfo,
+    formData.deliveryType,
+  ]);
 
   const handleInputChange = (field: keyof OrderFormData, value: any) => {
     setFormData((prev) => {
@@ -355,8 +390,14 @@ export default function OrderForm({
       if (!formData.deliveryAddress?.province.trim()) {
         newErrors.deliveryProvince = "La province est requise";
       }
-      if (!formData.deliveryAddress?.postalCode.trim()) {
-        newErrors.deliveryPostalCode = "Le code postal est requis";
+      if (!deliveryZoneInfo?.isValid) {
+        newErrors.deliveryZone =
+          "Veuillez sélectionner un code postal de livraison valide";
+      }
+
+      // Validate minimum order amount for delivery
+      if (minimumOrderError) {
+        newErrors.minimumOrder = minimumOrderError;
       }
     }
 
@@ -740,44 +781,100 @@ export default function OrderForm({
                       },
                     }))
                   }
-                  className={errors.deliveryProvince ? "border-red-500" : ""}
-                  placeholder="QC"
-                />
-                {errors.deliveryProvince && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.deliveryProvince}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="postalCode" className="text-xs text-gray-600">
-                  CODE POSTAL:
-                </Label>
-                <Input
-                  id="postalCode"
-                  type="text"
-                  value={formData.deliveryAddress?.postalCode || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      deliveryAddress: {
-                        ...prev.deliveryAddress,
-                        street: prev.deliveryAddress?.street || "",
-                        city: prev.deliveryAddress?.city || "",
-                        province: prev.deliveryAddress?.province || "",
-                        postalCode: e.target.value,
-                      },
-                    }))
-                  }
                   className={errors.deliveryPostalCode ? "border-red-500" : ""}
-                  placeholder="H2L 3Y5"
+                  placeholder="Québec"
                 />
                 {errors.deliveryPostalCode && (
                   <p className="text-xs text-red-500 mt-1">
                     {errors.deliveryPostalCode}
                   </p>
                 )}
+                {deliveryZoneInfo && (
+                  <div
+                    className={`text-xs mt-1 p-2 rounded ${
+                      deliveryZoneInfo.isValid
+                        ? "bg-green-50 text-green-700"
+                        : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {deliveryZoneInfo.isValid ? (
+                      <>
+                        <div className="font-semibold">
+                          {formData.deliveryAddress?.postalCode}
+                        </div>
+                        <div>
+                          Frais de livraison: {deliveryZoneInfo.fee.toFixed(2)}$
+                        </div>
+                        <div>
+                          Minimum requis:{" "}
+                          {deliveryZoneInfo.minimumOrder.toFixed(2)}$ (avant
+                          taxe)
+                        </div>
+                      </>
+                    ) : (
+                      <div>Code postal invalide</div>
+                    )}
+                  </div>
+                )}
+                <div>
+                  <Label
+                    htmlFor="deliveryZone"
+                    className="text-xs text-gray-600"
+                  >
+                    CODE POSTAL DE LIVRAISON:
+                  </Label>
+                  <Select
+                    value={deliveryZoneInfo?.zoneName || ""}
+                    onValueChange={(postalCode) => {
+                      const zoneInfo = calculateDeliveryFee(postalCode);
+                      if (zoneInfo.isValid) {
+                        setDeliveryZoneInfo({
+                          zoneName: zoneInfo.zoneName,
+                          fee: zoneInfo.fee,
+                          minimumOrder: zoneInfo.minimumOrder,
+                          isValid: true,
+                        });
+                        setFormData((prev) => ({
+                          ...prev,
+                          deliveryAddress: {
+                            street: prev.deliveryAddress?.street || "",
+                            city: prev.deliveryAddress?.city || "",
+                            province: prev.deliveryAddress?.province || "",
+                            postalCode,
+                          },
+                          deliveryFee: zoneInfo.fee,
+                        }));
+                      } else {
+                        setDeliveryZoneInfo(null);
+                        setFormData((prev) => ({
+                          ...prev,
+                          deliveryFee: 0,
+                        }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sélectionnez votre code postal" />
+                    </SelectTrigger>
+                    <SelectContent
+                      className="z-100 max-h-60"
+                      side="bottom"
+                      align="start"
+                    >
+                      {DELIVERY_ZONES.flatMap((zone) =>
+                        zone.postalCodes.map((postalCode) => (
+                          <SelectItem
+                            key={`${zone.name}-${postalCode}`}
+                            value={postalCode}
+                          >
+                            {postalCode} ({zone.deliveryFee.toFixed(2)}$
+                            livraison, min. {zone.minimumOrder.toFixed(2)}$)
+                          </SelectItem>
+                        )),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
@@ -906,8 +1003,9 @@ export default function OrderForm({
                                   e.target.value,
                                 )
                               }
-                              placeholder="Notes pour ce produit (optionnel)"
-                              className="h-16 text-sm resize-none"
+                              placeholder="Notes pour cet article..."
+                              rows={2}
+                              className="text-xs"
                             />
                           </TableCell>
                         </TableRow>
@@ -918,7 +1016,46 @@ export default function OrderForm({
               </TableBody>
             </Table>
           </div>
+
+          {errors.items && (
+            <p className="text-xs text-red-500 mt-2">{errors.items}</p>
+          )}
         </div>
+
+        {/* Delivery Fee */}
+        <div>
+          <Label className="text-xs text-gray-600">
+            LIVRAISON
+            {deliveryZoneInfo?.isValid && (
+              <span className="text-xs text-gray-500 ml-1">
+                ({formData.deliveryAddress?.postalCode})
+              </span>
+            )}
+            :
+          </Label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.deliveryFee}
+            onChange={(e) =>
+              handleInputChange("deliveryFee", parseFloat(e.target.value) || 0)
+            }
+            className="w-24 h-8 text-sm text-right"
+            readOnly={deliveryZoneInfo?.isValid}
+            title={
+              deliveryZoneInfo?.isValid
+                ? "Frais de livraison automatiques basés sur le code postal"
+                : "Entrez les frais de livraison manuellement"
+            }
+          />
+        </div>
+
+        {minimumOrderError && (
+          <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+            ⚠️ {minimumOrderError}
+          </div>
+        )}
 
         {/* Notes */}
         <div>
