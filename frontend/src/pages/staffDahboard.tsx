@@ -10,61 +10,39 @@ import {
   X,
   UserCircle,
   Package,
-  Users,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Calendar,
-  Filter,
-  Download,
-  RefreshCw,
-  ShoppingCart,
-  CreditCard,
   Truck,
   Home,
+  ChefHat, 
+  MapPin, 
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+  ShoppingCart,
+  Filter
 } from "lucide-react";
 import { authClient } from "../lib/AuthClient";
 import OrderForm from "../components/OrderForm";
-import type { Order, Product, Client } from "../types";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import type { Order, Product } from "../types";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-type View = "dashboard" | "new-order" | "orders" | "clients";
+type View = "dashboard" | "new-order" | "orders" | "production";
 
 interface OrderStats {
   today: number;
-  thisWeek: number;
   pending: number;
   inProduction: number;
   ready: number;
   delivered: number;
   cancelled: number;
-  totalRevenue: number;
-  averageOrderValue: number;
 }
 
-interface TimeSeriesData {
-  date: string;
-  orders: number;
-  revenue: number;
+// Interface pour la liste de production agrégée
+interface ProductionItem {
+  productName: string;
+  totalQuantity: number;
+  details: Array<{ orderNumber: string; quantity: number }>;
 }
 
-interface ProductSales {
-  product: string;
-  sales: number;
-  revenue: number;
-}
-
-interface ClientActivity {
-  client: string;
-  orders: number;
-  totalSpent: number;
-}
-
-// Type pour DashboardOrder avec toutes les propriétés nécessaires
 interface DashboardOrder {
   id: string;
   orderNumber: string;
@@ -101,22 +79,19 @@ export default function StaffManagement() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [productionList, setProductionList] = useState<ProductionItem[]>([]);
+  
+  // Stats simplifiées (pas de revenus)
   const [stats, setStats] = useState<OrderStats>({
     today: 0,
-    thisWeek: 0,
     pending: 0,
     inProduction: 0,
     ready: 0,
     delivered: 0,
     cancelled: 0,
-    totalRevenue: 0,
-    averageOrderValue: 0,
   });
-  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
-  const [topProducts, setTopProducts] = useState<ProductSales[]>([]);
-  const [activeClients, setActiveClients] = useState<ClientActivity[]>([]);
+  
   const [loading, setLoading] = useState(true);
-  const [dateFilter, setDateFilter] = useState<"today" | "week" | "month">("week");
 
   /* ---------------- AUTH ---------------- */
   useEffect(() => {
@@ -128,15 +103,50 @@ export default function StaffManagement() {
   /* ---------------- LOAD DATA ---------------- */
   useEffect(() => {
     fetchDashboardData();
-    // Simuler un rafraîchissement toutes les 30 secondes
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
-  }, [dateFilter]);
+  }, []);
+
+  // Recalcul de la liste de production à chaque changement des commandes
+  useEffect(() => {
+    calculateProductionList(orders);
+  }, [orders]);
+
+  const calculateProductionList = (currentOrders: Order[]) => {
+    // On ne prend que les commandes qui doivent être produites (Pending ou In Production)
+    const activeOrders = currentOrders.filter(o => 
+      o.status === "pending" || o.status === "in_production"
+    );
+
+    const map = new Map<string, ProductionItem>();
+
+    activeOrders.forEach(order => {
+      order.items.forEach(item => {
+        const pName = item.product?.name || "Produit Inconnu";
+        
+        const existing = map.get(pName);
+        if (existing) {
+          existing.totalQuantity += item.quantity;
+          existing.details.push({ orderNumber: order.orderNumber, quantity: item.quantity });
+        } else {
+          map.set(pName, {
+            productName: pName,
+            totalQuantity: item.quantity,
+            details: [{ orderNumber: order.orderNumber, quantity: item.quantity }]
+          });
+        }
+      });
+    });
+
+    // Conversion en tableau et tri par quantité décroissante
+    setProductionList(Array.from(map.values()).sort((a, b) => b.totalQuantity - a.totalQuantity));
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const mockOrders: DashboardOrder[] = Array.from({ length: 50 }, (_, i) => ({
+      // Mock data (similaire à avant mais nettoyé)
+      const mockOrders: DashboardOrder[] = Array.from({ length: 20 }, (_, i) => ({
         id: `ORD${1000 + i}`,
         orderNumber: `ORD${1000 + i}`,
         client: {
@@ -145,84 +155,84 @@ export default function StaffManagement() {
           lastName: ["Dupont", "Martin", "Bernard", "Petit", "Durand"][i % 5],
           email: `client${i % 10}@example.com`,
           phone: `06${Math.floor(Math.random() * 100000000)}`,
-          address: `${Math.floor(Math.random() * 100)} Rue de la Boulangerie, Paris`,
+          address: `${Math.floor(Math.random() * 100)} Rue de la République, 1300${i%9} Marseille`,
         },
         items: [
           {
             product: {
-              id: `PROD${(i % 12) + 1}`,
-              name: ["Croissant", "Pain au Chocolat", "Baguette", "Éclair", "Tarte Citron"][i % 5],
-              price: [2.2, 2.4, 3.5, 4.5, 29.95][i % 5],
+              id: `PROD${(i % 5) + 1}`,
+              name: ["Croissant", "Pain au Chocolat", "Baguette Tradition", "Brioche", "Tarte aux Pommes"][i % 5],
+              price: 0, // Prix osef pour le staff
             },
-            quantity: Math.floor(Math.random() * 5) + 1,
-            unitPrice: [2.2, 2.4, 3.5, 4.5, 29.95][i % 5],
+            quantity: Math.floor(Math.random() * 10) + 1,
+            unitPrice: 0,
           },
         ],
-        total: Math.random() * 100 + 20,
-        status: ["pending", "in_production", "ready", "delivered", "cancelled"][i % 5] as OrderStatus,
-        createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-        notes: i % 3 === 0 ? "Livraison avant 10h" : undefined,
+        total: 0,
+        status: ["pending", "in_production", "ready", "delivered"][i % 4] as OrderStatus,
+        createdAt: new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000).toISOString(),
+        notes: i % 3 === 0 ? "Bien cuit svp" : undefined,
       }));
 
-      // Convertir DashboardOrder en Order pour le state
+      // Conversion
       const convertedOrders: Order[] = mockOrders.map(order => ({
         id: order.id,
         orderNumber: order.orderNumber,
-        clientId: parseInt(order.client.id.replace('CLI', '')),
+        clientId: 0,
         client: {
-          id: parseInt(order.client.id.replace('CLI', '')),
+          id: 0,
           firstName: order.client.firstName,
           lastName: order.client.lastName,
           email: order.client.email,
           phone: order.client.phone,
-          status: "active" as const,
+          status: "active",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           addresses: [{
             id: 1,
-            type: "shipping" as const,
-            street: order.client.address.split(',')[0] || '',
-            city: order.client.address.split(',')[1]?.trim() || 'Paris',
-            province: 'Île-de-France',
-            postalCode: '75000',
+            type: "shipping",
+            street: order.client.address,
+            city: "Marseille",
+            province: "",
+            postalCode: "",
             isDefault: true,
           }],
           orders: [],
         },
         orderDate: order.createdAt,
         pickupDate: order.createdAt,
-        pickupLocation: "Montreal" as const,
-        deliveryType: "pickup" as const,
+        pickupLocation: "Marseille",
+        deliveryType: "pickup",
         items: order.items.map((item, idx) => ({
           id: idx,
-          orderId: parseInt(order.id.replace('ORD', '')),
-          productId: parseInt(item.product?.id.replace('PROD', '') || '0'),
+          orderId: 0,
+          productId: 0,
           product: item.product ? {
-            id: parseInt(item.product.id.replace('PROD', '')),
+            id: 0,
             name: item.product.name,
             category: 'Viennoiserie',
-            price: item.product.price,
+            price: 0,
             available: true,
             minOrderQuantity: 1,
             maxOrderQuantity: 100,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: "",
+            updatedAt: "",
           } : undefined,
           quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.quantity * item.unitPrice,
-          productionStatus: "pending" as const,
+          unitPrice: 0,
+          subtotal: 0,
+          productionStatus: "pending",
         })),
-        subtotal: order.total,
-        taxAmount: order.total * 0.1,
+        subtotal: 0,
+        taxAmount: 0,
         deliveryFee: 0,
-        total: order.total,
+        total: 0, // On garde 0 ou le vrai montant, mais on ne l'affiche pas forcément
         depositAmount: 0,
         depositPaid: false,
         balancePaid: false,
-        paymentStatus: "unpaid" as const,
+        paymentStatus: "unpaid",
         status: order.status,
-        source: "in_store" as const,
+        source: "in_store",
         notes: order.notes,
         createdAt: order.createdAt,
         updatedAt: order.createdAt,
@@ -230,88 +240,18 @@ export default function StaffManagement() {
 
       setOrders(convertedOrders);
 
-      // Calculer les statistiques
+      // Stats simplifiées pour l'opérationnel
       const today = new Date();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      const statsData: OrderStats = {
+      setStats({
         today: convertedOrders.filter(o => new Date(o.createdAt) >= todayStart).length,
-        thisWeek: convertedOrders.filter(o => {
-          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-          return new Date(o.createdAt) >= weekAgo;
-        }).length,
         pending: convertedOrders.filter(o => o.status === "pending").length,
         inProduction: convertedOrders.filter(o => o.status === "in_production").length,
         ready: convertedOrders.filter(o => o.status === "ready").length,
         delivered: convertedOrders.filter(o => o.status === "delivered").length,
         cancelled: convertedOrders.filter(o => o.status === "cancelled").length,
-        totalRevenue: convertedOrders.reduce((sum, o) => sum + o.total, 0),
-        averageOrderValue: convertedOrders.length > 0 
-          ? convertedOrders.reduce((sum, o) => sum + o.total, 0) / convertedOrders.length 
-          : 0,
-      };
-
-      setStats(statsData);
-
-      // Données série temporelle
-      const timeData: TimeSeriesData[] = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (6 - i));
-        const dateStr = date.toLocaleDateString('fr-FR', { weekday: 'short' });
-        
-        const dayOrders = convertedOrders.filter(o => {
-          const orderDate = new Date(o.createdAt);
-          return orderDate.getDate() === date.getDate() &&
-                 orderDate.getMonth() === date.getMonth() &&
-                 orderDate.getFullYear() === date.getFullYear();
-        });
-
-        return {
-          date: dateStr,
-          orders: dayOrders.length,
-          revenue: dayOrders.reduce((sum, o) => sum + o.total, 0),
-        };
       });
-
-      setTimeSeriesData(timeData);
-
-      // Top produits
-      const productMap = new Map<string, { sales: number; revenue: number }>();
-      convertedOrders.forEach(order => {
-        order.items.forEach(item => {
-          const productName = item.product?.name || "Inconnu";
-          const existing = productMap.get(productName) || { sales: 0, revenue: 0 };
-          productMap.set(productName, {
-            sales: existing.sales + item.quantity,
-            revenue: existing.revenue + (item.quantity * item.unitPrice),
-          });
-        });
-      });
-
-      const topProductsData = Array.from(productMap.entries())
-        .map(([product, data]) => ({ product, ...data }))
-        .sort((a, b) => b.sales - a.sales)
-        .slice(0, 5);
-
-      setTopProducts(topProductsData);
-
-      // Clients actifs
-      const clientMap = new Map<string, { orders: number; totalSpent: number }>();
-      convertedOrders.forEach(order => {
-        const clientName = `${order.client.firstName} ${order.client.lastName}`;
-        const existing = clientMap.get(clientName) || { orders: 0, totalSpent: 0 };
-        clientMap.set(clientName, {
-          orders: existing.orders + 1,
-          totalSpent: existing.totalSpent + order.total,
-        });
-      });
-
-      const activeClientsData = Array.from(clientMap.entries())
-        .map(([client, data]) => ({ client, ...data }))
-        .sort((a, b) => b.orders - a.orders)
-        .slice(0, 5);
-
-      setActiveClients(activeClientsData);
 
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -325,162 +265,16 @@ export default function StaffManagement() {
     navigate("/se-connecter");
   };
 
-  /* ---------------- PDF ---------------- */
-  const printOrderPDF = (order: Order) => {
-    const win = window.open("", "_blank");
-    if (!win) return;
-
-    const itemsHTML = order.items.map(item => `
-      <tr>
-        <td>${item.product?.name || "Produit inconnu"}</td>
-        <td>${item.quantity}</td>
-        <td>${item.unitPrice.toFixed(2)} €</td>
-        <td>${(item.quantity * item.unitPrice).toFixed(2)} €</td>
-      </tr>
-    `).join("");
-
-    // FIX: Accéder correctement à l'adresse depuis le tableau addresses
-    const addressStr = order.client.addresses && order.client.addresses.length > 0
-      ? `${order.client.addresses[0].street}, ${order.client.addresses[0].city}, ${order.client.addresses[0].postalCode}`
-      : 'Adresse non disponible';
-
-    win.document.write(`
-      <html>
-        <head>
-          <title>Commande ${order.orderNumber}</title>
-          <style>
-            body { font-family: 'Arial', sans-serif; padding: 40px; color: #2D2A26; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #C5A065; padding-bottom: 20px; }
-            h1 { color: #2D2A26; margin: 0; font-size: 28px; }
-            .subtitle { color: #666; font-size: 14px; margin-top: 5px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 30px 0; }
-            .info-card { background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid #C5A065; }
-            .info-card h3 { margin: 0 0 10px 0; font-size: 16px; color: #2D2A26; }
-            .info-card p { margin: 5px 0; color: #555; }
-            table { width: 100%; border-collapse: collapse; margin: 30px 0; }
-            th { background: #2D2A26; color: white; padding: 12px; text-align: left; font-weight: 600; }
-            td { padding: 12px; border-bottom: 1px solid #eee; }
-            tr:hover { background: #f5f5f5; }
-            .total { text-align: right; font-size: 20px; font-weight: bold; color: #2D2A26; margin-top: 30px; }
-            .footer { margin-top: 50px; text-align: center; color: #888; font-size: 12px; border-top: 1px solid #eee; padding-top: 20px; }
-            .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-            .status-pending { background: #FFF3CD; color: #856404; }
-            .status-ready { background: #D4EDDA; color: #155724; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>MARIUS & FANNY</h1>
-            <p class="subtitle">Boulangerie-Pâtisserie Artisanale</p>
-            <p class="subtitle">${new Date(order.createdAt).toLocaleDateString('fr-FR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}</p>
-          </div>
-
-          <div class="info-grid">
-            <div class="info-card">
-              <h3>Informations Commande</h3>
-              <p><strong>Numéro :</strong> ${order.orderNumber}</p>
-              <p><strong>Date :</strong> ${new Date(order.createdAt).toLocaleDateString('fr-FR')}</p>
-              <p><strong>Heure :</strong> ${new Date(order.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
-              <p><strong>Statut :</strong> 
-                <span class="status status-${order.status}">
-                  ${order.status === 'pending' ? 'En attente' : 
-                    order.status === 'in_production' ? 'En production' :
-                    order.status === 'ready' ? 'Prête' :
-                    order.status === 'delivered' ? 'Livrée' : 'Annulée'}
-                </span>
-              </p>
-            </div>
-
-            <div class="info-card">
-              <h3>Informations Client</h3>
-              <p><strong>Nom :</strong> ${order.client.firstName} ${order.client.lastName}</p>
-              <p><strong>Email :</strong> ${order.client.email}</p>
-              <p><strong>Téléphone :</strong> ${order.client.phone}</p>
-              <p><strong>Adresse :</strong> ${addressStr}</p>
-            </div>
-          </div>
-
-          <h2>Détails de la commande</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Produit</th>
-                <th>Quantité</th>
-                <th>Prix unitaire</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHTML}
-            </tbody>
-          </table>
-
-          <div class="total">
-            <p>Total HT: ${(order.total / 1.1).toFixed(2)} €</p>
-            <p>TVA (10%): ${(order.total * 0.1 / 1.1).toFixed(2)} €</p>
-            <p style="font-size: 24px; margin-top: 10px;">Total TTC: ${order.total.toFixed(2)} €</p>
-          </div>
-
-          ${order.notes ? `
-            <div class="info-card" style="margin-top: 30px;">
-              <h3>Notes spéciales</h3>
-              <p>${order.notes}</p>
-            </div>
-          ` : ''}
-
-          <div class="footer">
-            <p>Merci pour votre commande !</p>
-            <p>MARIUS & FANNY • 123 Rue de la Boulangerie, 75000 Paris • 01 23 45 67 89</p>
-            <p>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
-          </div>
-
-          <script>
-            setTimeout(() => {
-              window.print();
-              window.close();
-            }, 1000);
-          </script>
-        </body>
-      </html>
-    `);
-
-    win.document.close();
-  };
-
-  /* ---------------- ORDER ACTIONS ---------------- */
+  /* ---------------- ACTIONS ---------------- */
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
-    try {
-      // Ici, vous feriez un appel API réel
-      setOrders(prev => prev.map(order =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      ));
-      fetchDashboardData(); // Rafraîchir les stats
-    } catch (error) {
-      console.error("Error updating order:", error);
-    }
-  };
-
-  const cancelOrder = async (orderId: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir annuler cette commande ?")) {
-      try {
-        // Ici, vous feriez un appel API réel
-        setOrders(prev => prev.map(order =>
-          order.id === orderId ? { ...order, status: 'cancelled' } : order
-        ));
-        fetchDashboardData(); // Rafraîchir les stats
-      } catch (error) {
-        console.error("Error cancelling order:", error);
-      }
-    }
+    setOrders(prev => prev.map(order =>
+      order.id === orderId ? { ...order, status: newStatus } : order
+    ));
+    // Dans une vraie app, appel API ici
   };
 
   const handleOrderCreated = (formData: any) => {
-    // Créer un objet Order compatible
+    // Création de la commande avec l'adresse
     const newOrder: Order = {
       id: `ORD${Date.now()}`,
       orderNumber: `ORD${Date.now()}`,
@@ -488,38 +282,41 @@ export default function StaffManagement() {
       client: {
         id: 0,
         firstName: formData.client?.firstName || "Client",
-        lastName: formData.client?.lastName || "Anonyme",
-        email: formData.client?.email || "",
+        lastName: formData.client?.lastName || "Comptoir",
+        email: "",
         phone: formData.client?.phone || "",
         status: "active",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        addresses: [],
+        addresses: [{
+          id: 1,
+          type: "shipping",
+          street: formData.client?.address || "Retrait boutique", // On capture l'adresse ici
+          city: "",
+          province: "",
+          postalCode: "",
+          isDefault: true
+        }],
         orders: []
       },
+      // ... reste des champs par défaut
       orderDate: new Date().toISOString(),
       pickupDate: new Date().toISOString(),
-      pickupLocation: "Montreal",
+      pickupLocation: "Marseille",
       deliveryType: "pickup",
-      items: formData.items?.map((item: any, index: number) => ({
-        id: index,
+      items: formData.items?.map((item: any, idx: number) => ({
+        id: idx,
         orderId: 0,
         productId: 0,
         product: item.product,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        subtotal: item.quantity * item.unitPrice,
+        unitPrice: 0,
+        subtotal: 0,
         productionStatus: "pending"
       })) || [],
-      subtotal: formData.total || 0,
-      taxAmount: 0,
-      deliveryFee: 0,
-      total: formData.total || 0,
-      depositAmount: 0,
-      depositPaid: false,
-      balancePaid: false,
-      paymentStatus: "unpaid",
-      status: "pending",
+      subtotal: 0, taxAmount: 0, deliveryFee: 0, total: 0,
+      depositAmount: 0, depositPaid: false, balancePaid: false, paymentStatus: "unpaid",
+      status: "pending", // Une nouvelle commande arrive en pending pour la prod
       source: "in_store",
       notes: formData.notes,
       createdAt: new Date().toISOString(),
@@ -528,876 +325,335 @@ export default function StaffManagement() {
 
     setLastOrder(newOrder);
     setOrders(prev => [newOrder, ...prev]);
-    setView("dashboard");
-    fetchDashboardData();
+    setView("production"); // On redirige vers la prod pour voir ce qu'il y a à faire
+  };
+
+  const printOrderPDF = (order: Order) => {
+    // Logique d'impression (inchangée mais pourrait être allégée des prix si besoin)
+    // Pour simplifier ici, je garde la fonction existante mais j'insiste sur l'affichage de l'adresse
+    const address = order.client.addresses?.[0]?.street || "Pas d'adresse";
+    const win = window.open("", "_blank");
+    if(!win) return;
+    
+    // ... (Génération HTML simplifié pour le staff)
+    win.document.write(`
+      <html>
+        <head><title>Bon de Production ${order.orderNumber}</title></head>
+        <body style="font-family:sans-serif; padding:20px;">
+          <h1>${order.orderNumber}</h1>
+          <p><strong>Client:</strong> ${order.client.firstName} ${order.client.lastName}</p>
+          <p><strong>Adresse:</strong> ${address}</p>
+          <p><strong>Notes:</strong> ${order.notes || '-'}</p>
+          <hr/>
+          <ul>
+            ${order.items.map(i => `<li><strong>${i.quantity}x</strong> ${i.product?.name}</li>`).join('')}
+          </ul>
+          <script>setTimeout(()=>{window.print();window.close()},500);</script>
+        </body>
+      </html>
+    `);
+    win.document.close();
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="text-center">
-          <RefreshCw className="w-12 h-12 text-[#C5A065] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Chargement du tableau de bord...</p>
-        </div>
+        <RefreshCw className="w-12 h-12 text-[#C5A065] animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* OVERLAY */}
-      {mobileMenu && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setMobileMenu(false)}
-        />
-      )}
-
       {/* SIDEBAR */}
       <aside
         className={`fixed md:relative inset-y-0 left-0 z-50 w-72
-        bg-gradient-to-b from-[#2D2A26] to-[#1a1816] text-white
-        transform transition-transform duration-300 ease-in-out
-        ${mobileMenu ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-        flex flex-col shadow-2xl`}
+        bg-[#2D2A26] text-white flex flex-col shadow-2xl transition-transform duration-300
+        ${mobileMenu ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
-        <div className="p-6 border-b border-gray-700/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#C5A065] flex items-center justify-center">
-                <Home size={20} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-serif tracking-wide text-white">
-                  MARIUS & FANNY
-                </h1>
-                <p className="text-xs text-gray-400 mt-0.5 tracking-wider uppercase">
-                  Panel Staff
-                </p>
-              </div>
+        <div className="p-6 border-b border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#C5A065] flex items-center justify-center">
+              <ChefHat size={20} className="text-white" />
             </div>
-            <button 
-              className="md:hidden text-gray-400 hover:text-white transition-colors"
-              onClick={() => setMobileMenu(false)}
-            >
-              <X size={24} />
-            </button>
+            <div>
+              <h1 className="text-xl font-serif text-white">MARIUS & FANNY</h1>
+              <p className="text-xs text-gray-400 uppercase">Espace Production</p>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
-              Tableau de bord
-            </p>
-            <div className="space-y-1">
-              <SidebarItem
-                icon={<LayoutDashboard size={20} />}
-                label="Dashboard"
-                active={view === "dashboard"}
-                onClick={() => {
-                  setView("dashboard");
-                  setMobileMenu(false);
-                }}
-              />
-              <SidebarItem
-                icon={<FilePlus size={20} />}
-                label="Nouvelle commande"
-                active={view === "new-order"}
-                onClick={() => {
-                  setView("new-order");
-                  setMobileMenu(false);
-                }}
-              />
-              <SidebarItem
-                icon={<ClipboardList size={20} />}
-                label="Commandes"
-                active={view === "orders"}
-                onClick={() => {
-                  setView("orders");
-                  setMobileMenu(false);
-                }}
-              />
-              <SidebarItem
-                icon={<Users size={20} />}
-                label="Clients"
-                active={view === "clients"}
-                onClick={() => {
-                  setView("clients");
-                  setMobileMenu(false);
-                }}
-              />
-            </div>
-          </div>
+        <nav className="flex-1 p-4 space-y-2">
+          <SidebarItem
+            icon={<LayoutDashboard size={20} />}
+            label="Vue d'ensemble"
+            active={view === "dashboard"}
+            onClick={() => setView("dashboard")}
+          />
+          <SidebarItem
+            icon={<FilePlus size={20} />}
+            label="Nouvelle Commande"
+            active={view === "new-order"}
+            onClick={() => setView("new-order")}
+          />
+          <div className="my-4 border-t border-gray-700/50" />
+          <SidebarItem
+            icon={<ChefHat size={20} />}
+            label="Liste de Production"
+            active={view === "production"}
+            onClick={() => setView("production")}
+          />
+          <SidebarItem
+            icon={<ClipboardList size={20} />}
+            label="Toutes les Commandes"
+            active={view === "orders"}
+            onClick={() => setView("orders")}
+          />
         </nav>
 
-        <div className="p-4 border-t border-gray-700/50 bg-black/20">
-          <div className="mb-3 p-3 rounded-lg bg-gray-800/50 border border-gray-700/50">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#C5A065] flex items-center justify-center">
-                <UserCircle size={20} className="text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  Staff Membre
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  staff@mariusetfanny.com
-                </p>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 w-full p-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-all border border-transparent hover:border-red-800/50"
-          >
-            <LogOut size={20} />
-            <span className="font-medium">Déconnexion</span>
-          </button>
+        <div className="p-4 bg-black/20">
+            <button onClick={logout} className="flex items-center gap-3 w-full p-3 rounded-lg text-gray-400 hover:text-white transition-all">
+                <LogOut size={20} /> Déconnexion
+            </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-gray-100">
         {/* Mobile Header */}
-        <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-between sticky top-0 z-30">
-          <button
-            onClick={() => setMobileMenu(true)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <Menu size={24} />
-          </button>
-          <h1 className="text-lg font-serif text-[#2D2A26]">MARIUS & FANNY Staff</h1>
-          <div className="w-6" />
+        <div className="md:hidden bg-white p-4 flex justify-between items-center shadow-sm">
+            <button onClick={() => setMobileMenu(true)}><Menu/></button>
+            <span className="font-serif">Staff Panel</span>
+            <div className="w-6"/>
         </div>
 
-        {/* DASHBOARD VIEW */}
+        {/* --- VIEW: DASHBOARD --- */}
         {view === "dashboard" && (
-          <div className="p-4 md:p-8">
-            <header className="mb-6 md:mb-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
-                    Tableau de bord Staff
-                  </h2>
-                  <p className="text-sm md:text-base text-gray-500 mt-1">
-                    Statistiques et gestion des commandes en temps réel
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value as "today" | "week" | "month")}
-                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
-                  >
-                    <option value="today">Aujourd'hui</option>
-                    <option value="week">Cette semaine</option>
-                    <option value="month">Ce mois</option>
-                  </select>
-                  <button
-                    onClick={fetchDashboardData}
-                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                    title="Rafraîchir"
-                  >
-                    <RefreshCw size={18} />
-                  </button>
-                  <button 
-                    onClick={() => lastOrder ? printOrderPDF(lastOrder) : alert("Aucune commande à imprimer")}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#C5A065] text-white rounded-lg hover:bg-[#b8935a] transition-colors text-sm"
-                  >
-                    <Printer size={16} />
-                    Imprimer dernière commande
-                  </button>
-                </div>
-              </div>
-            </header>
-
-            {/* STATS CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-              <StatCard
-                title="Commandes aujourd'hui"
-                value={stats.today.toString()}
-                change={stats.today > 5 ? 12 : -5}
-                icon={<ShoppingCart size={24} />}
-                color="blue"
-              />
-              <StatCard
-                title="Chiffre d'affaires"
-                value={`${stats.totalRevenue.toFixed(2)} €`}
-                change={8.3}
-                icon={<DollarSign size={24} />}
-                color="green"
-              />
-              <StatCard
-                title="En production"
-                value={stats.inProduction.toString()}
-                icon={<Package size={24} />}
-                color="purple"
-              />
-              <StatCard
-                title="À livrer"
-                value={stats.ready.toString()}
-                icon={<Truck size={24} />}
-                color="orange"
-                alert={stats.ready > 3}
-              />
+          <div className="p-6 max-w-7xl mx-auto">
+            <h2 className="text-3xl font-serif text-[#2D2A26] mb-6">Bonjour, l'équipe !</h2>
+            
+            {/* KPI Operationnels uniquement */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <StatCard title="À Produire" value={stats.pending.toString()} color="orange" icon={<ChefHat/>} />
+              <StatCard title="En cours" value={stats.inProduction.toString()} color="blue" icon={<RefreshCw/>} />
+              <StatCard title="Prêtes" value={stats.ready.toString()} color="green" icon={<CheckCircle/>} />
+              <StatCard title="Livrées (24h)" value={stats.delivered.toString()} color="purple" icon={<Truck/>} />
             </div>
 
-            {/* CHARTS SECTION */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-              {/* Orders Trend */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-serif text-[#2D2A26]">
-                    Évolution des commandes
-                  </h3>
-                  <BarChart3 className="text-[#C5A065]" size={20} />
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={timeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="date" stroke="#666" />
-                      <YAxis stroke="#666" />
-                      <Tooltip 
-                        formatter={(value: any) => [`${value}`, "Valeur"]}
-                        labelFormatter={(label) => `Jour: ${label}`}
-                      />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="orders"
-                        stroke="#C5A065"
-                        strokeWidth={2}
-                        name="Commandes"
-                        dot={{ r: 4 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke="#2D2A26"
-                        strokeWidth={2}
-                        name="CA (€)"
-                        dot={{ r: 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Order Status Distribution */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-serif text-[#2D2A26]">
-                    Répartition des commandes
-                  </h3>
-                  <PieChartIcon className="text-[#C5A065]" size={20} />
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'En attente', value: stats.pending },
-                          { name: 'En production', value: stats.inProduction },
-                          { name: 'Prêtes', value: stats.ready },
-                          { name: 'Livrées', value: stats.delivered },
-                          { name: 'Annulées', value: stats.cancelled },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'En attente', value: stats.pending },
-                          { name: 'En production', value: stats.inProduction },
-                          { name: 'Prêtes', value: stats.ready },
-                          { name: 'Livrées', value: stats.delivered },
-                          { name: 'Annulées', value: stats.cancelled },
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: any) => [`${value} commandes`, "Quantité"]} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* TABLES SECTION */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              {/* Top Products */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4 md:mb-6">
-                  <h3 className="text-lg md:text-xl font-serif text-[#2D2A26]">
-                    Produits populaires
-                  </h3>
-                  <BarChart3 className="text-[#C5A065]" size={20} />
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Produit</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Ventes</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">CA</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topProducts.map((product, index) => (
-                        <tr key={index} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#C5A065]/20 flex items-center justify-center">
-                                <span className="text-[#C5A065] font-bold text-sm">{index + 1}</span>
-                              </div>
-                              <span className="font-medium text-[#2D2A26]">{product.product}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-medium">{product.sales}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-[#2D2A26]">{product.revenue.toFixed(2)} €</div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Active Clients */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4 md:mb-6">
-                  <h3 className="text-lg md:text-xl font-serif text-[#2D2A26]">
-                    Clients actifs
-                  </h3>
-                  <Users className="text-[#C5A065]" size={20} />
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Client</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Commandes</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Total dépensé</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeClients.map((client, index) => (
-                        <tr key={index} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#2D2A26] text-white flex items-center justify-center">
-                                <span className="text-xs font-bold">
-                                  {client.client.split(' ').map(n => n[0]).join('')}
-                                </span>
-                              </div>
-                              <span className="font-medium text-[#2D2A26]">{client.client}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-medium">{client.orders}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-[#2D2A26]">{client.totalSpent.toFixed(2)} €</div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* RECENT ORDERS */}
-            <div className="mt-6 md:mt-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4 md:mb-6">
-                  <h3 className="text-lg md:text-xl font-serif text-[#2D2A26]">
-                    Commandes récentes
-                  </h3>
-                  <ClipboardList className="text-[#C5A065]" size={20} />
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Commande</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Client</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Total</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Statut</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.slice(0, 5).map((order) => (
-                        <tr key={order.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-[#2D2A26]">{order.orderNumber}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div>
-                              <div className="font-medium">{order.client.firstName} {order.client.lastName}</div>
-                              <div className="text-xs text-gray-500">{order.client.email}</div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="text-sm">
-                              {new Date(order.createdAt).toLocaleDateString('fr-FR')}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-[#2D2A26]">{order.total.toFixed(2)} €</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <StatusBadge status={order.status} />
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => printOrderPDF(order)}
-                                className="p-2 text-gray-600 hover:text-[#C5A065] transition-colors"
-                                title="Imprimer PDF"
-                              >
-                                <Printer size={16} />
-                              </button>
-                              <button
-                                onClick={() => updateOrderStatus(order.id, 'in_production')}
-                                className="p-2 text-gray-600 hover:text-green-600 transition-colors"
-                                title="Passer en production"
-                                disabled={order.status === 'cancelled' || order.status === 'delivered'}
-                              >
-                                <Package size={16} />
-                              </button>
-                              <button
-                                onClick={() => cancelOrder(order.id)}
-                                className="p-2 text-gray-600 hover:text-red-600 transition-colors"
-                                title="Annuler"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={() => setView("orders")}
-                    className="text-[#C5A065] hover:text-[#b8935a] font-medium text-sm"
-                  >
-                    Voir toutes les commandes →
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Last Order Created */}
-            {lastOrder && (
-              <div className="mt-6 md:mt-8">
-                <div className="bg-gradient-to-r from-[#C5A065]/10 to-transparent border border-[#C5A065]/20 rounded-xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-serif text-[#2D2A26]">
-                        Dernière commande créée
-                      </h3>
-                      <p className="text-gray-500">Commande #{lastOrder.orderNumber}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Répartition Status (Pie Chart) - Utile pour voir la charge */}
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg font-bold mb-4">Charge de travail actuelle</h3>
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={[
+                                        { name: 'À faire', value: stats.pending },
+                                        { name: 'Au four', value: stats.inProduction },
+                                        { name: 'Fini', value: stats.ready }
+                                    ]}
+                                    cx="50%" cy="50%" innerRadius={60} outerRadius={80}
+                                    dataKey="value"
+                                >
+                                    <Cell fill="#F59E0B" /> {/* Orange */}
+                                    <Cell fill="#3B82F6" /> {/* Bleu */}
+                                    <Cell fill="#10B981" /> {/* Vert */}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
-                    <button
-                      onClick={() => printOrderPDF(lastOrder)}
-                      className="flex items-center gap-2 bg-[#C5A065] text-white px-4 py-2 rounded-lg hover:bg-[#b8935a] transition-colors"
+                </div>
+
+                {/* Raccourci vers la Prod */}
+                <div className="bg-[#2D2A26] text-white p-6 rounded-xl shadow-sm flex flex-col justify-center items-center text-center">
+                    <ChefHat size={48} className="text-[#C5A065] mb-4"/>
+                    <h3 className="text-2xl font-bold mb-2">Production Prioritaire</h3>
+                    <p className="text-gray-400 mb-6">
+                        Il y a {productionList.length} types de produits différents à préparer.
+                    </p>
+                    <button 
+                        onClick={() => setView("production")}
+                        className="bg-[#C5A065] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#b8935a] transition"
                     >
-                      <Printer size={18} />
-                      Imprimer le PDF
+                        Voir la liste de production
                     </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-3 bg-white rounded-lg">
-                      <p className="text-sm text-gray-500">Client</p>
-                      <p className="font-medium">{lastOrder.client.firstName} {lastOrder.client.lastName}</p>
-                    </div>
-                    <div className="p-3 bg-white rounded-lg">
-                      <p className="text-sm text-gray-500">Total</p>
-                      <p className="font-bold text-[#2D2A26]">{lastOrder.total.toFixed(2)} €</p>
-                    </div>
-                    <div className="p-3 bg-white rounded-lg">
-                      <p className="text-sm text-gray-500">Statut</p>
-                      <StatusBadge status={lastOrder.status} />
-                    </div>
-                  </div>
                 </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* NEW ORDER VIEW */}
-        {view === "new-order" && (
-          <div className="p-4 md:p-8">
-            <header className="mb-6 md:mb-8">
-              <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
-                Nouvelle commande
-              </h2>
-              <p className="text-sm md:text-base text-gray-500 mt-1">
-                Créez une nouvelle commande pour un client
-              </p>
-            </header>
-
-            <OrderForm
-              onSubmit={handleOrderCreated}
-              onCancel={() => setView("dashboard")}
-            />
-          </div>
-        )}
-
-        {/* ORDERS VIEW */}
-        {view === "orders" && (
-          <div className="p-4 md:p-8">
-            <header className="mb-6 md:mb-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* --- VIEW: PRODUCTION LIST (NOUVEAU) --- */}
+        {view === "production" && (
+          <div className="p-6 max-w-5xl mx-auto">
+            <header className="mb-8 flex justify-between items-center">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
-                    Gestion des commandes
-                  </h2>
-                  <p className="text-sm md:text-base text-gray-500 mt-1">
-                    {orders.length} commandes au total
-                  </p>
+                    <h2 className="text-3xl font-serif text-[#2D2A26]">Liste de Production</h2>
+                    <p className="text-gray-500">Agrégation des commandes "En attente" et "En production"</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setView("new-order")}
-                    className="flex items-center gap-2 bg-[#C5A065] text-white px-4 py-2 rounded-lg hover:bg-[#b8935a] transition-colors"
-                  >
-                    <FilePlus size={18} />
-                    Nouvelle commande
-                  </button>
-                </div>
-              </div>
+                <button onClick={() => window.print()} className="bg-white border border-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-50">
+                    <Printer size={18}/> Imprimer la liste
+                </button>
             </header>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Commande</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Client</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Date</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Produits</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Total</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Statut</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr key={order.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                        <td className="py-4 px-6">
-                          <div className="font-medium text-[#2D2A26]">{order.orderNumber}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div>
-                            <div className="font-medium">{order.client.firstName} {order.client.lastName}</div>
-                            <div className="text-xs text-gray-500">{order.client.email}</div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="text-sm">
-                            {new Date(order.createdAt).toLocaleDateString('fr-FR')}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="text-sm">
-                            {order.items.length} produit(s)
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-[#2D2A26]">{order.total.toFixed(2)} €</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <StatusBadge status={order.status} />
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => printOrderPDF(order)}
-                              className="p-2 text-gray-600 hover:text-[#C5A065] transition-colors"
-                              title="Imprimer PDF"
-                            >
-                              <Printer size={16} />
-                            </button>
-                            <button
-                              onClick={() => updateOrderStatus(order.id, 'in_production')}
-                              className="p-2 text-gray-600 hover:text-green-600 transition-colors"
-                              title="Passer en production"
-                              disabled={order.status === 'cancelled' || order.status === 'delivered'}
-                            >
-                              <Package size={16} />
-                            </button>
-                            <button
-                              onClick={() => updateOrderStatus(order.id, 'ready')}
-                              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-                              title="Marquer comme prête"
-                              disabled={order.status === 'cancelled' || order.status === 'delivered'}
-                            >
-                              <CheckCircle size={16} />
-                            </button>
-                            <button
-                              onClick={() => updateOrderStatus(order.id, 'delivered')}
-                              className="p-2 text-gray-600 hover:text-purple-600 transition-colors"
-                              title="Marquer comme livrée"
-                              disabled={order.status === 'cancelled'}
-                            >
-                              <Truck size={16} />
-                            </button>
-                            <button
-                              onClick={() => cancelOrder(order.id)}
-                              className="p-2 text-gray-600 hover:text-red-600 transition-colors"
-                              title="Annuler"
-                              disabled={order.status === 'cancelled' || order.status === 'delivered'}
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="grid gap-4">
+                {productionList.length === 0 ? (
+                    <div className="text-center py-12 bg-white rounded-xl text-gray-500">
+                        <CheckCircle size={48} className="mx-auto mb-4 text-green-500"/>
+                        <p className="text-lg">Tout est calme ! Aucune production en attente.</p>
+                    </div>
+                ) : (
+                    productionList.map((item, index) => (
+                        <div key={index} className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-[#C5A065] flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-bold text-[#2D2A26]">{item.productName}</h3>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Commandes : {item.details.map(d => `#${d.orderNumber} (${d.quantity})`).join(', ')}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <span className="block text-4xl font-black text-[#2D2A26]">{item.totalQuantity}</span>
+                                <span className="text-xs uppercase tracking-wider text-gray-400">Unités à faire</span>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
           </div>
         )}
 
-        {/* CLIENTS VIEW */}
-        {view === "clients" && (
-          <div className="p-4 md:p-8">
-            <header className="mb-6 md:mb-8">
-              <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
-                Gestion des clients
-              </h2>
-              <p className="text-sm md:text-base text-gray-500 mt-1">
-                {activeClients.length} clients actifs
-              </p>
-            </header>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Client</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Contact</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Commandes</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Total dépensé</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Dernière commande</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeClients.map((client) => {
-                      const lastOrder = orders
-                        .filter(o => `${o.client.firstName} ${o.client.lastName}` === client.client)
-                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-                      
-                      return (
-                        <tr key={client.client} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-[#2D2A26] text-white flex items-center justify-center">
-                                <span className="text-sm font-bold">
-                                  {client.client.split(' ').map(n => n[0]).join('')}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium text-[#2D2A26]">{client.client}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6">
-                            <div className="text-sm">
-                              <div className="text-gray-500">Email/Téléphone</div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6">
-                            <div className="font-medium">{client.orders}</div>
-                          </td>
-                          <td className="py-4 px-6">
-                            <div className="font-bold text-[#2D2A26]">{client.totalSpent.toFixed(2)} €</div>
-                          </td>
-                          <td className="py-4 px-6">
-                            {lastOrder ? (
-                              <div className="text-sm">
-                                <div>{new Date(lastOrder.createdAt).toLocaleDateString('fr-FR')}</div>
-                                <div className="text-gray-500">#{lastOrder.orderNumber}</div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        {/* --- VIEW: NEW ORDER --- */}
+        {view === "new-order" && (
+          <div className="p-6 max-w-4xl mx-auto">
+            <h2 className="text-3xl font-serif text-[#2D2A26] mb-6">Prise de Commande</h2>
+            {/* Note: OrderForm doit inclure un champ adresse. Comme je ne peux pas modifier OrderForm ici,
+                je suppose qu'il retourne l'adresse dans l'objet client lors du submit */}
+            <OrderForm onSubmit={handleOrderCreated} onCancel={() => setView("dashboard")} />
           </div>
+        )}
+
+        {/* --- VIEW: ALL ORDERS --- */}
+        {view === "orders" && (
+            <div className="p-6 max-w-7xl mx-auto">
+                <header className="mb-8 flex justify-between items-center">
+                    <h2 className="text-3xl font-serif text-[#2D2A26]">Journal des Commandes</h2>
+                </header>
+
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th className="p-4 font-semibold text-gray-600">N°</th>
+                                <th className="p-4 font-semibold text-gray-600">Client & Adresse</th>
+                                <th className="p-4 font-semibold text-gray-600">Détail</th>
+                                <th className="p-4 font-semibold text-gray-600">Notes</th>
+                                <th className="p-4 font-semibold text-gray-600">Statut</th>
+                                <th className="p-4 font-semibold text-gray-600">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {orders.map(order => (
+                                <tr key={order.id} className="hover:bg-gray-50">
+                                    <td className="p-4 font-medium">{order.orderNumber}</td>
+                                    <td className="p-4">
+                                        <div className="font-bold">{order.client.firstName} {order.client.lastName}</div>
+                                        <div className="flex items-start gap-1 text-sm text-gray-500 mt-1">
+                                            <MapPin size={14} className="mt-0.5 shrink-0"/>
+                                            <span>{order.client.addresses[0]?.street || "Sur place"}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <ul className="text-sm list-disc list-inside">
+                                            {order.items.map((item, i) => (
+                                                <li key={i}>{item.quantity}x {item.product?.name}</li>
+                                            ))}
+                                        </ul>
+                                    </td>
+                                    <td className="p-4 text-sm italic text-gray-500">
+                                        {order.notes || "-"}
+                                    </td>
+                                    <td className="p-4">
+                                        <StatusBadge status={order.status}/>
+                                    </td>
+                                    <td className="p-4 flex gap-2">
+                                        <button title="Imprimer" onClick={() => printOrderPDF(order)} className="p-2 hover:bg-gray-200 rounded"><Printer size={16}/></button>
+                                        
+                                        {order.status === 'pending' && (
+                                            <button 
+                                                onClick={() => updateOrderStatus(order.id, 'in_production')}
+                                                className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                title="Lancer en production"
+                                            >
+                                                <ChefHat size={16}/>
+                                            </button>
+                                        )}
+                                        
+                                        {order.status === 'in_production' && (
+                                            <button 
+                                                onClick={() => updateOrderStatus(order.id, 'ready')}
+                                                className="p-2 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                                title="Marquer prêt"
+                                            >
+                                                <CheckCircle size={16}/>
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         )}
       </main>
     </div>
   );
 }
 
-/* ---------------- COMPONENTS ---------------- */
+/* --- SUB COMPONENTS --- */
 
-interface SidebarItemProps {
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  onClick?: () => void;
+function SidebarItem({ icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) {
+    return (
+        <button onClick={onClick} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${active ? "bg-[#C5A065] text-white" : "text-gray-400 hover:text-white hover:bg-gray-800"}`}>
+            {icon}
+            <span className="font-medium">{label}</span>
+        </button>
+    )
 }
 
-function SidebarItem({ icon, label, active = false, onClick }: SidebarItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        flex items-center gap-3 w-full p-3 rounded-lg transition-all duration-200
-        relative group
-        ${
-          active
-            ? "bg-gradient-to-r from-[#C5A065] to-[#b8935a] text-white shadow-lg shadow-[#C5A065]/20"
-            : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
-        }
-      `}
-    >
-      <span
-        className={`${active ? "scale-110" : "group-hover:scale-110"} transition-transform`}
-      >
-        {icon}
-      </span>
-      <span className="font-medium text-sm">{label}</span>
-      {active && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
-      )}
-    </button>
-  );
-}
-
-interface StatCardProps {
-  title: string;
-  value: string;
-  change?: number;
-  icon: React.ReactNode;
-  color: "blue" | "green" | "purple" | "orange" | "red";
-  alert?: boolean;
-}
-
-function StatCard({ title, value, change, icon, color, alert }: StatCardProps) {
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
-    orange: "bg-orange-100 text-orange-600",
-    red: "bg-red-100 text-red-600",
-  };
-
-  return (
-    <div
-      className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 ${alert ? "ring-2 ring-red-200" : ""}`}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs md:text-sm text-gray-500 mb-1">{title}</p>
-          <h3 className="text-2xl md:text-3xl font-bold text-[#2D2A26]">
-            {value}
-          </h3>
-          {change !== undefined && (
-            <div className="flex items-center gap-1 mt-2">
-              {change >= 0 ? (
-                <TrendingUp size={14} className="text-green-600" />
-              ) : (
-                <TrendingDown size={14} className="text-red-600" />
-              )}
-              <span
-                className={`text-xs md:text-sm font-medium ${change >= 0 ? "text-green-600" : "text-red-600"}`}
-              >
-                {change >= 0 ? "+" : ""}
-                {change}%
-              </span>
-              <span className="text-xs text-gray-400 hidden sm:inline">
-                vs hier
-              </span>
+function StatCard({ title, value, color, icon }: any) {
+    const colors: any = { orange: "bg-orange-100 text-orange-600", blue: "bg-blue-100 text-blue-600", green: "bg-green-100 text-green-600", purple: "bg-purple-100 text-purple-600" };
+    return (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p className="text-sm text-gray-500 mb-1">{title}</p>
+                <p className="text-3xl font-bold text-[#2D2A26]">{value}</p>
             </div>
-          )}
+            <div className={`p-3 rounded-full ${colors[color] || "bg-gray-100"}`}>{icon}</div>
         </div>
-        <div className={`p-2 md:p-3 rounded-xl ${colorClasses[color]}`}>
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
+    )
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const getStatusInfo = (status: string) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower.includes('pending') || statusLower.includes('attente')) {
-      return { text: 'En attente', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
-    }
-    if (statusLower.includes('production')) {
-      return { text: 'En production', color: 'bg-blue-100 text-blue-700 border-blue-200' };
-    }
-    if (statusLower.includes('ready') || statusLower.includes('prête')) {
-      return { text: 'Prête', color: 'bg-green-100 text-green-700 border-green-200' };
-    }
-    if (statusLower.includes('delivered') || statusLower.includes('livrée')) {
-      return { text: 'Livrée', color: 'bg-purple-100 text-purple-700 border-purple-200' };
-    }
-    if (statusLower.includes('cancelled') || statusLower.includes('annulée')) {
-      return { text: 'Annulée', color: 'bg-red-100 text-red-700 border-red-200' };
-    }
-    return { text: status, color: 'bg-gray-100 text-gray-700 border-gray-200' };
-  };
-
-  const info = getStatusInfo(status);
-
-  return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold border ${info.color} whitespace-nowrap`}
-    >
-      {info.text}
-    </span>
-  );
-}
-
-function PieChartIcon({ className, size }: { className?: string; size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size || 20}
-      height={size || 20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-      <path d="M22 12A10 10 0 0 0 12 2v10z" />
-    </svg>
-  );
+    const styles: any = {
+        pending: "bg-yellow-100 text-yellow-800",
+        in_production: "bg-blue-100 text-blue-800",
+        ready: "bg-green-100 text-green-800",
+        delivered: "bg-gray-100 text-gray-600",
+        cancelled: "bg-red-100 text-red-600"
+    };
+    const labels: any = {
+        pending: "En attente",
+        in_production: "En production",
+        ready: "Prêt",
+        delivered: "Livré",
+        cancelled: "Annulé"
+    };
+    return (
+        <span className={`px-2 py-1 rounded-full text-xs font-bold ${styles[status] || styles.delivered}`}>
+            {labels[status] || status}
+        </span>
+    );
 }

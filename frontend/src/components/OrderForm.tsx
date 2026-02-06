@@ -110,7 +110,6 @@ export default function OrderForm({
     null,
   );
 
-  // Calculate totals whenever items or delivery fee change
   useEffect(() => {
     const subtotal = formData.items.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = subtotal * TAX_RATE;
@@ -132,10 +131,8 @@ export default function OrderForm({
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
 
-      // When delivery type changes, reset relevant fields and errors
       if (field === "deliveryType") {
         if (value === "pickup") {
-          // Clear delivery-specific fields
           updated.deliveryAddress = undefined;
           updated.deliveryFee = 0;
           setSelectedAddressId(null);
@@ -267,7 +264,6 @@ export default function OrderForm({
     }
   };
 
-  // Filter clients by email search
   const filteredClients = clients.filter((client) =>
     client.email.toLowerCase().includes(emailSearch.toLowerCase()),
   );
@@ -285,7 +281,6 @@ export default function OrderForm({
     setEmailSearch(client.email);
     setEmailOpen(false);
 
-    // Clear address when client changes
     setSelectedAddressId(null);
   };
 
@@ -293,7 +288,6 @@ export default function OrderForm({
     setEmailSearch(value);
     setFormData((prev) => ({ ...prev, email: value }));
 
-    // If email doesn't match selected client, clear client selection
     if (selectedClient && value !== selectedClient.email) {
       setSelectedClient(null);
       setFormData((prev) => ({ ...prev, clientId: undefined }));

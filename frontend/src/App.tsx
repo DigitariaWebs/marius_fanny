@@ -151,7 +151,7 @@ const App: React.FC = () => {
       
           <Route path="/user" element={<User />} />
           <Route path="/staff" element={<StaffManagement />} />
-          <Route path="/staff/managements" element={<StaffDashboard />} />
+          <Route path="/staff/dashboard" element={<StaffDashboard />} />
         </Routes>
       </div>
     </Router>
