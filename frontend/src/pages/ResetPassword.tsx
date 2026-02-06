@@ -20,7 +20,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/auth/reset_password", {
+      const res = await fetch("http://localhost:3000/api/auth-password/reset_password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: password }),
@@ -45,7 +45,7 @@ const ResetPassword = () => {
     <div className="relative min-h-screen">
       <GoldenBackground />
       
-      <div className="relative z-[999] flex items-center justify-center min-h-screen px-4">
+      <div className="relative z-999 flex items-center justify-center min-h-screen px-4">
         <div className="bg-white/95 p-8 rounded-2xl shadow-2xl w-full max-w-md backdrop-blur-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-serif text-[#C5A065]">Nouveau départ</h1>

@@ -7,11 +7,17 @@ import { ZodError, ZodType, z } from "zod";
 export function validateBody<T extends ZodType<any>>(schema: T) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log(
+        "🔍 [VALIDATION] Validating request body:",
+        JSON.stringify(req.body, null, 2),
+      );
       const validated = await schema.parseAsync(req.body);
       req.body = validated;
+      console.log("✅ [VALIDATION] Request body validated successfully");
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error("❌ [VALIDATION] Validation failed:", error.issues);
         return res.status(400).json({
           success: false,
           error: "Validation Error",

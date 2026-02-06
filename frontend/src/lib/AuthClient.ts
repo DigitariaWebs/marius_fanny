@@ -7,7 +7,7 @@ export const authClient = createAuthClient({
 });
 
 export const forgotPassword = async (email: string) => {
-  const response = await fetch(`${API_URL}/api/auth/forgot_password`, {
+  const response = await fetch(`${API_URL}/api/auth-password/forgot_password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

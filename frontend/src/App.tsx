@@ -23,6 +23,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPassword from "./pages/ResetPassword";
 import StaffManagement from "./pages/Stuff";
 import StaffDashboard from "./pages/staffDahboard";
+import Checkout from "./pages/Checkout";
 
 interface CartItem {
   id: number;
@@ -40,12 +41,18 @@ const App: React.FC = () => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
+        console.log(
+          `➕ [CART] Increased quantity for existing item: ${product.name} (${existing.quantity} → ${existing.quantity + 1})`,
+        );
         return prev.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item,
         );
       }
+      console.log(
+        `🛒 [CART] Added new item: ${product.name} (Price: ${product.price}$)`,
+      );
       return [
         ...prev,
         { ...product, quantity: 1, image: product.image || product.img },
@@ -59,6 +66,9 @@ const App: React.FC = () => {
       prev.map((item) => {
         if (item.id === id) {
           const newQty = Math.max(1, item.quantity + delta);
+          console.log(
+            `🔄 [CART] Updated quantity for item ${id} (${item.name}): ${item.quantity} → ${newQty}`,
+          );
           return { ...item, quantity: newQty };
         }
         return item;
@@ -67,6 +77,10 @@ const App: React.FC = () => {
   };
 
   const removeItem = (id: number) => {
+    const itemToRemove = cartItems.find((item) => item.id === id);
+    console.log(
+      `🗑️ [CART] Removed item: ${itemToRemove?.name || "Unknown"} (ID: ${id})`,
+    );
     setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -128,6 +142,7 @@ const App: React.FC = () => {
           <Route path="/politique-retour" element={<Politique />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/dashboard" element={<AdminDashboard />} />
+          <Route path="/checkout" element={<Checkout />} />
 
           {/* Auth Routes */}
           <Route path="/se-connecter" element={<AuthPage />} />
@@ -140,15 +155,9 @@ const App: React.FC = () => {
               />
             }
           />
-        <Route
-    path="/reset-password/:token" 
-    element={
-      <ResetPassword
-      />
-    }
-  />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-      
+
           <Route path="/user" element={<User />} />
           <Route path="/staff" element={<StaffManagement />} />
           <Route path="/staff/managements" element={<StaffDashboard />} />

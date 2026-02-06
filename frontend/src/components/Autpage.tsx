@@ -114,7 +114,7 @@ const AuthPage: React.FC = () => {
   const handleForgotPassword = async () => {
     try {
       // On utilise la fonction centralisée de AuthClient.ts
-      // Assurez-vous que forgotPassword dans AuthClient pointe vers la bonne URL (/api/forgot_password)
+      // Assurez-vous que forgotPassword dans AuthClient pointe vers la bonne URL (/api/auth-password/forgot_password)
       await forgotPassword(email);
 
       setSuccessMessage(
