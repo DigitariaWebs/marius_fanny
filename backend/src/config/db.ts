@@ -1,8 +1,6 @@
 import { MongoClient } from "mongodb";
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/marius_fanny";
-
 let mongoClient: MongoClient;
 let mongoDb: ReturnType<MongoClient["db"]>;
 
@@ -12,10 +10,25 @@ export async function connectMongoDB() {
   }
 
   try {
-    mongoClient = new MongoClient(MONGODB_URI);
+    const mongodbUri = process.env.MONGODB_URI;
+    if (!mongodbUri) {
+      throw new Error("MONGODB_URI is not set");
+    }
+    mongoClient = new MongoClient(mongodbUri);
     await mongoClient.connect();
     mongoDb = mongoClient.db();
-    console.log("✅ MongoDB native client connected");
+    const collections = await mongoDb
+      .listCollections({}, { nameOnly: true })
+      .toArray();
+    const collectionNames = collections.map((collection) => collection.name);
+    console.log(
+      `✅ MongoDB native client connected (db: ${mongoDb.databaseName})`,
+    );
+    console.log(
+      `📚 MongoDB collections: ${
+        collectionNames.length ? collectionNames.join(", ") : "(none)"
+      }`,
+    );
     return { client: mongoClient, db: mongoDb };
   } catch (error) {
     console.error("❌ MongoDB native client connection error:", error);
@@ -25,7 +38,11 @@ export async function connectMongoDB() {
 
 export async function connectMongoose() {
   try {
-    await mongoose.connect(MONGODB_URI);
+    const mongodbUri = process.env.MONGODB_URI;
+    if (!mongodbUri) {
+      throw new Error("MONGODB_URI is not set");
+    }
+    await mongoose.connect(mongodbUri);
     console.log("✅ Mongoose connected");
   } catch (error) {
     console.error("❌ Mongoose connection error:", error);

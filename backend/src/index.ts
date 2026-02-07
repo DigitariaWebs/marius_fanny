@@ -1,4 +1,10 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
@@ -24,8 +30,10 @@ const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // --- AJOUTE CETTE LIGNE ICI (AVANT LA CONNEXION) ---
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/marius_fanny";
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI is not set");
+}
 
 // 1. CONNEXION MONGOOSE
 mongoose.set("strictQuery", true);
@@ -99,7 +107,7 @@ app.use(errorHandler);
 export default app;
 
 // Only start server when running locally (not imported as module)
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });

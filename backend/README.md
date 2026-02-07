@@ -37,7 +37,7 @@ cp .env.example .env
 3. Update `.env` with your configuration:
 
 ```env
-MONGODB_URI=mongodb://localhost:27017/marius_fanny
+MONGODB_URI=your_mongodb_uri
 PORT=3000
 BETTER_AUTH_URL=http://localhost:3000
 BETTER_AUTH_SECRET=your-secret-key-min-32-chars
@@ -314,7 +314,7 @@ throw new AppError("Custom error message", 400);
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/marius_fanny` |
+| `MONGODB_URI` | MongoDB connection string | (required) |
 | `PORT` | Server port | `3000` |
 | `BETTER_AUTH_URL` | Base URL for Better Auth (for OAuth callbacks) | `http://localhost:3000` |
 | `BETTER_AUTH_SECRET` | Secret key for Better Auth (min 32 chars) | - |

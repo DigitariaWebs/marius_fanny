@@ -33,6 +33,7 @@ async function initializeAuth() {
       emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
+        minPasswordLength: 5,
         password: {
           hash: async (password) => {
             return await bcrypt.hash(password, 10);

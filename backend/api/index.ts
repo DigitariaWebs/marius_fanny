@@ -22,8 +22,10 @@ const initializeApp = async () => {
   try {
     const app = express();
     const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-    const MONGODB_URI =
-      process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/marius_fanny";
+    const MONGODB_URI = process.env.MONGODB_URI;
+    if (!MONGODB_URI) {
+      throw new Error("MONGODB_URI is not set");
+    }
 
     // MongoDB connection (non-blocking)
     mongoose.set("strictQuery", true);
