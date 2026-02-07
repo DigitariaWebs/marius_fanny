@@ -20,7 +20,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [role, setRole] = useState<string>("client"); // État pour stocker le rôle
+  const [role, setRole] = useState<string>("client");
   
   const sidebarRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -32,18 +32,31 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
     const checkAuth = async () => {
       try {
         const session = await authClient.getSession();
+        console.log("📋 Session complète:", session);
         const user = session.data?.user;
         
         setIsLoggedIn(!!user);
 
         if (user) {
-          // On récupère le rôle (on cast en any pour éviter les erreurs TS sur les champs personnalisés)
+          console.log("👤 User object:", user);
           const userWithRole = user as any;
-          const detectedRole = userWithRole.role || userWithRole.user_metadata?.role || "client";
+          console.log("🔍 user.role:", userWithRole.role);
+          console.log("🔍 user.user_metadata:", userWithRole.user_metadata);
+          console.log("🔍 user.app_metadata:", userWithRole.app_metadata);
+          
+          const detectedRole = 
+            userWithRole.role || 
+            userWithRole.user_metadata?.role || 
+            userWithRole.app_metadata?.role || 
+            "client";
+          
+          console.log("✅ Rôle final détecté:", detectedRole);
           setRole(detectedRole);
+        } else {
+          console.log("❌ Pas d'utilisateur connecté");
         }
       } catch (error) {
-        console.error("Session check error:", error);
+        console.error("❌ Session check error:", error);
         setIsLoggedIn(false);
       }
     };
@@ -62,6 +75,9 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
   ];
 
   const handleAnchorClick = (id: string) => {
+    console.log("🎯 handleAnchorClick appelé avec id:", id);
+    console.log("🎯 Rôle actuel:", role);
+    
     setIsOpen(false);
 
     if (id === "politique-de-retour") {
@@ -77,7 +93,19 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
       return;
     }
     if (id === "dashboard") {
-      navigate("/dashboard");
+      console.log("🚀 Navigation dashboard - Rôle:", role);
+      
+      // Redirection selon le rôle
+      if (role === "admin") {
+        console.log("➡️ Navigation vers /dashboard (admin)");
+        navigate("/dashboard");
+      } else if (role === "kitchen_staff" || role === "customer_service") {
+        console.log("➡️ Navigation vers /staff/dashboard (staff)");
+        navigate("/staff/dashboard");
+      } else {
+        console.log("➡️ Navigation vers /mon-compte (client)");
+        navigate("/mon-compte");
+      }
       return;
     }
 
@@ -135,6 +163,14 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
     }
   };
 
+  // Fonction pour obtenir le texte du bouton selon le rôle
+  const getDashboardButtonText = () => {
+    if (role === "client") return "Mon Compte";
+    if (role === "admin") return "Dashboard Admin";
+    if (role === "kitchen_staff" || role === "customer_service") return "Dashboard Staff";
+    return "Dashboard";
+  };
+
   return (
     <>
       <nav
@@ -178,8 +214,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                   onClick={() => handleAnchorClick("dashboard")}
                   className="ml-4 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#2D2A26] hover:text-[#C5A065] transition-all duration-300 focus:outline-none"
                 >
-                  {/* LOGIQUE DYNAMIQUE ICI */}
-                  {role === "client" ? "Mon Compte" : "Dashboard"}
+                  {getDashboardButtonText()}
                 </button>
                 <button
                   onClick={handleLogout}
@@ -243,8 +278,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                 className="w-full px-6 py-3 text-[11px] font-black uppercase tracking-widest text-[#2D2A26] border-2 border-[#2D2A26] rounded-full hover:bg-[#2D2A26] hover:text-white transition-all"
                 style={{ fontFamily: styles.fontSans }}
               >
-                {/* LOGIQUE DYNAMIQUE ICI AUSSI */}
-                {role === "client" ? "Mon Compte" : "Dashboard"}
+                {getDashboardButtonText()}
               </button>
               <button onClick={handleLogout} className="w-full px-6 py-3 text-[11px] font-black uppercase tracking-widest text-white rounded-full mt-2" style={{ backgroundColor: styles.text, fontFamily: styles.fontSans }}>
                 Déconnexion

@@ -44,9 +44,18 @@ export function ProtectedRoute({
         const user = session.data.user as UserWithMetadata;
 
         // ✅ Récupération du rôle avec "client" par défaut
-        const role = (user.user_metadata?.role || user.role || "client") as RoleType;
+        const rawRole = user.user_metadata?.role || user.role || "client";
+        
+        // 🧹 NETTOYAGE DU RÔLE (suppression des guillemets et espaces)
+        const cleanedRole = String(rawRole)
+          .replace(/['"]/g, '')
+          .trim() as RoleType;
 
-        setUserRole(role);
+        console.log("🔐 [ProtectedRoute] Rôle brut:", rawRole);
+        console.log("🔐 [ProtectedRoute] Rôle nettoyé:", cleanedRole);
+        console.log("🔐 [ProtectedRoute] Rôles autorisés:", allowedRoles);
+
+        setUserRole(cleanedRole);
         setLoading(false);
       } catch (error) {
         console.error("Auth check error:", error);
