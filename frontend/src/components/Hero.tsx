@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLImageElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -33,20 +35,20 @@ const Hero = () => {
       className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-center py-20"
     >
       {/* Vidéo en arrière-plan */}
-      <div className="absolute inset-0 w-full h-full -z-10">
+      <div className="absolute inset-0 w-full h-full z-[1] overflow-hidden">
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="w-full h-full object-cover" 
+          className="w-full h-full object-cover scale-110" 
         >
           <source src="/v3.mp4" type="video/mp4" />
         </video>
       </div>
 
       {/* Contenu principal */}
-      <div className="relative z-10 w-full max-w-7xl px-4 flex flex-col items-center text-center">
+      <div className="relative z-[2] w-full max-w-7xl px-4 flex flex-col items-center text-center">
         
         <div className="mb-6 md:mb-10"> 
           <img
@@ -65,7 +67,16 @@ const Hero = () => {
             Tradition, passion et savoir-faire artisanal.
           </p>
 
-          <button className="bg-bakery-gold text-bakery-dark px-8 py-3 md:px-10 md:py-4 rounded-sm font-bold uppercase tracking-widest text-xs md:text-sm hover:bg-white hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(197,160,101,0.4)]">
+          <button 
+            onClick={() => {
+              const shopSection = document.getElementById("shop");
+              if (shopSection) {
+                shopSection.scrollIntoView({ behavior: "smooth" });
+              } else {
+                navigate("/products");
+              }
+            }}
+            className="bg-bakery-gold text-bakery-dark px-8 py-3 md:px-10 md:py-4 rounded-sm font-bold uppercase tracking-widest text-xs md:text-sm hover:bg-white hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(197,160,101,0.4)]">
             Commander maintenant
           </button>
         </div>

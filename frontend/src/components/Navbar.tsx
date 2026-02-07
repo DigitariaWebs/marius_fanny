@@ -115,12 +115,12 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
       if (role === "admin") {
         console.log("➡️ Navigation vers /dashboard (admin)");
         navigate("/dashboard");
+      } else if (role === "client") {
+        console.log("➡️ Navigation vers /mon-compte (client)");
+        navigate("/mon-compte");
       } else if (role === "kitchen_staff" || role === "customer_service") {
         console.log("➡️ Navigation vers /staff/dashboard (staff)");
         navigate("/staff/dashboard");
-      } else {
-        console.log("➡️ Navigation vers /mon-compte (client)");
-        navigate("/mon-compte");
       }
       return;
     }
@@ -197,12 +197,15 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
         }}
       >
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center relative z-50">
-          <button onClick={handleHeroClick} className="cursor-pointer focus:outline-none">
-            <img src="/logo.avif" alt="Logo" className="h-10 md:h-12 w-auto object-contain" />
-          </button>
+          {/* LOGO */}
+          <div className="flex-shrink-0">
+            <button onClick={handleHeroClick} className="cursor-pointer focus:outline-none">
+              <img src="/logo.avif" alt="Logo" className="h-10 md:h-12 w-auto object-contain" />
+            </button>
+          </div>
 
-          {/* NAV DESKTOP */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* LINKS DESKTOP */}
+          <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
             {mainLinks.map((link) => (
               <button
                 key={link.name}
@@ -214,7 +217,10 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full" style={{ backgroundColor: styles.gold }} />
               </button>
             ))}
+          </div>
 
+          {/* CART + PROFILE/LOGIN DESKTOP */}
+          <div className="hidden md:flex items-center gap-3 flex-shrink-0 pr-4">
             <button onClick={onCartClick} className="relative p-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors focus:outline-none">
               <FiShoppingBag size={22} />
               {cartCount > 0 && (
@@ -225,48 +231,61 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
             </button>
 
             {isLoggedIn ? (
-              <>
-                <div className="relative" ref={profileMenuRef}>
-                  <button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="p-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors focus:outline-none"
-                  >
-                    <User size={22} />
-                  </button>
-                  
-                  {showProfileMenu && (
-                    <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-xl border border-[#E5E0D8] z-50 w-48 py-2">
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="p-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors focus:outline-none"
+                >
+                  <User size={22} />
+                </button>
+                
+                {showProfileMenu && (
+                  <div className="absolute right-1/2 transform translate-x-1/2 top-full mt-2 bg-white rounded-lg shadow-xl border border-[#E5E0D8] z-50 w-36 py-2">
+                    <div className="flex flex-col">
                       {role === "admin" && (
                         <button
                           onClick={() => {
                             handleAnchorClick("dashboard");
                             setShowProfileMenu(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm font-bold uppercase tracking-widest text-[#2D2A26] hover:bg-[#C5A065]/10 transition-colors"
+                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#C5A065]/10 transition-colors text-center"
                         >
-                          Dashboard Admin
+                          Dashboard
                         </button>
                       )}
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setShowProfileMenu(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-sm font-bold uppercase tracking-widest text-[#2D2A26] hover:bg-red-50 transition-colors border-t border-[#E5E0D8]"
-                      >
-                        Déconnexion
-                      </button>
+                      {role !== "admin" && (
+                        <button
+                          onClick={() => {
+                            navigate("/mon-compte");
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#C5A065]/10 transition-colors text-center"
+                        >
+                          Mon Compte
+                        </button>
+                      )}
+                      {isLoggedIn && (
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-red-50 transition-colors border-t border-[#E5E0D8] text-center"
+                        >
+                          Déconnexion
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
-              </>
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 onClick={() => handleAnchorClick("se-connecter")}
-                className="p-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors focus:outline-none"
-                title="Se connecter"
+                className="px-4 py-2 text-[11px] font-black uppercase tracking-widest text-white rounded-full transition-all hover:opacity-90"
+                style={{ backgroundColor: styles.gold }}
               >
-                <User size={22} />
+                Se Connecter
               </button>
             )}
           </div>
@@ -292,42 +311,67 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
       <div ref={overlayRef} className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" style={{ opacity: 0, pointerEvents: "none" }} onClick={() => setIsOpen(false)} />
 
       {/* SIDEBAR MOBILE */}
-      <div ref={sidebarRef} className="fixed top-0 right-0 h-full w-[280px] z-50 md:hidden shadow-2xl overflow-y-auto" style={{ backgroundColor: styles.cream, transform: "translateX(100%)" }}>
-        <div className="flex justify-between items-center p-6 border-b border-[#E5E0D8]">
-          <h2 className="text-lg font-black uppercase tracking-wider" style={{ color: styles.text, fontFamily: styles.fontSans }}>Menu</h2>
-          <button onClick={() => setIsOpen(false)} className="text-2xl p-2 focus:outline-none" style={{ color: styles.text }}><FiX /></button>
+      <div ref={sidebarRef} className="fixed top-0 right-0 h-full w-[65vw] max-w-[260px] z-50 md:hidden shadow-2xl overflow-y-auto" style={{ backgroundColor: styles.cream, transform: "translateX(100%)" }}>
+        <div className="flex justify-between items-center p-4 border-b border-[#E5E0D8]">
+          <h2 className="text-sm font-black uppercase tracking-wider" style={{ color: styles.text, fontFamily: styles.fontSans }}>Menu</h2>
+          <button onClick={() => setIsOpen(false)} className="text-xl p-1 focus:outline-none" style={{ color: styles.text }}><FiX /></button>
         </div>
 
-        <div ref={linksRef} className="flex flex-col p-6 gap-6">
+        <div ref={linksRef} className="flex flex-col p-4 gap-4">
           {mainLinks.map((link) => (
-            <button key={link.id} onClick={() => handleAnchorClick(link.id)} className="text-left focus:outline-none text-[12px] font-black uppercase tracking-[0.2em] py-2 border-b border-[#E5E0D8] hover:text-[#C5A065] transition-colors" style={{ color: styles.text, fontFamily: styles.fontSans }}>
+            <button key={link.id} onClick={() => handleAnchorClick(link.id)} className="text-left focus:outline-none text-[11px] font-black uppercase tracking-[0.15em] py-1.5 border-b border-[#E5E0D8] hover:text-[#C5A065] transition-colors" style={{ color: styles.text, fontFamily: styles.fontSans }}>
               {link.name}
             </button>
           ))}
 
-          <div className="h-px bg-[#C5A065] my-4" />
+          <div className="h-px bg-[#C5A065] my-3" />
 
           {isLoggedIn ? (
             <>
               {role === "admin" && (
                 <button
-                  onClick={() => handleAnchorClick("dashboard")}
-                  className="w-full px-6 py-3 text-[11px] font-black uppercase tracking-widest text-[#2D2A26] border-2 border-[#2D2A26] rounded-full hover:bg-[#2D2A26] hover:text-white transition-all"
+                  onClick={() => {
+                    handleAnchorClick("dashboard");
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#2D2A26] border-2 border-[#2D2A26] rounded-full hover:bg-[#2D2A26] hover:text-white transition-all"
                   style={{ fontFamily: styles.fontSans }}
                 >
-                  Dashboard Admin
+                  Dashboard
+                </button>
+              )}
+              {role === "client" && (
+                <button
+                  onClick={() => {
+                    handleAnchorClick("dashboard");
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#2D2A26] border-2 border-[#2D2A26] rounded-full hover:bg-[#2D2A26] hover:text-white transition-all"
+                  style={{ fontFamily: styles.fontSans }}
+                >
+                  Mon Compte
                 </button>
               )}
               <button 
-                onClick={handleLogout} 
-                className="w-full px-6 py-3 text-[11px] font-black uppercase tracking-widest text-white rounded-full" 
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false);
+                }}
+                className="w-full px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white rounded-full" 
                 style={{ backgroundColor: styles.text, fontFamily: styles.fontSans }}
               >
                 Déconnexion
               </button>
             </>
           ) : (
-            <button onClick={() => handleAnchorClick("se-connecter")} className="w-full px-6 py-3 text-[11px] font-black uppercase tracking-widest text-white rounded-full" style={{ backgroundColor: styles.text, fontFamily: styles.fontSans }}>
+            <button 
+              onClick={() => {
+                handleAnchorClick("se-connecter");
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white rounded-full" 
+              style={{ backgroundColor: styles.text, fontFamily: styles.fontSans }}
+            >
               Se Connecter
             </button>
           )}
