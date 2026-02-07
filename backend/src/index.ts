@@ -71,13 +71,31 @@ mongoose
 // Global request logger - logs ALL incoming requests
 // Removed request logger for production cleanliness
 
-app.use(
-  cors({
-    origin: FRONTEND_URL,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    credentials: true,
-  }),
-);
+// CORS configuration - accepte localhost sur n'importe quel port en développement
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests from localhost (any port) in development
+    if (process.env.NODE_ENV === "development" && origin?.includes("localhost")) {
+      callback(null, true);
+    }
+    // Allow from FRONTEND_URL
+    else if (origin === FRONTEND_URL) {
+      callback(null, true);
+    }
+    // Allow requests with no origin (like mobile apps or curl requests)
+    else if (!origin) {
+      callback(null, true);
+    }
+    // Deny others
+    else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 // 3. BETTER AUTH (REGISTER BEFORE JSON BODY PARSING)
 // Initialize auth handler once

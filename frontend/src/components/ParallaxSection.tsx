@@ -93,7 +93,7 @@ const WholesaleSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen bg-[#F9F7F2] text-[#2D2A26] overflow-hidden selection:bg-[#C5A065] selection:text-white">
+    <section id="devenir-partenaire" className="relative min-h-screen bg-[#F9F7F2] text-[#2D2A26] overflow-hidden selection:bg-[#C5A065] selection:text-white">
       
       {/* --- INTÉGRATION DU BACKGROUND --- */}
       {/* On place le composant ici. Il doit être en absolute inset-0 dans son propre code 

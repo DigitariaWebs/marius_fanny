@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Instagram, Phone, MapPin } from "lucide-react";
+import { Phone, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Footer: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,6 +17,36 @@ const Footer: React.FC = () => {
       setTimeout(() => {
         setIsSubscribed(false);
       }, 3000);
+    }
+  };
+
+  const mainLinks = [
+    { name: "La Boutique", id: "shop" },
+    { name: "Nos Favoris", id: "best-sellers" },
+    { name: "Notre Histoire", id: "timeline" },
+    { name: "Devenir partenaire", id: "devenir-partenaire" },
+    { name: "Contacter", id: "contact" },
+  ];
+
+  const handleAnchorClick = (id: string) => {
+    if (id === "politique-de-retour") {
+      navigate("/politique-retour");
+      return;
+    }
+    if (id === "contact") {
+      navigate("/contact");
+      return;
+    }
+
+    if (window.location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        element?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
+      const element = document.getElementById(id);
+      element?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -84,86 +116,28 @@ const Footer: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            <div className="mt-8">
-              <p className="text-sm font-bold mb-3 text-[#C5A065]">
-                Suivez-nous
-              </p>
-              <div className="flex gap-4">
-                <a
-                  href="https://www.instagram.com/patisseriemariusetfanny/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
-                >
-                  <Instagram size={24} className="text-white" />
-                </a>
-                <a
-                  href="https://www.facebook.com/mariusetfanny"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
-                >
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
           </div>
 
+          {/* Colonne 2 - Navigation */}
           <div>
             <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
               Navigation
             </h3>
             <ul className="space-y-3">
-              <li>
-                <a
-                  href="#biscuits"
-                  className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
-                >
-                  Biscuits
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#gateaux"
-                  className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
-                >
-                  Gâteaux
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#apropos"
-                  className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
-                >
-                  À propos
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#contact"
-                  className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
-                >
-                  Contact
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#wholesale"
-                  className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
-                >
-                  Wholesale
-                </a>
-              </li>
+              {mainLinks.map((link) => (
+                <li key={link.id}>
+                  <button
+                    onClick={() => handleAnchorClick(link.id)}
+                    className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase text-left"
+                  >
+                    {link.name}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Colonne 3 - Newsletter */}
           <div>
             <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
               Abonnez-vous à notre infolettre
@@ -222,12 +196,12 @@ const Footer: React.FC = () => {
                 Conditions d'utilisation
               </a>
               <span className="text-[#2D2A26]/40">|</span>
-              <a
-                href="#confidentialite"
+              <button
+                onClick={() => handleAnchorClick("politique-de-retour")}
                 className="text-[#2D2A26]/70 hover:text-[#C5A065] transition-colors"
               >
-                Politique de confidentialité
-              </a>
+                Politique de retour
+              </button>
             </div>
           </div>
         </div>

@@ -28,7 +28,7 @@ const timelineData: TimelineStep[] = [
     description: "Fondation par le chef Marc Chiecchio. La naissance d'une tradition provençale au Québec."
   },
   {
-    year: "2006",
+    year: "2014",
     location: "Montréal",
     address: "2006 St-Hubert",
     description: "Expansion majeure pour offrir nos douceurs au coeur de la métropole."

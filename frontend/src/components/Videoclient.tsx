@@ -1,5 +1,5 @@
 import React from 'react';
-import { Instagram } from 'lucide-react';
+import { Instagram, Facebook } from 'lucide-react';
 
 const ClientVideo: React.FC = () => {
   return (
@@ -53,10 +53,30 @@ const ClientVideo: React.FC = () => {
 
             <div className="h-px w-24 bg-[#C5A065]" />
             
-            <div className="flex gap-4">
-               <p className="text-sm font-black uppercase tracking-widest opacity-40">
-                 Partagez votre moment : #MariusEtFanny
-               </p>
+            <div className="space-y-4">
+              <p className="text-sm font-black uppercase tracking-widest opacity-40">
+                Partagez votre moment : #MariusEtFanny
+              </p>
+              <div className="flex gap-4">
+                <a
+                  href="https://www.instagram.com/patisseriemariusetfanny/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 bg-[#C5A065]/10 text-[#C5A065] rounded-full hover:bg-[#C5A065] hover:text-white transition-all duration-300 hover:scale-110"
+                  title="Suivez-nous sur Instagram"
+                >
+                  <Instagram size={24} />
+                </a>
+                <a
+                  href="https://www.facebook.com/mariusetfanny/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 bg-[#C5A065]/10 text-[#C5A065] rounded-full hover:bg-[#C5A065] hover:text-white transition-all duration-300 hover:scale-110"
+                  title="Suivez-nous sur Facebook"
+                >
+                  <Facebook size={24} />
+                </a>
+              </div>
             </div>
           </div>
 

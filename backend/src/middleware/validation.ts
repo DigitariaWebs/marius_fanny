@@ -40,7 +40,8 @@ export function validateQuery<T extends ZodType<any>>(schema: T) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validated = await schema.parseAsync(req.query);
-      req.query = validated as any;
+      // Use Object.assign instead of direct assignment (req.query is readonly)
+      Object.assign(req.query, validated);
       next();
     } catch (error) {
       if (error instanceof ZodError) {
