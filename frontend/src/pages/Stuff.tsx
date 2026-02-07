@@ -253,10 +253,10 @@ export default function StaffDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {user.role === "kitchen_staff" ? (
                 <>
-                  <StatCard title="En attente" value={stats.pending} icon={<Clock className="w-6 h-6 text-orange-600" />} color="bg-orange-50" />
-                  <StatCard title="En cours" value={stats.inProgress} icon={<ChefHat className="w-6 h-6 text-blue-600" />} color="bg-blue-50" />
-                  <StatCard title="Terminées" value={stats.completed} icon={<CheckCircle className="w-6 h-6 text-green-600" />} color="bg-green-50" />
-                  <StatCard title="Temps moy." value={stats.avgTime} icon={<TrendingUp className="w-6 h-6 text-purple-600" />} color="bg-purple-50" />
+                  <StatCard title="En attente" value={stats.pending ?? 0} icon={<Clock className="w-6 h-6 text-orange-600" />} color="bg-orange-50" />
+                  <StatCard title="En cours" value={(stats as any).inProgress ?? 0} icon={<ChefHat className="w-6 h-6 text-blue-600" />} color="bg-blue-50" />
+                  <StatCard title="Terminées" value={(stats as any).completed ?? 0}icon={<CheckCircle className="w-6 h-6 text-green-600" />} color="bg-green-50" />
+                  <StatCard title="Temps moy."  value={stats.avgTime ?? "0 min"}  icon={<TrendingUp className="w-6 h-6 text-purple-600" />} color="bg-purple-50" />
                 </>
               ) : (
                 <>
