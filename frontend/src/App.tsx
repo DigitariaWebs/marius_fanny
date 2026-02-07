@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { authClient } from "./lib/AuthClient";
 
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -25,7 +26,8 @@ import Checkout from "./pages/Checkout";
 import CustomerServicePage from "./pages/Customerservicepage";
 import StaffDashboardPage from "./pages/staffDahboard"; 
 import Stuff from "./pages/Stuff";
-
+import MonCompte from "./components/Moncompte";
+import StaffPlanning from "./pages/Staffplaning";
 import { ProtectedRoute } from "./components/Protectedroute";
 import { Product } from "./types";
 import { initializeCartSession, loadCart, saveCart } from "./utils/cartPersistence";
@@ -44,6 +46,34 @@ interface PageProps {
   cartCount: number;
   onAddToCart: (product: Product) => void;
 }
+
+// --- Gardien pour rediriger le Staff loin de la Home client ---
+const HomeGuard: React.FC<PageProps> = (props) => {
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const session = await authClient.getSession();
+        const user = session.data?.user as any;
+        setRole(user?.role || "client");
+      } catch (e) {
+        setRole("client");
+      } finally {
+        setLoading(false);
+      }
+    };
+    check();
+  }, []);
+
+  if (loading) return null;
+
+  if (role === "kitchen_staff" || role === "customer_service") {
+    return <Navigate to="/staff/dashboard" replace />;
+  }
+  return <HomePage {...props} />;
+};
 
 const HomePage: React.FC<PageProps> = ({
   onCartClick,
@@ -191,7 +221,7 @@ const App: React.FC = () => {
           <Route
             path="/"
             element={
-              <HomePage
+              <HomeGuard
                 onCartClick={() => setIsCartOpen(true)}
                 cartCount={cartItems.length}
                 onAddToCart={addToCart}
@@ -219,6 +249,15 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/mon-compte"
+            element={
+              <ProtectedRoute allowedRoles={["client"]}>
+                <MonCompte />
+              </ProtectedRoute>
+            }
+          />
           
           <Route path="/checkout" element={<Checkout />} />
 
@@ -237,12 +276,11 @@ const App: React.FC = () => {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/user" element={<User />} />
 
-          {/* Staff Routes - Protected */}
           
           <Route
             path="/staff/dashboard"
             element={
-                  <ProtectedRoute allowedRoles={["kitchen_staff", "customer_service"]}>
+              <ProtectedRoute allowedRoles={["kitchen_staff", "customer_service"]}>
                 <Stuff />
               </ProtectedRoute>
             }
@@ -256,7 +294,14 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
-
+     <Route
+          path="/staff/planning"
+  element={
+    <ProtectedRoute allowedRoles={["kitchen_staff", "customer_service"]}>
+      <StaffPlanning />
+    </ProtectedRoute>
+  }
+/>
           <Route
             path="/staff/commandes"
             element={
@@ -266,6 +311,7 @@ const App: React.FC = () => {
             }
           />
         </Routes>
+   
       </div>
     </Router>
   );

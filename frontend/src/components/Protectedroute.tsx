@@ -2,25 +2,19 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { authClient } from "../lib/AuthClient";
 
-// ===============================
-// 🔧 MODE TEST
-// ===============================
-const TEST_MODE = false; // ⬅️ mets false en production
-const TEST_USER_ROLE: "admin" | "kitchen_staff" | "customer_service" | "client" =
-  "customer_service"; // change ici pour tester
+type RoleType = "admin" | "kitchen_staff" | "customer_service" | "client";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ("admin" | "kitchen_staff" | "customer_service")[];
+  allowedRoles?: RoleType[]; 
 }
 
-// ----- Ajout de ce type pour éviter TS2339 -----
 interface UserWithMetadata {
   id: string;
   email: string;
-  role?: "admin" | "kitchen_staff" | "customer_service" | "client";
+  role?: RoleType;
   user_metadata?: {
-    role?: "admin" | "kitchen_staff" | "customer_service" | "client";
+    role?: RoleType;
     [key: string]: any;
   };
   [key: string]: any;
@@ -32,22 +26,12 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<RoleType | null>(null);
   const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // 🧪 MODE TEST
-        if (TEST_MODE) {
-          console.log("🧪 TEST MODE: Simulating user role:", TEST_USER_ROLE);
-          setIsAuthenticated(true);
-          setUserRole(TEST_USER_ROLE);
-          setLoading(false);
-          return;
-        }
-
-        // 🔐 MODE PRODUCTION
         const session = await authClient.getSession();
 
         if (!session?.data?.user) {
@@ -57,13 +41,10 @@ export function ProtectedRoute({
         }
 
         setIsAuthenticated(true);
-
         const user = session.data.user as UserWithMetadata;
 
-        const role =
-          user.user_metadata?.role ||
-          user.role ||
-          "client";
+        // ✅ Récupération du rôle avec "client" par défaut
+        const role = (user.user_metadata?.role || user.role || "client") as RoleType;
 
         setUserRole(role);
         setLoading(false);
@@ -77,29 +58,29 @@ export function ProtectedRoute({
     checkAuth();
   }, []);
 
+  // ⏳ Écran de chargement stylisé
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#F9F7F2]">
         <div className="w-12 h-12 border-4 border-[#C5A065] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
+  // 🔒 Redirection si non connecté
   if (!isAuthenticated) {
     return <Navigate to="/se-connecter" state={{ from: location }} replace />;
   }
 
-  // 🎯 Vérification des rôles autorisés
-  if (allowedRoles && !allowedRoles.includes(userRole as any)) {
-    console.warn(
-      `🚫 Access denied. Allowed: ${allowedRoles.join(
-        ", "
-      )}, User has: ${userRole}`
-    );
+  // 🎯 Vérification des permissions
+  if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
+    console.warn(`🚫 Accès refusé. Requis: ${allowedRoles}, Utilisateur: ${userRole}`);
 
+    // Redirections automatiques vers les bons espaces selon le rôle
     if (userRole === "admin") return <Navigate to="/dashboard" replace />;
     if (userRole === "kitchen_staff") return <Navigate to="/staff/production" replace />;
     if (userRole === "customer_service") return <Navigate to="/staff/commandes" replace />;
+    if (userRole === "client") return <Navigate to="/mon-compte" replace />;
 
     return <Navigate to="/" replace />;
   }

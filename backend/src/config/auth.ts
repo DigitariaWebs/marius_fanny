@@ -19,8 +19,17 @@ async function initializeAuth() {
       baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
       basePath: "/api/auth",
       database: mongodbAdapter(db, {
-        client, // Enable transactions
+        client, 
       }),
+      user: {
+        additionalFields: {
+          role: {
+            type: "string",
+            required: false,
+            defaultValue: "client", 
+          },
+        },
+      },
       emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,

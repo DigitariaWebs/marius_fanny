@@ -9,6 +9,13 @@ export const normalizedApiUrl = API_URL.startsWith('http') ? API_URL : `https://
 export const authClient = createAuthClient({
   baseURL: normalizedApiUrl,
   plugins: [emailOTPClient()],
+  user: {
+    additionalFields: {
+      role: {
+        type: "string"
+      }
+    }
+  }
 });
 
 export const forgotPassword = async (email: string) => {
@@ -23,7 +30,6 @@ export const forgotPassword = async (email: string) => {
   const contentType = response.headers.get("content-type");
   
   if (!response.ok) {
-    // On essaie de lire le message d'erreur JSON envoyé par ton auth.controller.ts
     const errorData = contentType?.includes("application/json") 
       ? await response.json() 
       : { message: "Route introuvable (404)" };
@@ -34,7 +40,6 @@ export const forgotPassword = async (email: string) => {
   return response.json();
 };
 
-// Email verification helper functions
 export const sendVerificationEmail = async (email: string, callbackURL?: string) => {
   return await authClient.sendVerificationEmail({
     email,

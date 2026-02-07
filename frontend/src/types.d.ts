@@ -299,7 +299,7 @@ export interface DashboardOrder {
   createdAt: string;
   notes?: string;
 }
-interface UserWithRole {
+export interface UserWithRole {
   id: string;
   createdAt: Date;
   updatedAt: Date;
@@ -310,7 +310,7 @@ interface UserWithRole {
   role?: string;  
   user_metadata?: {
     [key: string]: any;
-  }; // ajout si tu utilises user_metadata
+  }; 
 }
 
 

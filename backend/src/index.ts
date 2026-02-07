@@ -66,7 +66,7 @@ app.use(
 // Initialize auth handler once
 let authHandler: any = null;
 
-app.all("/api/auth/*", async (req, res) => {
+app.all(/^\/api\/auth\/.*/, async (req, res) => {
   try {
     if (!authHandler) {
       const auth = await getAuth();

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { authClient, forgotPassword } from "../lib/AuthClient.ts";
+import { authClient, forgotPassword } from "../lib/AuthClient"; 
 import GoldenBackground from "./GoldenBackground";
 import { Mail, ArrowLeft, Check, Lock, User } from "lucide-react";
+import { getRedirectPath } from "../utils/loginMultipleusers"; 
+import { UserWithRole } from "../types";
 
 const styles = {
   gold: "#C5A065",
@@ -14,9 +16,7 @@ const styles = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const AuthPage: React.FC = () => {
-  const [view, setView] = useState<"login" | "signup" | "forgot-password">(
-    "login"
-  );
+  const [view, setView] = useState<"login" | "signup" | "forgot-password">("login");
   const [isVerificationSent, setIsVerificationSent] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingSignIn, setPendingSignIn] = useState<{email: string, password: string} | null>(null);
@@ -33,19 +33,49 @@ const AuthPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // --- LOGIQUE DE REDIRECTION CENTRALISÉE ---
+  const handleRoleBasedRedirect = async () => {
+    try {
+      const checkoutIntent = localStorage.getItem("checkout_intent");
+      if (checkoutIntent) {
+        const intent = JSON.parse(checkoutIntent);
+        localStorage.removeItem("checkout_intent");
+        console.log("🛒 [AUTH] Restoring checkout intent");
+        navigate("/checkout", { state: intent });
+        return;
+      }
+
+      const session = await authClient.getSession();
+      
+      const user = session?.data?.user as UserWithRole; 
+      
+      const role = user?.user_metadata?.role || user?.role || "client";
+      console.log("👤 [AUTH] Role detected:", role);
+
+      const destination = getRedirectPath(role);
+      
+      navigate(destination, { replace: true });
+
+    } catch (e) {
+      console.error("Redirect error:", e);
+      navigate("/"); // Fallback de sécurité
+    }
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const session = await authClient.getSession();
-        if (session.data) {
-          navigate("/");
+        if (session.data?.user) {
+          handleRoleBasedRedirect();
         }
       } catch (error) {
         console.error("Session check error:", error);
       }
     };
     checkAuth();
-  }, [navigate]);
+    
+  }, []);
 
   const switchView = (newView: "login" | "signup" | "forgot-password") => {
     setView(newView);
@@ -85,16 +115,12 @@ const AuthPage: React.FC = () => {
         });
 
         if (signInError) {
-          // Check if email verification is required
           if (
             signInError.message?.includes("Email not verified") ||
             signInError.message?.includes("verification") ||
             signInError.status === 403
           ) {
-            console.log(
-              "📧 [AUTH] Email verification required, proceeding to verification...",
-            );
-
+            console.log("📧 [AUTH] Email verification required...");
             setPendingSignIn({ email, password });
             setIsVerificationSent(true);
             setError(null);
@@ -103,32 +129,15 @@ const AuthPage: React.FC = () => {
           throw new Error(signInError.message || "Connexion échouée");
         }
 
-        // Check for checkout intent
-        const checkoutIntent = localStorage.getItem("checkout_intent");
-        if (checkoutIntent) {
-          try {
-            const intent = JSON.parse(checkoutIntent);
-            // Clear the intent
-            localStorage.removeItem("checkout_intent");
-            console.log(
-              "🛒 [AUTH] Restoring checkout intent and redirecting to checkout",
-            );
-            // Navigate to checkout with saved state
-            navigate("/checkout", { state: intent });
-            return;
-          } catch (e) {
-            console.error("Error parsing checkout intent:", e);
-          }
-        }
+        await handleRoleBasedRedirect();
 
-        const from = (location.state as any)?.from?.pathname || "/dashboard";
-        navigate(from);
       } else if (view === "signup") {
         const { error: signUpError } = await authClient.signUp.email({
           email,
           password,
           name,
-        });
+         role: "client"
+        } as any);
 
         if (signUpError)
           throw new Error(signUpError.message || "Inscription échouée");
@@ -149,13 +158,9 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  // Correction ici : Utilisation de la fonction importée au lieu du fetch manuel
   const handleForgotPassword = async () => {
     await forgotPassword(email);
-
-    setSuccessMessage(
-      "Un lien de réinitialisation a été envoyé à votre adresse email.",
-    );
+    setSuccessMessage("Un lien de réinitialisation a été envoyé à votre adresse email.");
   };
 
   const handleVerifyCode = async (e: React.FormEvent) => {
@@ -188,36 +193,15 @@ const AuthPage: React.FC = () => {
           });
 
           if (signInError) {
-            throw new Error(
-              signInError.message || "Erreur lors de la connexion",
-            );
+            throw new Error(signInError.message || "Erreur lors de la connexion");
           }
 
           setPendingSignIn(null);
+          
+          await handleRoleBasedRedirect();
 
-          // Check for checkout intent
-          const checkoutIntent = localStorage.getItem("checkout_intent");
-          if (checkoutIntent) {
-            try {
-              const intent = JSON.parse(checkoutIntent);
-              localStorage.removeItem("checkout_intent");
-              console.log(
-                "🛒 [AUTH] Restoring checkout intent and redirecting to checkout",
-              );
-              navigate("/checkout", { state: intent });
-              return;
-            } catch (e) {
-              console.error("Error parsing checkout intent:", e);
-            }
-          }
-
-          const from = (location.state as any)?.from?.pathname || "/dashboard";
-          navigate(from);
         } else {
-          // Signup verification completed
-          setSuccessMessage(
-            "Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.",
-          );
+          setSuccessMessage("Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.");
           setTimeout(() => {
             setIsVerificationSent(false);
             switchView("login");
@@ -252,14 +236,13 @@ const AuthPage: React.FC = () => {
       });
 
       setSuccessMessage("Un nouveau code a été envoyé à votre email.");
-      console.log("✅ [RESEND] Verification OTP resent");
     } catch (err: any) {
-      console.error("❌ [RESEND] Failed to resend verification OTP:", err);
       setError("Erreur lors de l'envoi du code. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
   };
+
 
   if (isVerificationSent) {
     return (
@@ -272,18 +255,14 @@ const AuthPage: React.FC = () => {
             <div className="w-20 h-20 bg-[#C5A065]/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Mail className="text-[#C5A065]" size={40} />
             </div>
-            <h2
-              className="text-4xl mb-4"
-              style={{ fontFamily: styles.fontScript, color: styles.gold }}
-            >
-              {pendingSignIn ? "Vérifiez votre email" : "Vérifiez votre email"}
+            <h2 className="text-4xl mb-4" style={{ fontFamily: styles.fontScript, color: styles.gold }}>
+              Vérifiez votre email
             </h2>
             <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500 leading-relaxed mb-8">
               {pendingSignIn
                 ? `Un code de vérification a été envoyé à ${pendingSignIn.email} pour compléter votre connexion.`
                 : `Un code de vérification a été envoyé à ${email} pour activer votre compte.`}{" "}
-              <br />
-              <br />
+              <br /><br />
               Veuillez entrer le code à 6 chiffres ci-dessous.
             </p>
 
@@ -292,11 +271,7 @@ const AuthPage: React.FC = () => {
                 <input
                   type="text"
                   value={verificationCode}
-                  onChange={(e) =>
-                    setVerificationCode(
-                      e.target.value.replace(/\D/g, "").slice(0, 6),
-                    )
-                  }
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="Entrez le code"
                   className="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A065] focus:border-transparent"
                   maxLength={6}
@@ -312,9 +287,7 @@ const AuthPage: React.FC = () => {
 
               {successMessage && (
                 <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
-                  <p className="text-green-700 text-sm text-center">
-                    {successMessage}
-                  </p>
+                  <p className="text-green-700 text-sm text-center">{successMessage}</p>
                 </div>
               )}
 
@@ -360,16 +333,10 @@ const AuthPage: React.FC = () => {
       <div className="relative z-10 w-full max-w-md px-6">
         <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
           <div className="text-center mb-8">
-            <h2
-              className="text-5xl mb-2"
-              style={{ fontFamily: styles.fontScript, color: styles.gold }}
-            >
+            <h2 className="text-5xl mb-2" style={{ fontFamily: styles.fontScript, color: styles.gold }}>
               Marius & Fanny
             </h2>
-            <h1
-              className="text-[10px] font-black uppercase tracking-[0.4em] mt-4"
-              style={{ color: styles.text }}
-            >
+            <h1 className="text-[10px] font-black uppercase tracking-[0.4em] mt-4" style={{ color: styles.text }}>
               {view === "login" && "Connexion"}
               {view === "signup" && "Inscription"}
               {view === "forgot-password" && "Récupération"}
@@ -380,11 +347,7 @@ const AuthPage: React.FC = () => {
             {error && (
               <div
                 className="text-[10px] font-bold uppercase tracking-widest py-3 px-4 rounded-lg border text-center animate-pulse"
-                style={{
-                  borderColor: "#ef4444",
-                  backgroundColor: "#fef2f2",
-                  color: "#b91c1c",
-                }}
+                style={{ borderColor: "#ef4444", backgroundColor: "#fef2f2", color: "#b91c1c" }}
                 role="alert"
               >
                 {error}
@@ -394,11 +357,7 @@ const AuthPage: React.FC = () => {
             {successMessage && (
               <div
                 className="text-[10px] font-bold uppercase tracking-widest py-3 px-4 rounded-lg border text-center"
-                style={{
-                  borderColor: "#22c55e",
-                  backgroundColor: "#f0fdf4",
-                  color: "#15803d",
-                }}
+                style={{ borderColor: "#22c55e", backgroundColor: "#f0fdf4", color: "#15803d" }}
               >
                 {successMessage}
               </div>
@@ -453,17 +412,10 @@ const AuthPage: React.FC = () => {
             {view === "login" && (
               <div className="flex items-center justify-between pt-2">
                 <label className="flex items-center gap-2 cursor-pointer group">
-                  <div
-                    className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${rememberMe ? "border-[#C5A065] bg-[#C5A065]" : "border-black/20 group-hover:border-[#C5A065]"}`}
-                  >
+                  <div className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${rememberMe ? "border-[#C5A065] bg-[#C5A065]" : "border-black/20 group-hover:border-[#C5A065]"}`}>
                     {rememberMe && <Check size={10} className="text-white" />}
                   </div>
-                  <input
-                    type="checkbox"
-                    className="hidden"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
+                  <input type="checkbox" className="hidden" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D2A26]/60 group-hover:text-[#2D2A26] transition-colors">
                     Se souvenir
                   </span>
@@ -471,7 +423,6 @@ const AuthPage: React.FC = () => {
 
                 <button
                   type="button"
-                  /* Correction : Utilisation de switchView au lieu de navigate */
                   onClick={() => switchView("forgot-password")}
                   className="text-[10px] font-bold uppercase tracking-wider text-[#2D2A26]/60 hover:text-[#C5A065] transition-colors"
                 >
@@ -489,10 +440,10 @@ const AuthPage: React.FC = () => {
               {loading
                 ? "CHARGEMENT..."
                 : view === "login"
-                  ? "SE CONNECTER"
-                  : view === "signup"
-                    ? "CRÉER MON COMPTE"
-                    : "ENVOYER LE LIEN"}
+                ? "SE CONNECTER"
+                : view === "signup"
+                ? "CRÉER MON COMPTE"
+                : "ENVOYER LE LIEN"}
             </button>
           </form>
 
