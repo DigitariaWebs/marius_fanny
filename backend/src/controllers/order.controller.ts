@@ -188,7 +188,7 @@ export const getOrders = async (
     }
 
     // If user is authenticated and not admin, only show their orders
-    if (req.user && req.user.role !== "admin" && req.user.role !== "superuser") {
+    if (req.user && req.user.role !== "admin") {
       query.userId = req.user.id;
     }
 
@@ -245,7 +245,6 @@ export const getOrderById = async (
     if (
       req.user &&
       req.user.role !== "admin" &&
-      req.user.role !== "superuser" &&
       order.userId !== req.user.id
     ) {
       return res.status(403).json({
@@ -290,8 +289,8 @@ export const updateOrder = async (
       });
     }
 
-    // Check permissions - only admin/superuser can update orders
-    if (req.user && req.user.role !== "admin" && req.user.role !== "superuser") {
+    // Check permissions - only admin can update orders
+    if (req.user && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         error: "Vous n'avez pas la permission de modifier cette commande",
@@ -552,7 +551,6 @@ export const getOrderHistory = async (
     if (
       req.user &&
       req.user.role !== "admin" &&
-      req.user.role !== "superuser" &&
       order.userId !== req.user.id
     ) {
       return res.status(403).json({

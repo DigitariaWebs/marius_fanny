@@ -25,7 +25,7 @@ export const updateCurrentUserSchema = z.object({
  */
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  role: z.enum(["user", "superuser", "admin"]).optional(),
+  role: z.enum(["user", "staff", "customerService", "admin"]).optional(),
   profile: userProfileSchema.optional(),
 });
 
@@ -35,7 +35,7 @@ export const updateUserSchema = z.object({
 export const createUserProfileSchema = z.object({
   email: z.string().email(),
   name: z.string().min(2).max(100),
-  role: z.enum(["user", "superuser", "admin"]).optional().default("user"),
+  role: z.enum(["user", "staff", "customerService", "admin"]).optional().default("user"),
 });
 
 /**

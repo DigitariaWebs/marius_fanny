@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   requireAuth,
   requireRole,
-  requireSuperuser,
+  requireStaff,
   requireAdmin,
 } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
@@ -61,7 +61,7 @@ router.get(
 router.get(
   "/",
   requireAuth,
-  requireSuperuser,
+  requireAdmin,
   validateQuery(paginationSchema),
   asyncHandler(userController.getAllUsers),
 );

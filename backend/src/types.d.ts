@@ -1,5 +1,5 @@
 // User role types
-export type UserRole = "user" | "superuser" | "admin";
+export type UserRole = "user" | "staff" | "customerService" | "admin";
 
 // User types for better-auth
 export interface User {

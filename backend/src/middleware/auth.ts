@@ -124,7 +124,7 @@ export function requireRole(...roles: string[]) {
 
 /**
  * Middleware to check if user has minimum role level (hierarchical)
- * Example: requireMinRole("superuser") allows superuser and admin
+ * Example: requireMinRole("staff") allows staff, customerService and admin
  */
 export function requireMinRole(minRole: UserRole) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -166,5 +166,6 @@ export function requireMinRole(minRole: UserRole) {
  * Convenience middleware for common role checks
  */
 export const requireUser = requireMinRole(USER_ROLES.USER);
-export const requireSuperuser = requireMinRole(USER_ROLES.SUPERUSER);
+export const requireStaff = requireMinRole(USER_ROLES.STAFF);
+export const requireCustomerService = requireMinRole(USER_ROLES.CUSTOMER_SERVICE);
 export const requireAdmin = requireMinRole(USER_ROLES.ADMIN);

@@ -26,7 +26,7 @@ async function initializeAuth() {
           role: {
             type: "string",
             required: false,
-            defaultValue: "client", 
+            defaultValue: "user", 
           },
         },
       },
