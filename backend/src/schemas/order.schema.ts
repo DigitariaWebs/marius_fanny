@@ -59,7 +59,13 @@ export const createOrderSchema = z
         "Tous les articles doivent avoir une quantité positive",
       ),
     notes: z.string().optional(),
+    paymentType: z
+      .enum(["full", "deposit", "invoice"], {
+        message: "Le type de paiement doit être full, deposit ou invoice",
+      })
+      .default("full"),
     depositPaid: z.boolean().optional().default(false),
+    squarePaymentId: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -90,6 +96,8 @@ export const updateOrderSchema = z.object({
     .optional(),
   depositPaid: z.boolean().optional(),
   balancePaid: z.boolean().optional(),
+  squarePaymentId: z.string().optional(),
+  squareInvoiceId: z.string().optional(),
   notes: z.string().optional(),
 });
 

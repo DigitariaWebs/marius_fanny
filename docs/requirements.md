@@ -21,14 +21,14 @@
 ### 2. Payment Processing
 
 **Payment Options:**
-- [ ] Full payment upfront
-- [ ] Deposit (50%) with balance due on pick-up/delivery
-- [ ] Square integration for invoice generation and processing
+- [x] Full payment upfront
+- [x] Deposit (50%) with balance due on pick-up/delivery
+- [x] Square integration for invoice generation and processing
 
 **Payment Tracking:**
-- [ ] Payment status per order
-- [ ] Outstanding balances
-- [ ] Payment history
+- [x] Payment status per order
+- [x] Outstanding balances
+- [x] Payment history
 
 ### 3. Order Modifications
 
@@ -39,8 +39,8 @@
 ### 4. Communication & Notifications
 
 **Email Confirmations:**
-- [ ] Order confirmation sent to client
-- [ ] Payment confirmations
+- [x] Order confirmation sent to client
+- [x] Payment confirmations
 - [ ] Order ready notifications
 
 ### 5. Administrative Dashboard

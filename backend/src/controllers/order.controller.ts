@@ -11,6 +11,7 @@ import {
   validateMinimumOrder,
   getAllDeliveryZones,
 } from "../utils/deliveryZones.js";
+import { sendOrderReceipt } from "../utils/emailService.js";
 
 // Tax rate for Quebec (TPS + TVQ)
 const TAX_RATE = 0.14975;
@@ -27,13 +28,18 @@ export const createOrder = async (
     const orderData = req.body;
 
     // Calculate totals
-    const subtotal = orderData.items.reduce((sum, item) => sum + item.amount, 0);
+    const subtotal = orderData.items.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
     const taxAmount = subtotal * TAX_RATE;
     let deliveryFee = 0;
 
     // If delivery, calculate and validate delivery fee
     if (orderData.deliveryType === "delivery" && orderData.deliveryAddress) {
-      const deliveryInfo = calculateDeliveryFee(orderData.deliveryAddress.postalCode);
+      const deliveryInfo = calculateDeliveryFee(
+        orderData.deliveryAddress.postalCode,
+      );
 
       if (!deliveryInfo.isValid) {
         return res.status(400).json({
@@ -61,11 +67,31 @@ export const createOrder = async (
     const total = subtotal + taxAmount + deliveryFee;
     const depositAmount = total * 0.5; // 50% deposit
 
+    // Determine payment status based on payment type and depositPaid flag
+    let depositPaid = false;
+    let balancePaid = false;
+
+    if (orderData.paymentType === "full" && orderData.depositPaid) {
+      // Full payment made upfront
+      depositPaid = true;
+      balancePaid = true;
+    } else if (orderData.paymentType === "deposit" && orderData.depositPaid) {
+      // Deposit payment made
+      depositPaid = true;
+      balancePaid = false;
+    } else if (orderData.paymentType === "invoice") {
+      // Invoice - no payment yet
+      depositPaid = false;
+      balancePaid = false;
+    }
+
     // Create order
     const order = new Order({
       userId: req.user?.id,
       clientInfo: orderData.clientInfo,
-      pickupDate: orderData.pickupDate ? new Date(orderData.pickupDate) : undefined,
+      pickupDate: orderData.pickupDate
+        ? new Date(orderData.pickupDate)
+        : undefined,
       pickupLocation: orderData.pickupLocation,
       deliveryType: orderData.deliveryType,
       deliveryAddress: orderData.deliveryAddress,
@@ -75,12 +101,47 @@ export const createOrder = async (
       deliveryFee,
       total,
       depositAmount,
-      depositPaid: orderData.depositPaid || false,
-      balancePaid: false,
+      paymentType: orderData.paymentType || "full",
+      depositPaid,
+      balancePaid,
+      squarePaymentId: orderData.squarePaymentId,
       notes: orderData.notes,
     });
 
     await order.save();
+
+    // Send order receipt email based on payment type
+    try {
+      const customerName = `${orderData.clientInfo.firstName} ${orderData.clientInfo.lastName}`;
+
+      await sendOrderReceipt(orderData.paymentType || "full", {
+        email: orderData.clientInfo.email,
+        name: customerName,
+        orderNumber: order.orderNumber,
+        items: orderData.items.map((item) => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          amount: item.amount,
+        })),
+        subtotal,
+        taxAmount,
+        deliveryFee,
+        total,
+        depositAmount: depositPaid ? depositAmount : undefined,
+        paymentId: orderData.squarePaymentId,
+        invoiceUrl: undefined, // Will be updated via webhook or separate call
+      });
+
+      console.log(
+        `✅ Order receipt email sent to ${orderData.clientInfo.email}`,
+      );
+    } catch (emailError: any) {
+      // Log email error but don't fail the order creation
+      console.error(
+        `⚠️ Failed to send order receipt email:`,
+        emailError.message,
+      );
+    }
 
     res.status(201).json({
       success: true,

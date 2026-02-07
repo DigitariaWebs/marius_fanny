@@ -411,3 +411,201 @@ export const getSquareConfig = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Create a Square invoice
+ * POST /api/payments/invoice
+ */
+export const createInvoice = async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  console.log(`🧾 [INVOICE] Creating Square invoice`);
+
+  try {
+    const {
+      orderId,
+      customerEmail,
+      customerName,
+      items,
+      deliveryFee = 0,
+      taxAmount,
+      total,
+      dueDate,
+      notes,
+    } = req.body;
+
+    // Validate required fields
+    if (!orderId || !customerEmail || !customerName || !items || !total) {
+      console.error(`❌ [INVOICE] Missing required fields`);
+      return res.status(400).json({
+        success: false,
+        error: "orderId, customerEmail, customerName, items, and total are required",
+      });
+    }
+
+    console.log(`📧 [INVOICE] Creating invoice for ${customerEmail} (Order: ${orderId})`);
+
+    // Create idempotency key
+    const idempotencyKey = randomUUID();
+
+    // Build line items for the invoice
+    const lineItems = items.map((item: any, index: number) => ({
+      name: item.name,
+      quantity: item.quantity.toString(),
+      itemType: "ITEM",
+      basePriceMoney: {
+        amount: BigInt(Math.round(item.unitPrice * 100)),
+        currency: "CAD",
+      },
+    }));
+
+    // Add delivery fee as a line item if applicable
+    if (deliveryFee > 0) {
+      lineItems.push({
+        name: "Frais de livraison",
+        quantity: "1",
+        itemType: "ITEM",
+        basePriceMoney: {
+          amount: BigInt(Math.round(deliveryFee * 100)),
+          currency: "CAD",
+        },
+      });
+    }
+
+    // Calculate due date (default to 7 days from now)
+    const invoiceDueDate = dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Create the invoice
+    const invoiceRequest: any = {
+      idempotencyKey,
+      locationId: squareConfig.locationId,
+      order: {
+        locationId: squareConfig.locationId,
+        referenceId: orderId,
+        lineItems,
+        taxes: [
+          {
+            name: "TPS + TVQ",
+            percentage: "14.975",
+            scope: "ORDER",
+          },
+        ],
+      },
+      invoiceNumber: orderId,
+      title: `Commande ${orderId}`,
+      description: notes || `Facture pour la commande ${orderId}`,
+      scheduledAt: new Date().toISOString(),
+      dueDate: invoiceDueDate,
+      primaryRecipient: {
+        emailAddress: customerEmail,
+        givenName: customerName.split(" ")[0] || customerName,
+        familyName: customerName.split(" ").slice(1).join(" ") || "",
+      },
+      paymentRequests: [
+        {
+          requestType: "BALANCE",
+          dueDate: invoiceDueDate,
+          automaticPaymentSource: "NONE",
+        },
+      ],
+      deliveryMethod: "EMAIL",
+      acceptedPaymentMethods: {
+        card: true,
+        squareGiftCard: false,
+        bankAccount: false,
+        buyNowPayLater: false,
+      },
+    };
+
+    const response = await squareClient.invoices.create(invoiceRequest);
+    const invoice = response.invoice;
+    const processingTime = Date.now() - startTime;
+
+    console.log(
+      `✅ [INVOICE] Invoice created successfully! ID: ${invoice?.id}, Number: ${invoice?.invoiceNumber}, Processing time: ${processingTime}ms`,
+    );
+
+    // Publish the invoice to make it active and send email
+    if (invoice?.id) {
+      try {
+        console.log(`📤 [INVOICE] Publishing invoice ${invoice.id} to send email...`);
+        const publishResponse = await squareClient.invoices.publish({
+          invoiceId: invoice.id,
+          version: invoice.version!,
+          idempotencyKey: randomUUID(),
+        });
+        console.log(`✅ [INVOICE] Invoice published and email sent!`);
+      } catch (publishError: any) {
+        console.error(`⚠️ [INVOICE] Failed to publish invoice:`, publishError.message);
+        // Continue even if publish fails - invoice is still created
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        invoiceId: invoice?.id,
+        invoiceNumber: invoice?.invoiceNumber,
+        status: invoice?.status,
+        publicUrl: invoice?.publicUrl,
+        dueDate: invoice?.paymentRequests?.[0]?.dueDate,
+      },
+    });
+  } catch (error: any) {
+    const processingTime = Date.now() - startTime;
+    console.error(`❌ [INVOICE] Invoice creation failed after ${processingTime}ms:`, error);
+
+    if (error instanceof SquareError) {
+      console.error(`🚨 [INVOICE] SquareError:`, error.body);
+      return res.status(error.statusCode || 400).json({
+        success: false,
+        error: error.message || "Failed to create invoice",
+        details: (error.body as any)?.errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message || "An error occurred while creating invoice",
+    });
+  }
+};
+
+/**
+ * Get a Square invoice by ID
+ * GET /api/payments/invoice/:invoiceId
+ */
+export const getInvoice = async (req: Request, res: Response) => {
+  const { invoiceId } = req.params;
+  console.log(`🔍 [INVOICE] Fetching invoice: ${invoiceId}`);
+
+  try {
+    const response = await squareClient.invoices.get({
+      invoiceId,
+    });
+    const invoice = response.invoice;
+
+    console.log(
+      `✅ [INVOICE] Invoice retrieved: ${invoiceId}, Status: ${invoice?.status}`,
+    );
+
+    res.json({
+      success: true,
+      data: invoice,
+    });
+  } catch (error: any) {
+    console.error(`❌ [INVOICE] Error fetching invoice ${invoiceId}:`, error);
+
+    if (error instanceof SquareError) {
+      return res.status(error.statusCode || 404).json({
+        success: false,
+        error: error.message || "Invoice not found",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch invoice",
+    });
+  }
+};
+

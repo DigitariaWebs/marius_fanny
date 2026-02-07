@@ -38,7 +38,39 @@ export const listPaymentsSchema = z.object({
   cursor: z.string().optional(),
 });
 
+/**
+ * Create Invoice Schema
+ * POST /api/payments/invoice
+ */
+export const createInvoiceSchema = z.object({
+  orderId: z.string().min(1, "Order ID is required"),
+  customerEmail: z.string().email("Valid email is required"),
+  customerName: z.string().min(1, "Customer name is required"),
+  items: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.number().positive(),
+      unitPrice: z.number().positive(),
+    })
+  ),
+  deliveryFee: z.number().min(0).optional().default(0),
+  taxAmount: z.number().min(0),
+  total: z.number().positive(),
+  dueDate: z.string().optional(), // ISO date string
+  notes: z.string().optional(),
+});
+
+/**
+ * Get Invoice Schema
+ * GET /api/payments/invoice/:invoiceId
+ */
+export const getInvoiceSchema = z.object({
+  invoiceId: z.string().min(1, "Invoice ID is required"),
+});
+
 // Type exports
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export type RefundPaymentInput = z.infer<typeof refundPaymentSchema>;
 export type ListPaymentsInput = z.infer<typeof listPaymentsSchema>;
+export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
+export type GetInvoiceInput = z.infer<typeof getInvoiceSchema>;

@@ -31,6 +31,7 @@ const Checkout: React.FC = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [paymentOption, setPaymentOption] = useState<"full" | "deposit" | "invoice">("full");
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
 
@@ -100,8 +101,14 @@ const Checkout: React.FC = () => {
       return;
     }
 
+    // For invoice option, create order directly without payment
+    if (paymentOption === "invoice") {
+      handleInvoiceOrder();
+      return;
+    }
+
     console.log(
-      `💳 [CHECKOUT] Customer info collected, showing payment form for ${customerName} (${customerEmail}, ${customerPhone})`,
+      `💳 [CHECKOUT] Customer info collected, showing payment form for ${customerName} (${customerEmail}, ${customerPhone}), payment type: ${paymentOption}`,
     );
     setShowPaymentForm(true);
   };
@@ -114,7 +121,7 @@ const Checkout: React.FC = () => {
     const status = paymentResult.status;
 
     console.log(
-      `✅ [CHECKOUT] Payment successful! ID: ${paymentId}, Status: ${status}, Amount: ${amount}$`,
+      `✅ [CHECKOUT] Payment successful! ID: ${paymentId}, Status: ${status}, Amount: ${amount}$, Payment Type: ${paymentOption}`,
     );
 
     // Save order to backend
@@ -151,7 +158,9 @@ const Checkout: React.FC = () => {
           unitPrice: item.price,
           amount: item.price * item.quantity,
         })),
-        depositPaid: true, // Full payment upfront
+        paymentType: paymentOption,
+        depositPaid: true, // Payment was made
+        squarePaymentId: paymentId,
         notes: `Square Payment ID: ${paymentId}`,
       };
 
@@ -180,7 +189,8 @@ const Checkout: React.FC = () => {
         `🎉 Paiement réussi!\n\n` +
         `📄 Numéro de commande: ${result.data.orderNumber}\n` +
         `💰 Montant: ${amount}$ CAD\n` +
-        `📊 Statut: ${status}\n\n` +
+        `📊 Statut: ${status}\n` +
+        `💳 Type de paiement: ${paymentOption === "full" ? "Paiement complet" : "Acompte (50%)"}\n\n` +
         `Votre commande a été confirmée. Vous recevrez un email de confirmation sous peu.`;
 
       alert(successMessage);
@@ -197,6 +207,137 @@ const Checkout: React.FC = () => {
       );
       // Still redirect but user should contact support
       navigate("/");
+    }
+  };
+
+  const handleInvoiceOrder = async () => {
+    console.log("🧾 [CHECKOUT] Creating order with invoice payment option...");
+
+    try {
+      // Prepare order data
+      const nameParts = customerName.trim().split(" ");
+      const firstName = nameParts[0] || customerName;
+      const lastName =
+        nameParts.length > 1 ? nameParts.slice(1).join(" ") : "N/A";
+
+      const orderData = {
+        clientInfo: {
+          firstName: firstName,
+          lastName: lastName,
+          email: customerEmail,
+          phone: customerPhone,
+        },
+        deliveryType: state.postalCode ? "delivery" : "pickup",
+        deliveryAddress: state.postalCode
+          ? {
+              street: "À déterminer",
+              city: "À déterminer",
+              province: "QC",
+              postalCode: state.postalCode,
+            }
+          : undefined,
+        pickupLocation: "Laval",
+        items: state.items.map((item) => ({
+          productId: item.id,
+          productName: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          amount: item.price * item.quantity,
+        })),
+        paymentType: "invoice",
+        depositPaid: false,
+        notes: "Paiement par facture Square",
+      };
+
+      // Create order first
+      const orderResponse = await fetch(`${normalizedApiUrl}/api/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(orderData),
+      });
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.error || "Failed to create order");
+      }
+
+      const orderResult = await orderResponse.json();
+      console.log("✅ [CHECKOUT] Order created:", orderResult.data);
+
+      // Create Square invoice
+      const invoiceData = {
+        orderId: orderResult.data.orderNumber,
+        customerEmail: customerEmail,
+        customerName: customerName,
+        items: state.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+        })),
+        deliveryFee: state.deliveryFee,
+        taxAmount: orderResult.data.taxAmount,
+        total: state.total,
+        notes: `Commande ${orderResult.data.orderNumber}`,
+      };
+
+      const invoiceResponse = await fetch(
+        `${normalizedApiUrl}/api/payments/invoice`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(invoiceData),
+        }
+      );
+
+      if (!invoiceResponse.ok) {
+        const errorData = await invoiceResponse.json();
+        throw new Error(errorData.error || "Failed to create invoice");
+      }
+
+      const invoiceResult = await invoiceResponse.json();
+      console.log("✅ [CHECKOUT] Invoice created:", invoiceResult.data);
+
+      // Update order with invoice ID
+      await fetch(
+        `${normalizedApiUrl}/api/orders/${orderResult.data._id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            squareInvoiceId: invoiceResult.data.invoiceId,
+          }),
+        }
+      );
+
+      // Clear cart
+      clearCart();
+
+      // Show success message
+      const successMessage =
+        `🎉 Commande créée avec succès!\n\n` +
+        `📄 Numéro de commande: ${orderResult.data.orderNumber}\n` +
+        `🧾 Une facture vous a été envoyée par email à ${customerEmail}\n` +
+        `💰 Montant total: ${state.total.toFixed(2)}$ CAD\n\n` +
+        `Vous pouvez payer la facture en cliquant sur le lien dans l'email.`;
+
+      alert(successMessage);
+      navigate("/");
+    } catch (error: any) {
+      console.error("❌ [CHECKOUT] Failed to create invoice order:", error);
+      alert(
+        `⚠️ Une erreur est survenue lors de la création de votre commande.\n\n` +
+          `Erreur: ${error.message}\n\n` +
+          `Veuillez réessayer ou contacter le support.`
+      );
     }
   };
 
@@ -323,22 +464,94 @@ const Checkout: React.FC = () => {
                         required
                       />
                     </div>
+
+                    {/* Payment Options */}
+                    <div className="pt-4 border-t border-stone-200">
+                      <label className="block text-sm text-stone-600 mb-3 font-medium">
+                        Options de paiement *
+                      </label>
+                      <div className="space-y-3">
+                        <label className="flex items-start gap-3 p-4 border-2 border-stone-200 rounded-lg cursor-pointer hover:border-[#C5A065] transition-colors">
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            value="full"
+                            checked={paymentOption === "full"}
+                            onChange={(e) => setPaymentOption(e.target.value as "full" | "deposit" | "invoice")}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-[#2D2A26]">
+                              💳 Paiement complet
+                            </div>
+                            <div className="text-sm text-stone-500">
+                              Payez le montant total maintenant ({state.total.toFixed(2)}$ CAD)
+                            </div>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start gap-3 p-4 border-2 border-stone-200 rounded-lg cursor-pointer hover:border-[#C5A065] transition-colors">
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            value="deposit"
+                            checked={paymentOption === "deposit"}
+                            onChange={(e) => setPaymentOption(e.target.value as "full" | "deposit" | "invoice")}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-[#2D2A26]">
+                              💰 Acompte (50%)
+                            </div>
+                            <div className="text-sm text-stone-500">
+                              Payez 50% maintenant ({(state.total * 0.5).toFixed(2)}$ CAD), 
+                              le reste lors du ramassage/livraison
+                            </div>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start gap-3 p-4 border-2 border-stone-200 rounded-lg cursor-pointer hover:border-[#C5A065] transition-colors">
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            value="invoice"
+                            checked={paymentOption === "invoice"}
+                            onChange={(e) => setPaymentOption(e.target.value as "full" | "deposit" | "invoice")}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-[#2D2A26]">
+                              🧾 Payer plus tard (Facture)
+                            </div>
+                            <div className="text-sm text-stone-500">
+                              Recevez une facture Square par email pour payer plus tard
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
                       className="w-full bg-[#2D2A26] text-white py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:bg-[#C5A065] transition-all shadow-lg"
                     >
                       <CreditCard size={18} />
-                      Continuer au paiement
+                      {paymentOption === "invoice" ? "Créer la commande" : "Continuer au paiement"}
                     </button>
                   </form>
                 </div>
               ) : (
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
-                  <h2 className="text-xl font-serif text-[#2D2A26] mb-4">
+                  <h2 className="text-xl font-serif text-[#2D2A26] mb-2">
                     Informations de paiement
                   </h2>
+                  <p className="text-sm text-stone-500 mb-4">
+                    {paymentOption === "full"
+                      ? `Montant à payer: ${state.total.toFixed(2)}$ CAD (Paiement complet)`
+                      : `Montant à payer: ${(state.total * 0.5).toFixed(2)}$ CAD (Acompte 50%)`}
+                  </p>
                   <SquarePaymentForm
-                    amount={state.total}
+                    amount={paymentOption === "full" ? state.total : state.total * 0.5}
                     onPaymentSuccess={handlePaymentSuccess}
                     onPaymentError={handlePaymentError}
                     customerEmail={customerEmail}
@@ -413,6 +626,17 @@ const Checkout: React.FC = () => {
                       {state.total.toFixed(2)} $
                     </span>
                   </div>
+                  {paymentOption === "deposit" && (
+                    <div className="flex justify-between text-lg font-medium text-[#C5A065] pt-2 border-t border-stone-200">
+                      <span>Acompte (50%)</span>
+                      <span>{(state.total * 0.5).toFixed(2)} $</span>
+                    </div>
+                  )}
+                  {paymentOption === "invoice" && (
+                    <div className="text-sm text-stone-500 pt-2 border-t border-stone-200">
+                      Une facture vous sera envoyée pour le montant total
+                    </div>
+                  )}
                 </div>
               </div>
 

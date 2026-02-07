@@ -42,7 +42,10 @@ export interface IOrder extends Document {
   depositPaidAt?: Date;
   balancePaid: boolean;
   balancePaidAt?: Date;
+  paymentType: "full" | "deposit" | "invoice"; // Payment option chosen by customer
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
+  squarePaymentId?: string; // Square payment ID for tracking
+  squareInvoiceId?: string; // Square invoice ID for invoice payments
   status:
     | "pending"
     | "confirmed"
@@ -233,11 +236,26 @@ const OrderSchema = new Schema<IOrder>(
     balancePaidAt: {
       type: Date,
     },
+    paymentType: {
+      type: String,
+      enum: ["full", "deposit", "invoice"],
+      required: true,
+      default: "full",
+      index: true,
+    },
     paymentStatus: {
       type: String,
       enum: ["unpaid", "deposit_paid", "paid"],
       default: "unpaid",
       index: true,
+    },
+    squarePaymentId: {
+      type: String,
+      trim: true,
+    },
+    squareInvoiceId: {
+      type: String,
+      trim: true,
     },
     status: {
       type: String,
