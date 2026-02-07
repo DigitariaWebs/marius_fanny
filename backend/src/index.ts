@@ -47,9 +47,18 @@ const mongooseOptions = {
 
 mongoose
   .connect(MONGODB_URI, mongooseOptions)
-  .then(() => {
+  .then(async () => {
     console.log("✅ MONGOOSE CONNECTÉ");
     validateSquareConfig();
+
+    // Initialize auth after database connection
+    try {
+      const auth = await getAuth();
+      authHandler = toNodeHandler(auth);
+      console.log("✅ Better Auth initialized");
+    } catch (error) {
+      console.error("❌ Failed to initialize Better Auth:", error);
+    }
   })
   .catch((err) => {
     console.error("❌ ERREUR CONNEXION MONGOOSE:", err);
@@ -77,8 +86,8 @@ let authHandler: any = null;
 app.all(/^\/api\/auth\/.*/, async (req, res) => {
   try {
     if (!authHandler) {
-      const auth = await getAuth();
-      authHandler = toNodeHandler(auth);
+      console.log("⚠️ Auth handler not initialized yet");
+      return res.status(503).json({ error: "Auth service not ready" });
     }
     return authHandler(req, res);
   } catch (error) {
