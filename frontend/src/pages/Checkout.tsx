@@ -14,6 +14,7 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  preparationTimeHours?: number;
 }
 
 interface CheckoutState {
@@ -489,14 +490,29 @@ const Checkout: React.FC = () => {
                   {state.items.map((item) => (
                     <div
                       key={item.id}
-                      className="flex justify-between items-center text-sm"
+                      className="text-sm"
                     >
-                      <span className="text-stone-600">
-                        {item.name} × {item.quantity}
-                      </span>
-                      <span className="font-medium">
-                        {(item.price * item.quantity).toFixed(2)} $
-                      </span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-stone-600">
+                          {item.name} × {item.quantity}
+                        </span>
+                        <span className="font-medium">
+                          {(item.price * item.quantity).toFixed(2)} $
+                        </span>
+                      </div>
+                      {item.preparationTimeHours && item.preparationTimeHours > 0 && (
+                        <div className="mt-1 p-2 rounded text-xs" style={{
+                          backgroundColor: item.preparationTimeHours >= 24 ? '#fef2f2' : item.preparationTimeHours >= 12 ? '#fffbeb' : '#f0fdf4',
+                          color: item.preparationTimeHours >= 24 ? '#dc2626' : item.preparationTimeHours >= 12 ? '#d97706' : '#16a34a'
+                        }}>
+                          ⏰ {item.preparationTimeHours >= 24
+                            ? `Préparation: ${item.preparationTimeHours / 24} jour${item.preparationTimeHours / 24 > 1 ? 's' : ''} requis`
+                            : item.preparationTimeHours >= 12
+                            ? `Préparation: ${item.preparationTimeHours} heures requises`
+                            : `Prêt en ${item.preparationTimeHours} heure${item.preparationTimeHours > 1 ? 's' : ''}`
+                          }
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

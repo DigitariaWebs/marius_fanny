@@ -32,6 +32,7 @@ export interface Product {
   updatedAt: string;
   sales?: number;
   revenue?: number;
+  preparationTimeHours?: number; // Hours required to prepare the product
 }
 
 // Statistics Types

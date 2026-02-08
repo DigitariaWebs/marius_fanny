@@ -262,6 +262,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 5,
     description: "Gâteau signature aux saveurs délicates",
+    preparationTimeHours: 48, // Requires 48 hours preparation for special cakes
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },
@@ -274,6 +275,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 3,
     description: "Tarte au citron avec meringue italienne",
+    preparationTimeHours: 24, // Requires 24 hours preparation
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },
@@ -286,6 +288,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 20,
     description: "Pain tradition français",
+    preparationTimeHours: undefined, // Can be prepared immediately
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },
@@ -298,6 +301,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 10,
     description: "Pain de campagne bio au levain",
+    preparationTimeHours: undefined, // Can be prepared immediately
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },
@@ -310,6 +314,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 50,
     description: "Croissant artisanal au beurre",
+    preparationTimeHours: undefined, // Can be prepared immediately
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },
@@ -322,6 +327,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 30,
     description: "Pain au chocolat avec chocolat belge",
+    preparationTimeHours: undefined, // Can be prepared immediately
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },
@@ -334,6 +340,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 10,
     description: "Boîte de 12 macarons aux saveurs variées",
+    preparationTimeHours: 72, // Requires 72 hours preparation for elaborate pastries
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },
@@ -346,6 +353,7 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: 1,
     maxOrderQuantity: 15,
     description: "Assortiment de chocolats pralinés maison",
+    preparationTimeHours: 48, // Requires 48 hours preparation for chocolate work
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
   },

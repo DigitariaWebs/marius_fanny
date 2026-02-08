@@ -274,6 +274,31 @@ export default function OrderForm({
     );
   };
 
+  const validatePreparationTime = (orderDate: string, productId: number) => {
+    const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+    if (!product || !product.preparationTimeHours) return true;
+
+    const orderDateTime = new Date(orderDate);
+    const now = new Date();
+    const timeDiff = orderDateTime.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+    return hoursDiff >= product.preparationTimeHours;
+  };
+
+  const getPreparationTimeWarning = (productId: number) => {
+    const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+    if (!product || !product.preparationTimeHours) return null;
+
+    if (product.preparationTimeHours >= 24) {
+      return `Ce produit nécessite ${product.preparationTimeHours / 24} jour${product.preparationTimeHours / 24 > 1 ? "s" : ""} de préparation.`;
+    } else if (product.preparationTimeHours >= 12) {
+      return `Ce produit nécessite ${product.preparationTimeHours} heures de préparation.`;
+    } else {
+      return `Ce produit nécessite ${product.preparationTimeHours} heure${product.preparationTimeHours > 1 ? "s" : ""} de préparation.`;
+    }
+  };
+
   const addItem = () => {
     const newItem: OrderFormItem = {
       id: Date.now().toString(),
@@ -419,6 +444,17 @@ export default function OrderForm({
       }
     });
 
+    // Validate preparation time for each item
+    formData.items.forEach((item, index) => {
+      if (item.productId) {
+        if (!validatePreparationTime(formData.date, item.productId)) {
+          const warning = getPreparationTimeWarning(item.productId);
+          newErrors[`item_${index}_preparation`] =
+            warning || "Temps de préparation insuffisant";
+        }
+      }
+    });
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -431,647 +467,625 @@ export default function OrderForm({
   };
 
   return (
-    <form
-      id="order-form"
-      onSubmit={handleSubmit}
-      className="space-y-6"
-    >
-        {/* Client Information */}
-        <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200">
-          <div>
-            <Label htmlFor="date" className="text-xs text-gray-600">
-              DATE:
-            </Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleInputChange("date", e.target.value)}
-              className={errors.date ? "border-red-500" : ""}
-            />
-            {errors.date && (
-              <p className="text-xs text-red-500 mt-1">{errors.date}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="email" className="text-xs text-gray-600">
-              EMAIL:
-            </Label>
-            <Popover open={emailOpen} onOpenChange={setEmailOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={emailOpen}
-                  className={`w-full justify-start text-left font-normal ${
-                    errors.email ? "border-red-500" : ""
-                  }`}
-                >
-                  {emailSearch || "Rechercher un client..."}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput
-                    placeholder="Rechercher par email..."
-                    value={emailSearch}
-                    onValueChange={handleEmailChange}
-                  />
-                  <CommandList>
-                    <CommandEmpty>Aucun client trouvé</CommandEmpty>
-                    <CommandGroup>
-                      {filteredClients.map((client) => (
-                        <CommandItem
-                          key={client.id}
-                          value={client.email}
-                          onSelect={() => handleClientSelect(client)}
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {client.firstName} {client.lastName}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {client.email}
-                            </span>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {errors.email && (
-              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="firstName" className="text-xs text-gray-600">
-              PRÉNOM:
-            </Label>
-            <Input
-              id="firstName"
-              type="text"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange("firstName", e.target.value)}
-              className={errors.firstName ? "border-red-500" : ""}
-              placeholder="Prénom"
-            />
-            {errors.firstName && (
-              <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="lastName" className="text-xs text-gray-600">
-              NOM DE FAMILLE:
-            </Label>
-            <Input
-              id="lastName"
-              type="text"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange("lastName", e.target.value)}
-              className={errors.lastName ? "border-red-500" : ""}
-              placeholder="Nom de famille"
-            />
-            {errors.lastName && (
-              <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="phone" className="text-xs text-gray-600">
-              TÉL:
-            </Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-              className={errors.phone ? "border-red-500" : ""}
-              placeholder="(___) ___-____"
-            />
-            {errors.phone && (
-              <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
-            )}
-          </div>
-
-          <div className="col-span-2">
-            {selectedClient && (
-              <div className="text-xs bg-green-50 text-green-700 p-2 rounded-md">
-                Client existant: {selectedClient.firstName}{" "}
-                {selectedClient.lastName}
-              </div>
-            )}
-            {!selectedClient && emailSearch && (
-              <div className="text-xs bg-blue-50 text-blue-700 p-2 rounded-md">
-                Nouveau client
-              </div>
-            )}
-          </div>
+    <form id="order-form" onSubmit={handleSubmit} className="space-y-6">
+      {/* Client Information */}
+      <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200">
+        <div>
+          <Label htmlFor="date" className="text-xs text-gray-600">
+            DATE:
+          </Label>
+          <Input
+            id="date"
+            type="date"
+            value={formData.date}
+            onChange={(e) => handleInputChange("date", e.target.value)}
+            className={errors.date ? "border-red-500" : ""}
+          />
+          {errors.date && (
+            <p className="text-xs text-red-500 mt-1">{errors.date}</p>
+          )}
         </div>
 
-        {/* Pickup/Delivery Options */}
-        <div className="pb-4 border-b border-gray-200">
-          <div className="mb-4">
-            <Label className="text-xs text-gray-600 mb-2">TYPE:</Label>
+        <div>
+          <Label htmlFor="email" className="text-xs text-gray-600">
+            EMAIL:
+          </Label>
+          <Popover open={emailOpen} onOpenChange={setEmailOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={emailOpen}
+                className={`w-full justify-start text-left font-normal ${
+                  errors.email ? "border-red-500" : ""
+                }`}
+              >
+                {emailSearch || "Rechercher un client..."}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput
+                  placeholder="Rechercher par email..."
+                  value={emailSearch}
+                  onValueChange={handleEmailChange}
+                />
+                <CommandList>
+                  <CommandEmpty>Aucun client trouvé</CommandEmpty>
+                  <CommandGroup>
+                    {filteredClients.map((client) => (
+                      <CommandItem
+                        key={client.id}
+                        value={client.email}
+                        onSelect={() => handleClientSelect(client)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {client.firstName} {client.lastName}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {client.email}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {errors.email && (
+            <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="firstName" className="text-xs text-gray-600">
+            PRÉNOM:
+          </Label>
+          <Input
+            id="firstName"
+            type="text"
+            value={formData.firstName}
+            onChange={(e) => handleInputChange("firstName", e.target.value)}
+            className={errors.firstName ? "border-red-500" : ""}
+            placeholder="Prénom"
+          />
+          {errors.firstName && (
+            <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="lastName" className="text-xs text-gray-600">
+            NOM DE FAMILLE:
+          </Label>
+          <Input
+            id="lastName"
+            type="text"
+            value={formData.lastName}
+            onChange={(e) => handleInputChange("lastName", e.target.value)}
+            className={errors.lastName ? "border-red-500" : ""}
+            placeholder="Nom de famille"
+          />
+          {errors.lastName && (
+            <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="phone" className="text-xs text-gray-600">
+            TÉL:
+          </Label>
+          <Input
+            id="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => handleInputChange("phone", e.target.value)}
+            className={errors.phone ? "border-red-500" : ""}
+            placeholder="(___) ___-____"
+          />
+          {errors.phone && (
+            <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+          )}
+        </div>
+
+        <div className="col-span-2">
+          {selectedClient && (
+            <div className="text-xs bg-green-50 text-green-700 p-2 rounded-md">
+              Client existant: {selectedClient.firstName}{" "}
+              {selectedClient.lastName}
+            </div>
+          )}
+          {!selectedClient && emailSearch && (
+            <div className="text-xs bg-blue-50 text-blue-700 p-2 rounded-md">
+              Nouveau client
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Pickup/Delivery Options */}
+      <div className="pb-4 border-b border-gray-200">
+        <div className="mb-4">
+          <Label className="text-xs text-gray-600 mb-2">TYPE:</Label>
+          <RadioGroup
+            value={formData.deliveryType}
+            onValueChange={(value) => handleInputChange("deliveryType", value)}
+            className="flex gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="pickup" id="pickup" />
+              <Label htmlFor="pickup" className="text-sm font-normal">
+                Ramassage
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="delivery" id="delivery" />
+              <Label htmlFor="delivery" className="text-sm font-normal">
+                Livraison
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* Pickup Location - Only for pickup */}
+        {formData.deliveryType === "pickup" && (
+          <div>
+            <Label className="text-xs text-gray-600 mb-2">
+              LIEU DE RAMASSAGE:
+            </Label>
             <RadioGroup
-              value={formData.deliveryType}
+              value={formData.pickupLocation}
               onValueChange={(value) =>
-                handleInputChange("deliveryType", value)
+                handleInputChange("pickupLocation", value)
               }
               className="flex gap-4"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="pickup" id="pickup" />
-                <Label htmlFor="pickup" className="text-sm font-normal">
-                  Ramassage
+                <RadioGroupItem value="Laval" id="laval" />
+                <Label htmlFor="laval" className="text-sm font-normal">
+                  Laval
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="delivery" id="delivery" />
-                <Label htmlFor="delivery" className="text-sm font-normal">
-                  Livraison
+                <RadioGroupItem value="Montreal" id="montreal" />
+                <Label htmlFor="montreal" className="text-sm font-normal">
+                  Montréal
                 </Label>
               </div>
             </RadioGroup>
+            {errors.pickupLocation && (
+              <p className="text-xs text-red-500 mt-1">
+                {errors.pickupLocation}
+              </p>
+            )}
           </div>
+        )}
+      </div>
 
-          {/* Pickup Location - Only for pickup */}
-          {formData.deliveryType === "pickup" && (
-            <div>
-              <Label className="text-xs text-gray-600 mb-2">
-                LIEU DE RAMASSAGE:
+      {/* Delivery Address - Only for delivery */}
+      {formData.deliveryType === "delivery" && (
+        <div className="space-y-4 pb-4 border-b border-gray-200">
+          <Label className="text-xs text-gray-600">ADRESSE DE LIVRAISON:</Label>
+
+          {selectedClient && selectedClient.addresses.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-gray-500">
+                Adresses enregistrées:
               </Label>
               <RadioGroup
-                value={formData.pickupLocation}
-                onValueChange={(value) =>
-                  handleInputChange("pickupLocation", value)
-                }
-                className="flex gap-4"
+                value={selectedAddressId?.toString()}
+                onValueChange={(value) => handleAddressSelect(parseInt(value))}
+                className="space-y-2"
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Laval" id="laval" />
-                  <Label htmlFor="laval" className="text-sm font-normal">
-                    Laval
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Montreal" id="montreal" />
-                  <Label htmlFor="montreal" className="text-sm font-normal">
-                    Montréal
-                  </Label>
-                </div>
+                {selectedClient.addresses.map((address) => (
+                  <div key={address.id} className="flex items-start space-x-2">
+                    <RadioGroupItem
+                      value={address.id.toString()}
+                      id={`address-${address.id}`}
+                    />
+                    <Label
+                      htmlFor={`address-${address.id}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      <div>
+                        <div>{address.street}</div>
+                        <div className="text-xs text-gray-500">
+                          {address.city}, {address.province}{" "}
+                          {address.postalCode}
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                ))}
               </RadioGroup>
-              {errors.pickupLocation && (
+              <div className="text-xs text-gray-500 mt-2">
+                Ou entrez une nouvelle adresse:
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label htmlFor="street" className="text-xs text-gray-600">
+                RUE:
+              </Label>
+              <Input
+                id="street"
+                type="text"
+                value={formData.deliveryAddress?.street || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    deliveryAddress: {
+                      ...prev.deliveryAddress,
+                      street: e.target.value,
+                      city: prev.deliveryAddress?.city || "",
+                      province: prev.deliveryAddress?.province || "",
+                      postalCode: prev.deliveryAddress?.postalCode || "",
+                    },
+                  }))
+                }
+                className={errors.deliveryAddress ? "border-red-500" : ""}
+                placeholder="123 Rue Example"
+              />
+              {errors.deliveryAddress && (
                 <p className="text-xs text-red-500 mt-1">
-                  {errors.pickupLocation}
+                  {errors.deliveryAddress}
                 </p>
               )}
             </div>
-          )}
-        </div>
 
-        {/* Delivery Address - Only for delivery */}
-        {formData.deliveryType === "delivery" && (
-          <div className="space-y-4 pb-4 border-b border-gray-200">
-            <Label className="text-xs text-gray-600">
-              ADRESSE DE LIVRAISON:
-            </Label>
+            <div>
+              <Label htmlFor="city" className="text-xs text-gray-600">
+                VILLE:
+              </Label>
+              <Input
+                id="city"
+                type="text"
+                value={formData.deliveryAddress?.city || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    deliveryAddress: {
+                      ...prev.deliveryAddress,
+                      street: prev.deliveryAddress?.street || "",
+                      city: e.target.value,
+                      province: prev.deliveryAddress?.province || "",
+                      postalCode: prev.deliveryAddress?.postalCode || "",
+                    },
+                  }))
+                }
+                className={errors.deliveryCity ? "border-red-500" : ""}
+                placeholder="Montréal"
+              />
+              {errors.deliveryCity && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.deliveryCity}
+                </p>
+              )}
+            </div>
 
-            {selectedClient && selectedClient.addresses.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-500">
-                  Adresses enregistrées:
-                </Label>
-                <RadioGroup
-                  value={selectedAddressId?.toString()}
-                  onValueChange={(value) =>
-                    handleAddressSelect(parseInt(value))
-                  }
-                  className="space-y-2"
+            <div>
+              <Label htmlFor="province" className="text-xs text-gray-600">
+                PROVINCE:
+              </Label>
+              <Input
+                id="province"
+                type="text"
+                value={formData.deliveryAddress?.province || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    deliveryAddress: {
+                      ...prev.deliveryAddress,
+                      street: prev.deliveryAddress?.street || "",
+                      city: prev.deliveryAddress?.city || "",
+                      province: e.target.value,
+                      postalCode: prev.deliveryAddress?.postalCode || "",
+                    },
+                  }))
+                }
+                className={errors.deliveryPostalCode ? "border-red-500" : ""}
+                placeholder="Québec"
+              />
+              {errors.deliveryPostalCode && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.deliveryPostalCode}
+                </p>
+              )}
+              {deliveryZoneInfo && (
+                <div
+                  className={`text-xs mt-1 p-2 rounded ${
+                    deliveryZoneInfo.isValid
+                      ? "bg-green-50 text-green-700"
+                      : "bg-red-50 text-red-700"
+                  }`}
                 >
-                  {selectedClient.addresses.map((address) => (
-                    <div
-                      key={address.id}
-                      className="flex items-start space-x-2"
-                    >
-                      <RadioGroupItem
-                        value={address.id.toString()}
-                        id={`address-${address.id}`}
-                      />
-                      <Label
-                        htmlFor={`address-${address.id}`}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        <div>
-                          <div>{address.street}</div>
-                          <div className="text-xs text-gray-500">
-                            {address.city}, {address.province}{" "}
-                            {address.postalCode}
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-                <div className="text-xs text-gray-500 mt-2">
-                  Ou entrez une nouvelle adresse:
+                  {deliveryZoneInfo.isValid ? (
+                    <>
+                      <div className="font-semibold">
+                        {formData.deliveryAddress?.postalCode}
+                      </div>
+                      <div>
+                        Frais de livraison: {deliveryZoneInfo.fee.toFixed(2)}$
+                      </div>
+                      <div>
+                        Minimum requis:{" "}
+                        {deliveryZoneInfo.minimumOrder.toFixed(2)}$ (avant taxe)
+                      </div>
+                    </>
+                  ) : (
+                    <div>Code postal invalide</div>
+                  )}
                 </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label htmlFor="street" className="text-xs text-gray-600">
-                  RUE:
-                </Label>
-                <Input
-                  id="street"
-                  type="text"
-                  value={formData.deliveryAddress?.street || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      deliveryAddress: {
-                        ...prev.deliveryAddress,
-                        street: e.target.value,
-                        city: prev.deliveryAddress?.city || "",
-                        province: prev.deliveryAddress?.province || "",
-                        postalCode: prev.deliveryAddress?.postalCode || "",
-                      },
-                    }))
-                  }
-                  className={errors.deliveryAddress ? "border-red-500" : ""}
-                  placeholder="123 Rue Example"
-                />
-                {errors.deliveryAddress && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.deliveryAddress}
-                  </p>
-                )}
-              </div>
-
+              )}
               <div>
-                <Label htmlFor="city" className="text-xs text-gray-600">
-                  VILLE:
+                <Label htmlFor="deliveryZone" className="text-xs text-gray-600">
+                  CODE POSTAL DE LIVRAISON:
                 </Label>
-                <Input
-                  id="city"
-                  type="text"
-                  value={formData.deliveryAddress?.city || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      deliveryAddress: {
-                        ...prev.deliveryAddress,
-                        street: prev.deliveryAddress?.street || "",
-                        city: e.target.value,
-                        province: prev.deliveryAddress?.province || "",
-                        postalCode: prev.deliveryAddress?.postalCode || "",
-                      },
-                    }))
-                  }
-                  className={errors.deliveryCity ? "border-red-500" : ""}
-                  placeholder="Montréal"
-                />
-                {errors.deliveryCity && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.deliveryCity}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="province" className="text-xs text-gray-600">
-                  PROVINCE:
-                </Label>
-                <Input
-                  id="province"
-                  type="text"
-                  value={formData.deliveryAddress?.province || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      deliveryAddress: {
-                        ...prev.deliveryAddress,
-                        street: prev.deliveryAddress?.street || "",
-                        city: prev.deliveryAddress?.city || "",
-                        province: e.target.value,
-                        postalCode: prev.deliveryAddress?.postalCode || "",
-                      },
-                    }))
-                  }
-                  className={errors.deliveryPostalCode ? "border-red-500" : ""}
-                  placeholder="Québec"
-                />
-                {errors.deliveryPostalCode && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.deliveryPostalCode}
-                  </p>
-                )}
-                {deliveryZoneInfo && (
-                  <div
-                    className={`text-xs mt-1 p-2 rounded ${
-                      deliveryZoneInfo.isValid
-                        ? "bg-green-50 text-green-700"
-                        : "bg-red-50 text-red-700"
-                    }`}
+                <Select
+                  value={deliveryZoneInfo?.zoneName || ""}
+                  onValueChange={(postalCode) => {
+                    const zoneInfo = calculateDeliveryFee(postalCode);
+                    if (zoneInfo.isValid) {
+                      setDeliveryZoneInfo({
+                        zoneName: zoneInfo.zoneName,
+                        fee: zoneInfo.fee,
+                        minimumOrder: zoneInfo.minimumOrder,
+                        isValid: true,
+                      });
+                      setFormData((prev) => ({
+                        ...prev,
+                        deliveryAddress: {
+                          street: prev.deliveryAddress?.street || "",
+                          city: prev.deliveryAddress?.city || "",
+                          province: prev.deliveryAddress?.province || "",
+                          postalCode,
+                        },
+                        deliveryFee: zoneInfo.fee,
+                      }));
+                    } else {
+                      setDeliveryZoneInfo(null);
+                      setFormData((prev) => ({
+                        ...prev,
+                        deliveryFee: 0,
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sélectionnez votre code postal" />
+                  </SelectTrigger>
+                  <SelectContent
+                    className="z-100 max-h-60"
+                    side="bottom"
+                    align="start"
                   >
-                    {deliveryZoneInfo.isValid ? (
-                      <>
-                        <div className="font-semibold">
-                          {formData.deliveryAddress?.postalCode}
-                        </div>
-                        <div>
-                          Frais de livraison: {deliveryZoneInfo.fee.toFixed(2)}$
-                        </div>
-                        <div>
-                          Minimum requis:{" "}
-                          {deliveryZoneInfo.minimumOrder.toFixed(2)}$ (avant
-                          taxe)
-                        </div>
-                      </>
-                    ) : (
-                      <div>Code postal invalide</div>
+                    {DELIVERY_ZONES.flatMap((zone) =>
+                      zone.postalCodes.map((postalCode) => (
+                        <SelectItem
+                          key={`${zone.name}-${postalCode}`}
+                          value={postalCode}
+                        >
+                          {postalCode} ({zone.deliveryFee.toFixed(2)}$
+                          livraison, min. {zone.minimumOrder.toFixed(2)}$)
+                        </SelectItem>
+                      )),
                     )}
-                  </div>
-                )}
-                <div>
-                  <Label
-                    htmlFor="deliveryZone"
-                    className="text-xs text-gray-600"
-                  >
-                    CODE POSTAL DE LIVRAISON:
-                  </Label>
-                  <Select
-                    value={deliveryZoneInfo?.zoneName || ""}
-                    onValueChange={(postalCode) => {
-                      const zoneInfo = calculateDeliveryFee(postalCode);
-                      if (zoneInfo.isValid) {
-                        setDeliveryZoneInfo({
-                          zoneName: zoneInfo.zoneName,
-                          fee: zoneInfo.fee,
-                          minimumOrder: zoneInfo.minimumOrder,
-                          isValid: true,
-                        });
-                        setFormData((prev) => ({
-                          ...prev,
-                          deliveryAddress: {
-                            street: prev.deliveryAddress?.street || "",
-                            city: prev.deliveryAddress?.city || "",
-                            province: prev.deliveryAddress?.province || "",
-                            postalCode,
-                          },
-                          deliveryFee: zoneInfo.fee,
-                        }));
-                      } else {
-                        setDeliveryZoneInfo(null);
-                        setFormData((prev) => ({
-                          ...prev,
-                          deliveryFee: 0,
-                        }));
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Sélectionnez votre code postal" />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="z-100 max-h-60"
-                      side="bottom"
-                      align="start"
-                    >
-                      {DELIVERY_ZONES.flatMap((zone) =>
-                        zone.postalCodes.map((postalCode) => (
-                          <SelectItem
-                            key={`${zone.name}-${postalCode}`}
-                            value={postalCode}
-                          >
-                            {postalCode} ({zone.deliveryFee.toFixed(2)}$
-                            livraison, min. {zone.minimumOrder.toFixed(2)}$)
-                          </SelectItem>
-                        )),
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Items Table */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-xs text-gray-600">ARTICLES:</Label>
+          <Button
+            type="button"
+            onClick={addItem}
+            variant="ghost"
+            size="sm"
+            className="text-xs text-amber-600 hover:text-amber-700"
+          >
+            <Plus className="w-4 h-4" />
+            Ajouter
+          </Button>
+        </div>
+
+        {errors.items && (
+          <p className="text-xs text-red-500 mb-2">{errors.items}</p>
         )}
 
-        {/* Items Table */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <Label className="text-xs text-gray-600">ARTICLES:</Label>
-            <Button
-              type="button"
-              onClick={addItem}
-              variant="ghost"
-              size="sm"
-              className="text-xs text-amber-600 hover:text-amber-700"
-            >
-              <Plus className="w-4 h-4" />
-              Ajouter
-            </Button>
-          </div>
+        <div className="border border-gray-300 rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">PRODUIT</TableHead>
+                <TableHead className="w-24 text-xs">QTÉ</TableHead>
+                <TableHead className="w-28 text-xs">PRIX</TableHead>
+                <TableHead className="w-28 text-xs">MONTANT</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {formData.items.map((item, index) => {
+                const product = item.productId
+                  ? getProductById(item.productId)
+                  : null;
+                const availableProducts = getAvailableProducts(item.id);
+                const quantityError = errors[`item_${index}_quantity`];
 
-          {errors.items && (
-            <p className="text-xs text-red-500 mb-2">{errors.items}</p>
-          )}
-
-          <div className="border border-gray-300 rounded-md overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">PRODUIT</TableHead>
-                  <TableHead className="w-24 text-xs">QTÉ</TableHead>
-                  <TableHead className="w-28 text-xs">PRIX</TableHead>
-                  <TableHead className="w-28 text-xs">MONTANT</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {formData.items.map((item, index) => {
-                  const product = item.productId
-                    ? getProductById(item.productId)
-                    : null;
-                  const availableProducts = getAvailableProducts(item.id);
-                  const quantityError = errors[`item_${index}_quantity`];
-
-                  return (
-                    <React.Fragment key={item.id}>
+                return (
+                  <React.Fragment key={item.id}>
+                    <TableRow>
+                      <TableCell>
+                        <Select
+                          value={item.productId?.toString() || ""}
+                          onValueChange={(value) =>
+                            handleProductSelect(item.id, parseInt(value))
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Sélectionner un produit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableProducts.map((p) => (
+                              <SelectItem key={p.id} value={p.id.toString()}>
+                                {p.name} - ${p.price.toFixed(2)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min={product?.minOrderQuantity || 1}
+                          max={product?.maxOrderQuantity}
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleItemChange(
+                              item.id,
+                              "quantity",
+                              parseInt(e.target.value) || 1,
+                            )
+                          }
+                          disabled={!item.productId}
+                          className={`h-8 text-sm ${quantityError ? "border-red-500" : ""}`}
+                        />
+                        {quantityError && (
+                          <p className="text-xs text-red-500 mt-1">
+                            {quantityError}
+                          </p>
+                        )}
+                        {errors[`item_${index}_preparation`] && (
+                          <p className="text-xs text-orange-600 mt-1 bg-orange-50 p-1 rounded">
+                            ⚠️ {errors[`item_${index}_preparation`]}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm font-medium text-gray-700">
+                          ${item.unitPrice.toFixed(2)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm font-medium text-gray-700">
+                          ${item.amount.toFixed(2)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeItem(item.id)}
+                          className="h-8 w-8 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    {item.productId && (
                       <TableRow>
-                        <TableCell>
-                          <Select
-                            value={item.productId?.toString() || ""}
-                            onValueChange={(value) =>
-                              handleProductSelect(item.id, parseInt(value))
-                            }
-                          >
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Sélectionner un produit" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableProducts.map((p) => (
-                                <SelectItem key={p.id} value={p.id.toString()}>
-                                  {p.name} - ${p.price.toFixed(2)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min={product?.minOrderQuantity || 1}
-                            max={product?.maxOrderQuantity}
-                            value={item.quantity}
+                        <TableCell colSpan={5} className="bg-gray-50 py-2">
+                          <Textarea
+                            value={item.notes}
                             onChange={(e) =>
-                              handleItemChange(
-                                item.id,
-                                "quantity",
-                                parseInt(e.target.value) || 1,
-                              )
+                              handleItemChange(item.id, "notes", e.target.value)
                             }
-                            disabled={!item.productId}
-                            className={`h-8 text-sm ${quantityError ? "border-red-500" : ""}`}
+                            placeholder="Notes pour cet article..."
+                            rows={2}
+                            className="text-xs"
                           />
-                          {quantityError && (
-                            <p className="text-xs text-red-500 mt-1">
-                              {quantityError}
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-medium text-gray-700">
-                            ${item.unitPrice.toFixed(2)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-medium text-gray-700">
-                            ${item.amount.toFixed(2)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeItem(item.id)}
-                            className="h-8 w-8 text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </TableCell>
                       </TableRow>
-                      {item.productId && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="bg-gray-50 py-2">
-                            <Textarea
-                              value={item.notes}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  item.id,
-                                  "notes",
-                                  e.target.value,
-                                )
-                              }
-                              placeholder="Notes pour cet article..."
-                              rows={2}
-                              className="text-xs"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          {errors.items && (
-            <p className="text-xs text-red-500 mt-2">{errors.items}</p>
-          )}
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
 
-        {minimumOrderError && (
-          <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
-            ⚠️ {minimumOrderError}
-          </div>
+        {errors.items && (
+          <p className="text-xs text-red-500 mt-2">{errors.items}</p>
         )}
+      </div>
 
-        {/* Notes */}
-        <div>
-          <Label htmlFor="notes" className="text-xs text-gray-600">
-            NOTE:
-          </Label>
-          <Textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => handleInputChange("notes", e.target.value)}
-            rows={3}
-            placeholder="Notes supplémentaires..."
-          />
+      {minimumOrderError && (
+        <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+          ⚠️ {minimumOrderError}
         </div>
+      )}
 
-        {/* Totals */}
-        <div className="border-t border-gray-200 pt-4">
-          <div className="ml-auto space-y-2">
+      {/* Notes */}
+      <div>
+        <Label htmlFor="notes" className="text-xs text-gray-600">
+          NOTE:
+        </Label>
+        <Textarea
+          id="notes"
+          value={formData.notes}
+          onChange={(e) => handleInputChange("notes", e.target.value)}
+          rows={3}
+          placeholder="Notes supplémentaires..."
+        />
+      </div>
+
+      {/* Totals */}
+      <div className="border-t border-gray-200 pt-4">
+        <div className="ml-auto space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">SOUS-TOTAL:</span>
+            <span className="font-medium">${formData.subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">TPS + TVQ (14.975%):</span>
+            <span className="font-medium">
+              ${formData.taxAmount.toFixed(2)}
+            </span>
+          </div>
+          {formData.deliveryType === "delivery" && (
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">SOUS-TOTAL:</span>
-              <span className="font-medium">
-                ${formData.subtotal.toFixed(2)}
-              </span>
+              <span className="text-gray-600">LIVRAISON:</span>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.deliveryFee}
+                onChange={(e) =>
+                  handleInputChange(
+                    "deliveryFee",
+                    parseFloat(e.target.value) || 0,
+                  )
+                }
+                className="w-24 h-8 text-sm text-right"
+              />
             </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">TPS + TVQ (14.975%):</span>
-              <span className="font-medium">
-                ${formData.taxAmount.toFixed(2)}
-              </span>
-            </div>
-            {formData.deliveryType === "delivery" && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">LIVRAISON:</span>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.deliveryFee}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "deliveryFee",
-                      parseFloat(e.target.value) || 0,
-                    )
-                  }
-                  className="w-24 h-8 text-sm text-right"
-                />
-              </div>
-            )}
-            <div className="flex justify-between items-center text-base font-semibold border-t border-gray-300 pt-2">
-              <span className="text-gray-800">TOTAL:</span>
-              <span className="text-amber-600">
-                ${formData.total.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-sm bg-amber-50 p-2 rounded">
-              <span className="text-gray-700">ACOMPTE (50%):</span>
-              <span className="font-medium text-amber-700">
-                ${formData.depositAmount.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">BALANCE:</span>
-              <span className="font-medium">
-                ${formData.balance.toFixed(2)}
-              </span>
-            </div>
+          )}
+          <div className="flex justify-between items-center text-base font-semibold border-t border-gray-300 pt-2">
+            <span className="text-gray-800">TOTAL:</span>
+            <span className="text-amber-600">${formData.total.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm bg-amber-50 p-2 rounded">
+            <span className="text-gray-700">ACOMPTE (50%):</span>
+            <span className="font-medium text-amber-700">
+              ${formData.depositAmount.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">BALANCE:</span>
+            <span className="font-medium">${formData.balance.toFixed(2)}</span>
           </div>
         </div>
-      </form>
+      </div>
+    </form>
   );
 }

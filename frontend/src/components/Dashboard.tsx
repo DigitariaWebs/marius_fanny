@@ -26,19 +26,7 @@ import SettingsManagement from "./SettingsManagement";
 import DeliveryAssignment from "./DeliveryAssignment";
 import { authClient } from "../lib/AuthClient";
 import GoldenBackground from "./GoldenBackground";
-
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  price: number;
-  sales: number;
-  revenue: number;
-  image?: string;
-  available: boolean;
-  minOrderQuantity: number;
-  maxOrderQuantity: number;
-}
+import type { Product } from "../types";
 
 interface Statistics {
   totalProducts: number;
@@ -85,6 +73,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 5,
+    preparationTimeHours: 24,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 2,
@@ -96,6 +87,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 3,
+    preparationTimeHours: 24,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 3,
@@ -107,6 +101,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: false,
     minOrderQuantity: 1,
     maxOrderQuantity: 20,
+    preparationTimeHours: 2,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 4,
@@ -118,6 +115,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 10,
+    preparationTimeHours: 4,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 5,
@@ -129,6 +129,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 50,
+    preparationTimeHours: 2,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 6,
@@ -140,6 +143,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 30,
+    preparationTimeHours: 2,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 7,
@@ -151,6 +157,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 10,
+    preparationTimeHours: 24,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 8,
@@ -162,6 +171,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 15,
+    preparationTimeHours: 24,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 9,
@@ -173,6 +185,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 20,
+    preparationTimeHours: 12,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 10,
@@ -184,6 +199,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 25,
+    preparationTimeHours: 1,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 11,
@@ -195,6 +213,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 15,
+    preparationTimeHours: 2,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
   {
     id: 12,
@@ -206,6 +227,9 @@ const MOCK_PRODUCTS: Product[] = [
     available: true,
     minOrderQuantity: 1,
     maxOrderQuantity: 30,
+    preparationTimeHours: 4,
+    createdAt: "2024-01-15T10:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
   },
 ];
 
@@ -250,9 +274,9 @@ export default function AdminDashboard() {
   // Calcul des statistiques
   const calculateStats = (): Statistics => {
     const totalProducts = products.length;
-    const totalRevenue = products.reduce((sum, p) => sum + p.revenue, 0);
+    const totalRevenue = products.reduce((sum, p) => sum + (p.revenue || 0), 0);
     const lowStock = products.filter((p) => !p.available).length;
-    const totalSales = products.reduce((sum, p) => sum + p.sales, 0);
+    const totalSales = products.reduce((sum, p) => sum + (p.sales || 0), 0);
 
     return {
       totalProducts,
@@ -268,7 +292,7 @@ export default function AdminDashboard() {
 
   // Produits les plus vendus
   const topProducts = [...products]
-    .sort((a, b) => b.sales - a.sales)
+    .sort((a, b) => (b.sales || 0) - (a.sales || 0))
     .slice(0, 5);
 
   return (

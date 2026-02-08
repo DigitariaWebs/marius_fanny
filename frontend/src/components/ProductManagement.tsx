@@ -45,26 +45,25 @@ export function ProductManagement() {
     available: true,
     minOrderQuantity: "1",
     maxOrderQuantity: "10",
+    preparationTimeHours: "",
   });
 
   const getAvailabilityBadge = (available: boolean) => {
     return (
       <span
         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-          available
-            ? "bg-green-100 text-green-700"
-            : "bg-gray-100 text-gray-700"
+          available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
         }`}
       >
         {available ? (
           <>
             <Check size={12} />
-            Disponible
+            En stock
           </>
         ) : (
           <>
             <X size={12} />
-            Indisponible
+            Épuisé
           </>
         )}
       </span>
@@ -123,6 +122,7 @@ export function ProductManagement() {
       available: product.available,
       minOrderQuantity: product.minOrderQuantity.toString(),
       maxOrderQuantity: product.maxOrderQuantity.toString(),
+      preparationTimeHours: product.preparationTimeHours?.toString() || "",
     });
     setIsEditModalOpen(true);
   };
@@ -158,6 +158,9 @@ export function ProductManagement() {
         available: productForm.available,
         minOrderQuantity: parseInt(productForm.minOrderQuantity),
         maxOrderQuantity: parseInt(productForm.maxOrderQuantity),
+        preparationTimeHours: productForm.preparationTimeHours
+          ? parseInt(productForm.preparationTimeHours)
+          : undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -172,6 +175,7 @@ export function ProductManagement() {
         available: true,
         minOrderQuantity: "1",
         maxOrderQuantity: "10",
+        preparationTimeHours: "",
       });
       setIsSubmitting(false);
     }, 1000);
@@ -195,6 +199,9 @@ export function ProductManagement() {
                 available: productForm.available,
                 minOrderQuantity: parseInt(productForm.minOrderQuantity),
                 maxOrderQuantity: parseInt(productForm.maxOrderQuantity),
+                preparationTimeHours: productForm.preparationTimeHours
+                  ? parseInt(productForm.preparationTimeHours)
+                  : undefined,
                 updatedAt: new Date().toISOString(),
               }
             : p,
@@ -211,6 +218,7 @@ export function ProductManagement() {
         available: true,
         minOrderQuantity: "1",
         maxOrderQuantity: "10",
+        preparationTimeHours: "",
       });
       setIsSubmitting(false);
     }, 1000);
@@ -272,19 +280,34 @@ export function ProductManagement() {
       ),
     },
     {
+      key: "preparationTime",
+      label: "préparation",
+      sortable: true,
+      render: (product: Product) => (
+        <div className="text-sm text-gray-600">
+          {product.preparationTimeHours ? (
+            <span
+              className={`flex justify-center items-center px-2 py-1 rounded-full text-xs font-medium ${
+                product.preparationTimeHours >= 24
+                  ? "bg-red-100 text-red-700"
+                  : product.preparationTimeHours >= 12
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {product.preparationTimeHours}h
+            </span>
+          ) : (
+            <span className="text-gray-400">Immédiat</span>
+          )}
+        </div>
+      ),
+    },
+    {
       key: "available",
       label: "Disponibilité",
       sortable: true,
       render: (product: Product) => getAvailabilityBadge(product.available),
-    },
-    {
-      key: "limits",
-      label: "Limites de commande",
-      render: (product: Product) => (
-        <div className="text-sm text-gray-600">
-          Min: {product.minOrderQuantity} / Max: {product.maxOrderQuantity}
-        </div>
-      ),
     },
     {
       key: "actions",
@@ -295,11 +318,11 @@ export function ProductManagement() {
             onClick={() => toggleAvailability(product)}
             className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
               product.available
-                ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                ? "bg-orange-100 text-orange-700 hover:bg-orange-200"
                 : "bg-green-100 text-green-700 hover:bg-green-200"
             }`}
           >
-            {product.available ? "Désactiver" : "Activer"}
+            {product.available ? "Marquer épuisé" : "Remettre en stock"}
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -394,6 +417,7 @@ export function ProductManagement() {
                 available: true,
                 minOrderQuantity: "1",
                 maxOrderQuantity: "10",
+                preparationTimeHours: "",
               });
             },
             disabled: isSubmitting,
@@ -468,6 +492,30 @@ export function ProductManagement() {
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
                 placeholder="0.00"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Temps de préparation
+              </label>
+              <select
+                value={productForm.preparationTimeHours}
+                onChange={(e) =>
+                  setProductForm({
+                    ...productForm,
+                    preparationTimeHours: e.target.value,
+                  })
+                }
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+              >
+                <option value="">Immédiat (pas de préparation)</option>
+                <option value="24">24 heures (1 jour)</option>
+                <option value="48">48 heures (2 jours)</option>
+                <option value="72">72 heures (3 jours)</option>
+              </select>
+              <p className="text-xs text-gray-500">
+                Délai nécessaire pour préparer ce produit
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -577,6 +625,7 @@ export function ProductManagement() {
                 available: true,
                 minOrderQuantity: "1",
                 maxOrderQuantity: "10",
+                preparationTimeHours: "",
               });
             },
             disabled: isSubmitting,
@@ -651,6 +700,30 @@ export function ProductManagement() {
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
                 placeholder="0.00"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Temps de préparation
+              </label>
+              <select
+                value={productForm.preparationTimeHours}
+                onChange={(e) =>
+                  setProductForm({
+                    ...productForm,
+                    preparationTimeHours: e.target.value,
+                  })
+                }
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+              >
+                <option value="">Immédiat (pas de préparation)</option>
+                <option value="24">24 heures (1 jour)</option>
+                <option value="48">48 heures (2 jours)</option>
+                <option value="72">72 heures (3 jours)</option>
+              </select>
+              <p className="text-xs text-gray-500">
+                Délai nécessaire pour préparer ce produit
+              </p>
             </div>
 
             <div className="space-y-2">

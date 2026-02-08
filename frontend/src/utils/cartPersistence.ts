@@ -9,6 +9,7 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  preparationTimeHours?: number;
 }
 
 const CART_STORAGE_KEY = 'marius_fanny_cart';
