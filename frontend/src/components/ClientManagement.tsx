@@ -237,13 +237,13 @@ function ClientManagement() {
       label: "Nom",
       sortable: true,
       render: (client: Client) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-(--bakery-gold) bg-opacity-20 flex items-center justify-center">
-            <UserCircle className="w-6 h-6 text-(--bakery-gold)" />
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-[#C5A065] bg-opacity-20 flex items-center justify-center">
+            <UserCircle size={14} className="text-[#C5A065]" />
           </div>
           <div>
             <div>
-              <div className="font-medium text-(--bakery-text)">
+              <div className="font-medium text-[#2D2A26]">
                 {getFullName(client)}
               </div>
               {client.status === "placeholder" && (
@@ -261,8 +261,8 @@ function ClientManagement() {
       label: "Email",
       sortable: true,
       render: (client: Client) => (
-        <div className="flex items-center gap-2 text-(--bakery-text-secondary)">
-          <Mail className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Mail size={14} className="text-gray-400" />
           <span>{client.email}</span>
         </div>
       ),
@@ -272,8 +272,8 @@ function ClientManagement() {
       label: "Téléphone",
       sortable: true,
       render: (client: Client) => (
-        <div className="flex items-center gap-2 text-(--bakery-text-secondary)">
-          <Phone className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Phone size={14} className="text-gray-400" />
           <span>{client.phone}</span>
         </div>
       ),
@@ -284,8 +284,8 @@ function ClientManagement() {
       sortable: true,
       render: (client: Client) => (
         <div className="flex items-center gap-2">
-          <Package className="w-4 h-4 text-(--bakery-gold)" />
-          <span className="font-medium text-(--bakery-text)">
+          <Package size={14} className="text-[#C5A065]" />
+          <span className="font-medium text-[#2D2A26]">
             {client.orders.length}
           </span>
         </div>
@@ -298,7 +298,7 @@ function ClientManagement() {
       render: (client: Client) => (
         <button
           onClick={() => handleToggleStatus(client)}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
             client.status === "active"
               ? "bg-green-100 text-green-800 hover:bg-green-200"
               : client.status === "placeholder"
@@ -393,13 +393,16 @@ function ClientManagement() {
 
   return (
     <>
-      <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
+      <header className="p-4 md:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
+            <h2
+              className="text-4xl md:text-5xl mb-2"
+              style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+            >
               Gestion des Clients
             </h2>
-            <p className="text-sm md:text-base text-gray-500 mt-1">
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
               Gérer les clients et les placeholders
             </p>
           </div>
@@ -408,7 +411,7 @@ function ClientManagement() {
               resetForm();
               setIsCreateModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-[#2D2A26] hover:bg-[#C5A065] text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg transition-colors text-sm md:text-base whitespace-nowrap"
+            className="flex items-center gap-2 bg-[#C5A065] hover:bg-[#2D2A26] text-white font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:shadow-lg text-sm md:text-base whitespace-nowrap"
           >
             <Plus size={20} />
             <span>Nouveau Client</span>

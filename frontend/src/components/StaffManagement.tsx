@@ -32,8 +32,6 @@ export default function StaffManagement() {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
   const [formData, setFormData] = useState<StaffFormData>({
-    firstName: "",
-    lastName: "",
     email: "",
     phone: "",
     location: "Montreal",
@@ -47,8 +45,6 @@ export default function StaffManagement() {
 
   const resetForm = () => {
     setFormData({
-      firstName: "",
-      lastName: "",
       email: "",
       phone: "",
       location: "Montreal",
@@ -64,18 +60,6 @@ export default function StaffManagement() {
   };
 
   const validateForm = (includePassword = false): boolean => {
-    if (!formData.firstName.trim()) {
-      setErrorMessage("Veuillez entrer le prénom du membre du personnel.");
-      setIsErrorModalOpen(true);
-      return false;
-    }
-    if (!formData.lastName.trim()) {
-      setErrorMessage(
-        "Veuillez entrer le nom de famille du membre du personnel.",
-      );
-      setIsErrorModalOpen(true);
-      return false;
-    }
     if (!formData.email.trim() || !formData.email.includes("@")) {
       setErrorMessage("Veuillez entrer une adresse email valide.");
       setIsErrorModalOpen(true);
@@ -107,12 +91,14 @@ export default function StaffManagement() {
   };
 
   const handleCreate = () => {
-    if (!validateForm(true)) return;
+    if (!validateForm(false)) return;
 
     setIsSubmitting(true);
     setTimeout(() => {
       const newStaff: Staff = {
         id: Math.max(...staff.map((s) => s.id)) + 1,
+        firstName: "Auto",
+        lastName: "Generated",
         ...formData,
         status: "active",
         createdAt: new Date().toISOString(),
@@ -128,8 +114,6 @@ export default function StaffManagement() {
   const handleEditClick = (staffMember: Staff) => {
     setEditingStaff(staffMember);
     setFormData({
-      firstName: staffMember.firstName,
-      lastName: staffMember.lastName,
       email: staffMember.email,
       phone: staffMember.phone,
       location: staffMember.location,
@@ -374,13 +358,16 @@ export default function StaffManagement() {
 
   return (
     <>
-      <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
+      <header className="p-4 md:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
+            <h2
+              className="text-4xl md:text-5xl mb-2"
+              style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+            >
               Gestion du Personnel
             </h2>
-            <p className="text-sm md:text-base text-gray-500 mt-1">
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
               Gérer les membres de l'équipe
             </p>
           </div>
@@ -389,7 +376,7 @@ export default function StaffManagement() {
               resetForm();
               setIsCreateModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-[#2D2A26] hover:bg-[#C5A065] text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg transition-colors text-sm md:text-base whitespace-nowrap"
+            className="flex items-center gap-2 bg-[#C5A065] hover:bg-[#2D2A26] text-white font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:shadow-lg text-sm md:text-base whitespace-nowrap"
           >
             <Plus size={20} />
             <span>Ajouter un membre</span>
@@ -434,42 +421,14 @@ export default function StaffManagement() {
           },
         }}
       >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Prénom <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
-                placeholder="Ex: Marie"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Nom de famille <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
-                placeholder="Ex: Dubois"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
-              />
-            </div>
-          </div>
-
+        <div className="space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
               Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
               placeholder="Ex: marie.dubois@mariusetfanny.com"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
@@ -477,51 +436,25 @@ export default function StaffManagement() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
               Téléphone <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
               placeholder="Ex: 514-555-0101"
               value={formData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Mot de passe <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="password"
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
-              placeholder="Minimum 6 caractères"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Confirmer le mot de passe <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="password"
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
-              placeholder="Confirmez le mot de passe"
-              value={passwordConfirmation}
-              onChange={(e) => setPasswordConfirmation(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
                 Emplacement <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
                 value={formData.location}
                 onChange={(e) => handleLocationChange(e.target.value)}
               >
@@ -534,11 +467,11 @@ export default function StaffManagement() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
                 Département <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
                 value={formData.department}
                 onChange={(e) =>
                   handleInputChange("department", e.target.value)
@@ -551,7 +484,7 @@ export default function StaffManagement() {
                 ))}
               </select>
               {formData.location === "Montreal" && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-stone-500">
                   Personnel de cuisine disponible uniquement à Laval
                 </p>
               )}
@@ -601,15 +534,15 @@ export default function StaffManagement() {
             : undefined,
         }}
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           {editingStaff && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-xs font-bold uppercase tracking-wider text-stone-600">
                     Statut actuel
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-stone-500 mt-0.5">
                     Utilisez le bouton ci-dessous pour changer le statut
                   </p>
                 </div>
@@ -626,41 +559,13 @@ export default function StaffManagement() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Prénom <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
-                placeholder="Ex: Marie"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Nom de famille <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
-                placeholder="Ex: Dubois"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
               Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
               placeholder="Ex: marie.dubois@mariusetfanny.com"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
@@ -668,25 +573,25 @@ export default function StaffManagement() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
               Téléphone <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
               placeholder="Ex: 514-555-0101"
               value={formData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
                 Emplacement <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
                 value={formData.location}
                 onChange={(e) => handleLocationChange(e.target.value)}
               >
@@ -699,11 +604,11 @@ export default function StaffManagement() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
                 Département <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
                 value={formData.department}
                 onChange={(e) =>
                   handleInputChange("department", e.target.value)
@@ -716,7 +621,7 @@ export default function StaffManagement() {
                 ))}
               </select>
               {formData.location === "Montreal" && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-stone-500">
                   Personnel de cuisine disponible uniquement à Laval
                 </p>
               )}

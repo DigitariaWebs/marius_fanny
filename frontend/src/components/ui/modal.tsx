@@ -43,18 +43,18 @@ export interface ModalProps {
 }
 
 const sizeClasses = {
-  sm: "min-w-md",
-  md: "min-w-lg",
-  lg: "min-w-2xl",
-  xl: "min-w-4xl min-w-[72rem]",
-  full: "min-w-7xl",
+  sm: "max-w-md max-h-[80vh]",
+  md: "max-w-lg max-h-[80vh]",
+  lg: "max-w-2xl max-h-[85vh]",
+  xl: "max-w-4xl max-h-[90vh]",
+  full: "max-w-7xl max-h-[95vh]",
 };
 
 const defaultSizes: Record<ModalProps["type"], keyof typeof sizeClasses> = {
   confirmation: "sm",
   warning: "sm",
   details: "md",
-  form: "xl",
+  form: "lg",
 };
 
 const defaultIcons: Record<ModalProps["type"], React.ReactNode> = {
@@ -131,7 +131,9 @@ export function Modal({
           </div>
         </DialogHeader>
 
-        <div className="py-4 px-2">{children}</div>
+        <div className="py-4 px-2 overflow-y-auto max-h-[calc(85vh-12rem)]">
+          {children}
+        </div>
 
         {actions &&
           (actions.primary || actions.secondary || actions.tertiary) && (

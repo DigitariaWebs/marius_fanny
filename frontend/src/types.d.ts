@@ -12,9 +12,9 @@ export interface Staff {
   updatedAt: string;
 }
 
-export type StaffFormData = Omit<
+export type StaffFormData = Pick<
   Staff,
-  "id" | "createdAt" | "updatedAt" | "status"
+  "email" | "phone" | "location" | "department"
 >;
 
 // Product Management specific interface

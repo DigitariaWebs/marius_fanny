@@ -258,7 +258,7 @@ export function ProductManagement() {
       sortable: true,
       render: (product: Product) => (
         <div className="flex items-center gap-2">
-          <Tag size={16} className="text-gray-400" />
+          <Tag size={14} className="text-gray-400" />
           <span className="text-sm text-gray-600">{product.category}</span>
         </div>
       ),
@@ -304,23 +304,23 @@ export function ProductManagement() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical size={18} className="text-gray-600" />
+                <MoreVertical className="w-4 h-4 text-gray-600" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => handleViewDetails(product)}>
-                <Eye size={16} className="mr-2" />
+                <Eye className="w-4 h-4 mr-2" />
                 Voir les détails
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEdit(product)}>
-                <Edit size={16} className="mr-2" />
+                <Edit className="w-4 h-4 mr-2" />
                 Modifier
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleDeleteClick(product)}
                 className="text-red-600 focus:text-red-600"
               >
-                <Trash2 size={16} className="mr-2" />
+                <Trash2 className="w-4 h-4 mr-2" />
                 Supprimer
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -330,25 +330,24 @@ export function ProductManagement() {
     },
   ];
 
-  const getSearchValue = (product: Product) => {
-    return `${product.name} ${product.category}`;
-  };
-
   return (
     <div className="h-full overflow-auto">
-      <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
+      <header className="p-4 md:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
+            <h2
+              className="text-4xl md:text-5xl mb-2"
+              style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+            >
               Gestion des Produits
             </h2>
-            <p className="text-sm md:text-base text-gray-500 mt-1">
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
               Gérer votre catalogue de produits
             </p>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-[#C5A065] hover:bg-[#2D2A26] text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-[#C5A065] hover:bg-[#2D2A26] text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2"
           >
             <Plus size={20} />
             Ajouter un produit
@@ -362,7 +361,8 @@ export function ProductManagement() {
           columns={columns}
           filters={filters}
           searchPlaceholder="Rechercher un produit..."
-          getSearchValue={getSearchValue}
+          searchKeys={["name", "category"]}
+          itemsPerPage={10}
         />
       </div>
 

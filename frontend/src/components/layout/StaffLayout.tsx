@@ -38,7 +38,7 @@ export function StaffLayout({ children, user, onLogout }: StaffLayoutProps) {
       {/* Sidebar */}
       <aside
         className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-[#2D2A26] to-[#1a1816] text-white flex flex-col shadow-2xl
+        fixed inset-y-0 left-0 z-50 w-72 bg-linear-to-b from-[#2D2A26] to-[#1a1816] text-white flex flex-col shadow-2xl
         transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
       `}

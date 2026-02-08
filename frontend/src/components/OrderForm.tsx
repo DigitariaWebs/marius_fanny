@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -431,22 +431,11 @@ export default function OrderForm({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="bg-linear-to-r from-amber-50 to-orange-50 border-b border-gray-200 p-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-800">
-          {initialData ? "Modifier la commande" : "Nouvelle commande"}
-        </h2>
-        <Button variant="ghost" size="icon" onClick={onCancel} type="button">
-          <X className="w-6 h-6" />
-        </Button>
-      </div>
-
-      {/* Form Body */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex-1 overflow-y-auto p-6 space-y-6"
-      >
+    <form
+      id="order-form"
+      onSubmit={handleSubmit}
+      className="space-y-6"
+    >
         {/* Client Information */}
         <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200">
           <div>
@@ -934,12 +923,6 @@ export default function OrderForm({
                               ))}
                             </SelectContent>
                           </Select>
-                          {product && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              Min: {product.minOrderQuantity} | Max:{" "}
-                              {product.maxOrderQuantity}
-                            </div>
-                          )}
                         </TableCell>
                         <TableCell>
                           <Input
@@ -1016,35 +999,6 @@ export default function OrderForm({
           )}
         </div>
 
-        {/* Delivery Fee */}
-        <div>
-          <Label className="text-xs text-gray-600">
-            LIVRAISON
-            {deliveryZoneInfo?.isValid && (
-              <span className="text-xs text-gray-500 ml-1">
-                ({formData.deliveryAddress?.postalCode})
-              </span>
-            )}
-            :
-          </Label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            value={formData.deliveryFee}
-            onChange={(e) =>
-              handleInputChange("deliveryFee", parseFloat(e.target.value) || 0)
-            }
-            className="w-24 h-8 text-sm text-right"
-            readOnly={deliveryZoneInfo?.isValid}
-            title={
-              deliveryZoneInfo?.isValid
-                ? "Frais de livraison automatiques basés sur le code postal"
-                : "Entrez les frais de livraison manuellement"
-            }
-          />
-        </div>
-
         {minimumOrderError && (
           <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
             ⚠️ {minimumOrderError}
@@ -1119,33 +1073,5 @@ export default function OrderForm({
           </div>
         </div>
       </form>
-
-      {/* Footer */}
-      <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
-          Annuler
-        </Button>
-        <Button
-          type="submit"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="bg-amber-600 hover:bg-amber-700"
-        >
-          {isSubmitting ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Enregistrement...
-            </>
-          ) : (
-            "Enregistrer la commande"
-          )}
-        </Button>
-      </div>
-    </div>
   );
 }

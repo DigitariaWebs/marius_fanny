@@ -356,25 +356,6 @@ export function OrderManagement() {
       render: (order: Order) => formatDate(order.orderDate),
     },
     {
-      key: "pickupDate",
-      label: "Date de retrait",
-      sortable: true,
-      render: (order: Order) => formatDate(order.pickupDate),
-    },
-    {
-      key: "pickupLocation",
-      label: "Lieu",
-      sortable: true,
-      render: (order: Order) => order.pickupLocation,
-    },
-    {
-      key: "deliveryType",
-      label: "Type",
-      sortable: true,
-      render: (order: Order) =>
-        order.deliveryType === "pickup" ? "Ramassage" : "Livraison",
-    },
-    {
       key: "total",
       label: "Total",
       sortable: true,
@@ -393,28 +374,12 @@ export function OrderManagement() {
       render: (order: Order) => getStatusBadge(order.status),
     },
     {
-      key: "source",
-      label: "Source",
-      sortable: true,
-      render: (order: Order) => {
-        const sourceLabels = {
-          online: "En ligne",
-          phone: "Téléphone",
-          in_store: "En magasin",
-        };
-        return (
-          sourceLabels[order.source as keyof typeof sourceLabels] ||
-          order.source
-        );
-      },
-    },
-    {
       key: "actions",
       label: "Actions",
       render: (order: Order) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1 hover:bg-gray-100 rounded">
+            <button className="p-2 hover:bg-gray-100 rounded">
               <MoreVertical className="h-4 w-4" />
             </button>
           </DropdownMenuTrigger>
@@ -488,19 +453,22 @@ export function OrderManagement() {
 
   return (
     <>
-      <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
+      <header className="p-4 md:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
+            <h2
+              className="text-4xl md:text-5xl mb-2"
+              style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+            >
               Gestion des Commandes
             </h2>
-            <p className="text-sm md:text-base text-gray-500 mt-1">
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
               Gérer toutes les commandes (en ligne, téléphone, en magasin)
             </p>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-[#2D2A26] hover:bg-[#C5A065] text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg transition-colors text-sm md:text-base whitespace-nowrap"
+            className="flex items-center gap-2 bg-[#C5A065] hover:bg-[#2D2A26] text-white font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:shadow-lg text-sm md:text-base whitespace-nowrap"
           >
             <Plus size={20} />
             <span>Nouvelle Commande</span>
@@ -969,8 +937,8 @@ export function OrderManagement() {
               </TabsContent>
 
               <TabsContent value="history" className="space-y-4">
-                <OrderChangeHistory 
-                  orderId={selectedOrder.id} 
+                <OrderChangeHistory
+                  orderId={selectedOrder.id}
                   orderNumber={selectedOrder.orderNumber}
                 />
               </TabsContent>
@@ -979,51 +947,116 @@ export function OrderManagement() {
         )}
       </Modal>
 
-      {/* Create/Edit Modal - Placeholder for now */}
-      {(isCreateModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <OrderForm
-            onSubmit={(formData) => {
-              console.log("Order form submitted:", formData);
-              // TODO: Implement actual order creation/update
+      {/* Create Order Modal */}
+      <Modal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        type="form"
+        title="Nouvelle Commande"
+        description="Créer une nouvelle commande"
+        icon={<Plus className="h-6 w-6 text-[#C5A065]" />}
+        size="xl"
+        actions={{
+          primary: {
+            label: isSubmitting ? "Enregistrement..." : "Enregistrer la commande",
+            onClick: () => {
+              const form = document.getElementById("order-form") as HTMLFormElement;
+              if (form) form.requestSubmit();
+            },
+            disabled: isSubmitting,
+            loading: isSubmitting,
+          },
+          secondary: {
+            label: "Annuler",
+            onClick: () => {
               setIsCreateModalOpen(false);
+            },
+            disabled: isSubmitting,
+          },
+        }}
+      >
+        <OrderForm
+          onSubmit={(formData) => {
+            console.log("Order form submitted:", formData);
+            // TODO: Implement actual order creation
+            setIsCreateModalOpen(false);
+          }}
+          onCancel={() => {
+            setIsCreateModalOpen(false);
+          }}
+          clients={clients}
+          isSubmitting={isSubmitting}
+        />
+      </Modal>
+
+      {/* Edit Order Modal */}
+      <Modal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        type="form"
+        title="Modifier la Commande"
+        description="Modifier les informations de la commande"
+        icon={<Edit className="h-6 w-6 text-blue-500" />}
+        size="xl"
+        actions={{
+          primary: {
+            label: isSubmitting ? "Enregistrement..." : "Enregistrer les modifications",
+            onClick: () => {
+              const form = document.getElementById("order-form") as HTMLFormElement;
+              if (form) form.requestSubmit();
+            },
+            disabled: isSubmitting,
+            loading: isSubmitting,
+          },
+          secondary: {
+            label: "Annuler",
+            onClick: () => {
               setIsEditModalOpen(false);
               setSelectedOrder(null);
-            }}
-            onCancel={() => {
-              setIsCreateModalOpen(false);
-              setIsEditModalOpen(false);
-              setSelectedOrder(null);
-            }}
-            initialData={
-              selectedOrder
-                ? {
-                    date: selectedOrder.orderDate.split("T")[0],
-                    clientId: selectedOrder.clientId,
-                    firstName: selectedOrder.client.firstName,
-                    lastName: selectedOrder.client.lastName,
-                    phone: selectedOrder.client.phone,
-                    email: selectedOrder.client.email,
-                    pickupLocation: selectedOrder.pickupLocation,
-                    deliveryType: selectedOrder.deliveryType,
-                    notes: selectedOrder.notes || "",
-                    deliveryFee: selectedOrder.deliveryFee,
-                    deliveryAddress: selectedOrder.deliveryAddress
-                      ? {
-                          street: selectedOrder.deliveryAddress.street,
-                          city: selectedOrder.deliveryAddress.city,
-                          province: selectedOrder.deliveryAddress.province,
-                          postalCode: selectedOrder.deliveryAddress.postalCode,
-                        }
-                      : undefined,
-                  }
-                : undefined
-            }
-            clients={clients}
-            isSubmitting={isSubmitting}
-          />
-        </div>
-      )}
+            },
+            disabled: isSubmitting,
+          },
+        }}
+      >
+        <OrderForm
+          onSubmit={(formData) => {
+            console.log("Order form submitted:", formData);
+            // TODO: Implement actual order update
+            setIsEditModalOpen(false);
+            setSelectedOrder(null);
+          }}
+          onCancel={() => {
+            setIsEditModalOpen(false);
+            setSelectedOrder(null);
+          }}
+          initialData={
+            selectedOrder
+              ? {
+                  date: selectedOrder.orderDate.split("T")[0],
+                  clientId: selectedOrder.clientId,
+                  firstName: selectedOrder.client.firstName,
+                  lastName: selectedOrder.client.lastName,
+                  phone: selectedOrder.client.phone,
+                  email: selectedOrder.client.email,
+                  pickupLocation: selectedOrder.pickupLocation,
+                  deliveryType: selectedOrder.deliveryType,
+                  notes: selectedOrder.notes || "",
+                  deliveryFee: selectedOrder.deliveryFee,
+                  deliveryAddress: selectedOrder.deliveryAddress
+                    ? {
+                        street: selectedOrder.deliveryAddress.street,
+                        city: selectedOrder.deliveryAddress.city,
+                        province: selectedOrder.deliveryAddress.province,
+                        postalCode: selectedOrder.deliveryAddress.postalCode,
+                      }
+                    : undefined,
+                }
+              : undefined
+          }
+          clients={clients}
+          isSubmitting={isSubmitting}
+        />
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal

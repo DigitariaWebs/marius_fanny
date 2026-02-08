@@ -16,12 +16,16 @@ import {
   Users,
   UserCircle,
   ClipboardList,
+  Truck,
 } from "lucide-react";
 import StaffManagement from "./StaffManagement";
 import ClientManagement from "./ClientManagement";
 import { OrderManagement } from "./OrderManagement";
 import { ProductManagement } from "./ProductManagement";
+import SettingsManagement from "./SettingsManagement";
+import DeliveryAssignment from "./DeliveryAssignment";
 import { authClient } from "../lib/AuthClient";
+import GoldenBackground from "./GoldenBackground";
 
 interface Product {
   id: number;
@@ -58,6 +62,7 @@ type ViewMode =
   | "clients"
   | "orders"
   | "products"
+  | "delivery"
   | "settings";
 
 const CATEGORIES = [
@@ -267,7 +272,12 @@ export default function AdminDashboard() {
     .slice(0, 5);
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans text-[#2D2A26]">
+    <div className="relative flex h-screen bg-[#F9F7F2] font-sans text-stone-800">
+      {/* Golden Background */}
+      <div className="fixed inset-0 z-0 opacity-30">
+        <GoldenBackground />
+      </div>
+
       {/* --- MOBILE MENU OVERLAY --- */}
       {isMobileMenuOpen && (
         <div
@@ -279,26 +289,32 @@ export default function AdminDashboard() {
       {/* --- SIDEBAR --- */}
       <aside
         className={`
-        w-72 bg-linear-to-b from-[#2D2A26] to-[#1a1816] text-white flex flex-col shadow-2xl
+        w-72 bg-white/80 backdrop-blur-md text-stone-800 flex flex-col shadow-2xl border-r border-stone-200/50 relative z-20
         transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
       >
         {/* Brand Header */}
-        <div className="p-6 border-b border-gray-700/50 flex items-center justify-between">
+        <div className="p-6 border-b border-stone-200/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-xl font-serif tracking-wide text-white">
-                MARIUS & FANNY
+              <h1
+                className="text-2xl mb-1"
+                style={{
+                  fontFamily: '"Great Vibes", cursive',
+                  color: "#C5A065",
+                }}
+              >
+                Marius & Fanny
               </h1>
-              <p className="text-xs text-gray-400 mt-0.5 tracking-wider uppercase">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
                 Admin Panel
               </p>
             </div>
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden text-gray-400 hover:text-white transition-colors"
+            className="md:hidden text-stone-400 hover:text-[#C5A065] transition-colors"
           >
             <X size={24} />
           </button>
@@ -307,11 +323,11 @@ export default function AdminDashboard() {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
           {/* Main Section */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+          <div className="pb-4">
+            <p className="text-[9px] font-black text-stone-400 uppercase tracking-[0.3em] mb-3 px-3">
               Principal
             </p>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <NavItem
                 icon={<LayoutDashboard size={20} />}
                 label="Vue d'ensemble"
@@ -325,11 +341,11 @@ export default function AdminDashboard() {
           </div>
 
           {/* Management Section */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+          <div className="pb-4 border-t border-stone-200/50 pt-4">
+            <p className="text-[9px] font-black text-stone-400 uppercase tracking-[0.3em] mb-3 px-3">
               Gestion
             </p>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <NavItem
                 icon={<Users size={20} />}
                 label="Personnel"
@@ -366,15 +382,24 @@ export default function AdminDashboard() {
                   setIsMobileMenuOpen(false);
                 }}
               />
+              <NavItem
+                icon={<Truck size={20} />}
+                label="Livraisons"
+                active={viewMode === "delivery"}
+                onClick={() => {
+                  setViewMode("delivery");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
             </div>
           </div>
 
           {/* Settings Section */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
+          <div className="border-t border-stone-200/50 pt-4">
+            <p className="text-[9px] font-black text-stone-400 uppercase tracking-[0.3em] mb-3 px-3">
               Système
             </p>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <NavItem
                 icon={<Settings size={20} />}
                 label="Paramètres"
@@ -388,26 +413,11 @@ export default function AdminDashboard() {
           </div>
         </nav>
 
-        {/* User Profile & Logout */}
-        <div className="p-4 border-t border-gray-700/50 bg-black/20">
-          <div className="mb-3 p-3 rounded-lg bg-gray-800/50 border border-gray-700/50">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#C5A065] flex items-center justify-center">
-                <UserCircle size={20} className="text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  Administrateur
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  admin@mariusetfanny.com
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Logout */}
+        <div className="p-4 border-t border-stone-200/50">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full p-3 rounded-lg text-gray-400 hover:bg-red-900/20 hover:text-red-400 transition-all border border-transparent hover:border-red-800/50"
+            className="flex items-center gap-3 w-full p-3 rounded-xl text-stone-600 hover:bg-red-50 hover:text-red-600 transition-all border border-stone-200 hover:border-red-200"
           >
             <LogOut size={20} />
             <span className="font-medium">Déconnexion</span>
@@ -416,27 +426,38 @@ export default function AdminDashboard() {
       </aside>
 
       {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto relative z-10">
         {/* Mobile Header with Hamburger */}
-        <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-between sticky top-0 z-30">
+        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-stone-200 p-4 flex items-center justify-between sticky top-0 z-30">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-stone-600 hover:text-[#C5A065]"
           >
             <Menu size={24} />
           </button>
-          <h1 className="text-lg font-serif text-[#2D2A26]">MARIUS & FANNY</h1>
+          <h1
+            className="text-xl"
+            style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+          >
+            Marius & Fanny
+          </h1>
           <div className="w-6" /> {/* Spacer for centering */}
         </div>
 
         {/* VUE D'ENSEMBLE */}
         {viewMode === "overview" && (
           <>
-            <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
-              <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
+            <header className="p-4 md:p-8">
+              <h2
+                className="text-4xl md:text-5xl mb-2"
+                style={{
+                  fontFamily: '"Great Vibes", cursive',
+                  color: "#C5A065",
+                }}
+              >
                 Vue d'ensemble
               </h2>
-              <p className="text-sm md:text-base text-gray-500 mt-1">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
                 Tableau de bord administrateur
               </p>
             </header>
@@ -476,12 +497,12 @@ export default function AdminDashboard() {
               {/* Top Products & Charts - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 {/* Top Products */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+                <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white p-6 md:p-8 hover:shadow-2xl transition-all duration-300">
                   <div className="flex items-center justify-between mb-4 md:mb-6">
-                    <h3 className="text-lg md:text-xl font-serif text-[#2D2A26]">
+                    <h3 className="text-xl md:text-2xl font-bold text-stone-800">
                       Produits les plus vendus
                     </h3>
-                    <BarChart3 className="text-[#C5A065]" size={20} />
+                    <BarChart3 className="text-[#C5A065]" size={24} />
                   </div>
                   <div className="space-y-3 md:space-y-4">
                     {topProducts.map((product, index) => (
@@ -512,8 +533,8 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Recent Activity */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-                  <h3 className="text-lg md:text-xl font-serif text-[#2D2A26] mb-4 md:mb-6">
+                <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white p-6 md:p-8 hover:shadow-2xl transition-all duration-300">
+                  <h3 className="text-xl md:text-2xl font-bold text-stone-800 mb-4 md:mb-6">
                     Activité récente
                   </h3>
                   <div className="space-y-3 md:space-y-4">
@@ -577,66 +598,11 @@ export default function AdminDashboard() {
         {/* VUE PRODUITS */}
         {viewMode === "products" && <ProductManagement />}
 
-        {/* VUE PARAMÈTRES */}
-        {viewMode === "settings" && (
-          <>
-            <header className="bg-white shadow-sm border-b border-gray-100 p-4 md:p-8">
-              <h2 className="text-2xl md:text-3xl font-serif text-[#2D2A26]">
-                Paramètres
-              </h2>
-              <p className="text-sm md:text-base text-gray-500 mt-1">
-                Configuration de votre boutique
-              </p>
-            </header>
+        {/* VUE LIVRAISONS */}
+        {viewMode === "delivery" && <DeliveryAssignment />}
 
-            <div className="p-4 md:p-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-8 max-w-2xl">
-                <h3 className="text-lg md:text-xl font-serif text-[#2D2A26] mb-4 md:mb-6">
-                  Informations générales
-                </h3>
-                <div className="space-y-4 md:space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Nom de la boutique
-                    </label>
-                    <input
-                      type="text"
-                      defaultValue="MARIUS & FANNY"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Email de contact
-                    </label>
-                    <input
-                      type="email"
-                      defaultValue="contact@mariusetfanny.com"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Seuil de stock bas
-                    </label>
-                    <input
-                      type="number"
-                      defaultValue="20"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm md:text-base"
-                    />
-                    <p className="text-xs text-gray-500">
-                      Les produits avec un stock inférieur à ce seuil seront
-                      marqués comme "Stock bas"
-                    </p>
-                  </div>
-                  <button className="w-full bg-[#2D2A26] hover:bg-[#C5A065] text-white font-medium py-3 rounded-lg transition-colors text-sm md:text-base">
-                    Enregistrer les modifications
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        {/* VUE PARAMÈTRES */}
+        {viewMode === "settings" && <SettingsManagement />}
       </main>
     </div>
   );
@@ -656,12 +622,12 @@ function NavItem({ icon, label, active = false, onClick }: NavItemProps) {
     <button
       onClick={onClick}
       className={`
-        flex items-center gap-3 w-full p-3 rounded-lg transition-all duration-200
+        flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-200
         relative group
         ${
           active
-            ? "bg-linear-to-r from-[#C5A065] to-[#b8935a] text-white shadow-lg shadow-[#C5A065]/20"
-            : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
+            ? "bg-linear-to-r from-[#C5A065] to-[#b8935a] text-white shadow-lg shadow-[#C5A065]/30"
+            : "text-stone-600 hover:bg-stone-100 hover:text-[#C5A065]"
         }
       `}
     >
@@ -672,7 +638,7 @@ function NavItem({ icon, label, active = false, onClick }: NavItemProps) {
       </span>
       <span className="font-medium text-sm">{label}</span>
       {active && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#C5A065] rounded-r-full" />
       )}
     </button>
   );
@@ -714,12 +680,14 @@ function StatCard({ title, value, change, icon, color, alert }: StatCardProps) {
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 ${alert ? "ring-2 ring-red-200" : ""}`}
+      className={`bg-white/70 backdrop-blur-md rounded-2xl border border-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 p-5 md:p-6 ${alert ? "ring-2 ring-red-300" : ""}`}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs md:text-sm text-gray-500 mb-1">{title}</p>
-          <h3 className="text-2xl md:text-3xl font-bold text-[#2D2A26]">
+          <p className="text-xs font-bold opacity-60 uppercase tracking-widest mb-1">
+            {title}
+          </p>
+          <h3 className="text-2xl md:text-3xl font-bold text-stone-800">
             {value}
           </h3>
           {change !== undefined && (
@@ -730,18 +698,18 @@ function StatCard({ title, value, change, icon, color, alert }: StatCardProps) {
                 <TrendingDown size={14} className="text-red-600" />
               )}
               <span
-                className={`text-xs md:text-sm font-medium ${change >= 0 ? "text-green-600" : "text-red-600"}`}
+                className={`text-xs md:text-sm font-bold ${change >= 0 ? "text-green-600" : "text-red-600"}`}
               >
                 {change >= 0 ? "+" : ""}
                 {change}%
               </span>
-              <span className="text-xs text-gray-400 hidden sm:inline">
+              <span className="text-xs text-stone-400 hidden sm:inline">
                 vs mois dernier
               </span>
             </div>
           )}
         </div>
-        <div className={`p-2 md:p-3 rounded-xl ${colorClasses[color]}`}>
+        <div className={`p-2.5 rounded-lg ${colorClasses[color]}`}>
           {icon}
         </div>
       </div>
