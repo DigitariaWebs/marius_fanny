@@ -120,6 +120,7 @@ export function getRoleDisplayName(role: UserRole): string {
     staff: "Staff",
     customerService: "Customer Service",
     admin: "Administrator",
+    deliveryDriver: "Delivery Driver",
   };
   return displayNames[role] || role;
 }
@@ -136,6 +137,7 @@ export function getRoleDescription(role: UserRole): string {
     customerService:
       "Customer service representative with support and management capabilities",
     admin: "Full system administrator with complete access and control",
+    deliveryDriver: "Delivery driver with access to update delivery statuses",
   };
   return descriptions[role] || "Unknown role";
 }

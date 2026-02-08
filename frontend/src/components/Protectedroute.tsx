@@ -2,11 +2,16 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { authClient } from "../lib/AuthClient";
 
-type RoleType = "admin" | "kitchen_staff" | "customer_service" | "client";
+type RoleType =
+  | "admin"
+  | "kitchen_staff"
+  | "customer_service"
+  | "client"
+  | "deliveryDriver";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: RoleType[]; 
+  allowedRoles?: RoleType[];
 }
 
 interface UserWithMetadata {
@@ -45,10 +50,10 @@ export function ProtectedRoute({
 
         // ✅ Récupération du rôle avec "client" par défaut
         const rawRole = user.user_metadata?.role || user.role || "client";
-        
+
         // 🧹 NETTOYAGE DU RÔLE (suppression des guillemets et espaces)
         const cleanedRole = String(rawRole)
-          .replace(/['"]/g, '')
+          .replace(/['"]/g, "")
           .trim() as RoleType;
 
         console.log("🔐 [ProtectedRoute] Rôle brut:", rawRole);
@@ -83,12 +88,18 @@ export function ProtectedRoute({
 
   // 🎯 Vérification des permissions
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
-    console.warn(`🚫 Accès refusé. Requis: ${allowedRoles}, Utilisateur: ${userRole}`);
+    console.warn(
+      `🚫 Accès refusé. Requis: ${allowedRoles}, Utilisateur: ${userRole}`,
+    );
 
     // Redirections automatiques vers les bons espaces selon le rôle
     if (userRole === "admin") return <Navigate to="/dashboard" replace />;
-    if (userRole === "kitchen_staff") return <Navigate to="/staff/production" replace />;
-    if (userRole === "customer_service") return <Navigate to="/staff/commandes" replace />;
+    if (userRole === "kitchen_staff")
+      return <Navigate to="/staff/production" replace />;
+    if (userRole === "customer_service")
+      return <Navigate to="/staff/commandes" replace />;
+    if (userRole === "deliveryDriver")
+      return <Navigate to="/staff/delivery" replace />;
     if (userRole === "client") return <Navigate to="/mon-compte" replace />;
 
     return <Navigate to="/" replace />;

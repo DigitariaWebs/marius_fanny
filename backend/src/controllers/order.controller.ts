@@ -686,3 +686,95 @@ export const getDeliveryZones = async (
     });
   }
 };
+
+/**
+ * Update delivery status for an order (for delivery drivers)
+ * PATCH /api/orders/:id/delivery-status
+ */
+export const updateDeliveryStatus = async (
+  req: Request<{ id: string }, {}, { deliveryStatus: string }>,
+  res: Response<ApiResponse>,
+) => {
+  try {
+    const { id } = req.params;
+    const { deliveryStatus } = req.body;
+
+    // Validate delivery status
+    const validStatuses = ["pending", "in_transit", "arrived", "delivered"];
+    if (!validStatuses.includes(deliveryStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: "Statut de livraison invalide",
+      });
+    }
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: "Commande non trouvée",
+      });
+    }
+
+    // Only allow updating delivery orders
+    if (order.deliveryType !== "delivery") {
+      return res.status(400).json({
+        success: false,
+        error: "Cette commande n'est pas une livraison",
+      });
+    }
+
+    // Track change in history
+    const oldDeliveryStatus = order.deliveryStatus || "pending";
+    const oldStatus = order.status;
+    order.deliveryStatus = deliveryStatus as
+      | "pending"
+      | "in_transit"
+      | "arrived"
+      | "delivered";
+
+    // If delivery is completed, update order status to delivered
+    if (deliveryStatus === "delivered") {
+      order.status = "delivered";
+    }
+
+    const change = {
+      changedAt: new Date(),
+      changedBy: req.user?.id || "delivery_driver",
+      field: "delivery_status",
+      oldValue: oldDeliveryStatus,
+      newValue: deliveryStatus,
+      changeType: "updated" as const,
+      notes: `Delivery status updated by driver: ${deliveryStatus}`,
+    };
+
+    order.changeHistory = order.changeHistory || [];
+    order.changeHistory.push(change);
+
+    await order.save();
+
+    // TODO: Send notification to customer
+    // This is where you would integrate with a notification service
+    // to send push notifications or SMS to the customer
+
+    res.json({
+      success: true,
+      message: "Statut de livraison mis à jour avec succès",
+      data: {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        deliveryStatus: order.deliveryStatus,
+        updatedAt: new Date(),
+      },
+    });
+  } catch (error: any) {
+    console.error("Error updating delivery status:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la mise à jour du statut de livraison",
+      message: error.message,
+    });
+  }
+};

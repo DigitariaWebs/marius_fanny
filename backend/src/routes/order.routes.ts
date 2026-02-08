@@ -8,6 +8,7 @@ import {
   validateDelivery,
   getDeliveryZones,
   getOrderHistory,
+  updateDeliveryStatus,
 } from "../controllers/order.controller.js";
 import { validateBody, validateQuery } from "../middleware/validation.js";
 import {
@@ -50,6 +51,9 @@ router.get("/:id", requireAuth, getOrderById);
 
 // Get order change history (requires authentication)
 router.get("/:id/history", requireAuth, getOrderHistory);
+
+// Update delivery status (for delivery drivers)
+router.patch("/:id/delivery-status", requireAuth, updateDeliveryStatus);
 
 // Update an order (admin only)
 router.patch(

@@ -26,6 +26,8 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPassword from "./pages/ResetPassword";
 import StaffManagement from "./pages/Stuff";
 import Checkout from "./pages/Checkout";
+import DeliveryDashboard from "./pages/DeliveryDashboard";
+import { RoleBasedRedirect } from "./components/RoleBasedRedirect";
 
 // Utils
 import { loadCart, saveCart } from "./utils/cartPersistence";
@@ -95,32 +97,32 @@ const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     // Initialize cart state directly from localStorage
     const persistedCart = loadCart();
-    console.log('🚀 [APP] Initializing cart from localStorage:', persistedCart);
+    console.log("🚀 [APP] Initializing cart from localStorage:", persistedCart);
     return persistedCart;
   });
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    console.log('💾 [APP] Saving cart to localStorage:', cartItems);
+    console.log("💾 [APP] Saving cart to localStorage:", cartItems);
     saveCart(cartItems);
   }, [cartItems]);
 
   // Listen for cart updates from other components
   useEffect(() => {
     const handleCartUpdate = () => {
-      console.log('🔄 [APP] Cart updated event received, reloading cart');
+      console.log("🔄 [APP] Cart updated event received, reloading cart");
       const updatedCart = loadCart();
       setCartItems(updatedCart);
     };
 
-    window.addEventListener('cart:updated', handleCartUpdate);
-    return () => window.removeEventListener('cart:updated', handleCartUpdate);
+    window.addEventListener("cart:updated", handleCartUpdate);
+    return () => window.removeEventListener("cart:updated", handleCartUpdate);
   }, []);
 
   const addToCart = (product: any) => {
-    console.log('➕ [APP] Adding to cart:', product);
+    console.log("➕ [APP] Adding to cart:", product);
     setCartItems((prev) => {
-      console.log('📦 [APP] Previous cart:', prev);
+      console.log("📦 [APP] Previous cart:", prev);
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
         const newCart = prev.map((item) =>
@@ -128,14 +130,14 @@ const App: React.FC = () => {
             ? { ...item, quantity: item.quantity + 1 }
             : item,
         );
-        console.log('🔄 [APP] Updated existing item, new cart:', newCart);
+        console.log("🔄 [APP] Updated existing item, new cart:", newCart);
         return newCart;
       }
       const newCart = [
         ...prev,
         { ...product, quantity: 1, image: product.image || product.img },
       ];
-      console.log('🆕 [APP] Added new item, new cart:', newCart);
+      console.log("🆕 [APP] Added new item, new cart:", newCart);
       return newCart;
     });
     setIsCartOpen(true);
@@ -171,32 +173,77 @@ const App: React.FC = () => {
 
       <div className="min-h-screen relative">
         <Routes>
-          {/* Main Routes */}
+          {/* Main Routes - Protected from delivery drivers */}
           <Route
             path="/"
             element={
-              <HomePage
-                onCartClick={() => setIsCartOpen(true)}
-                cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-                onAddToCart={addToCart}
-              />
+              <RoleBasedRedirect>
+                <HomePage
+                  onCartClick={() => setIsCartOpen(true)}
+                  cartCount={cartItems.reduce(
+                    (sum, item) => sum + item.quantity,
+                    0,
+                  )}
+                  onAddToCart={addToCart}
+                />
+              </RoleBasedRedirect>
             }
           />
           <Route
             path="/products"
             element={
-              <ProductsPage
-                onCartClick={() => setIsCartOpen(true)}
-                cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-                onAddToCart={addToCart}
-              />
+              <RoleBasedRedirect>
+                <ProductsPage
+                  onCartClick={() => setIsCartOpen(true)}
+                  cartCount={cartItems.reduce(
+                    (sum, item) => sum + item.quantity,
+                    0,
+                  )}
+                  onAddToCart={addToCart}
+                />
+              </RoleBasedRedirect>
             }
           />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/politique-retour" element={<Politique />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/dashboard" element={<AdminDashboard />} />
-          <Route path="/mon-compte" element={<MonCompte />} />
+          <Route
+            path="/checkout"
+            element={
+              <RoleBasedRedirect>
+                <Checkout />
+              </RoleBasedRedirect>
+            }
+          />
+          <Route
+            path="/politique-retour"
+            element={
+              <RoleBasedRedirect>
+                <Politique />
+              </RoleBasedRedirect>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <RoleBasedRedirect>
+                <Contact />
+              </RoleBasedRedirect>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <RoleBasedRedirect>
+                <AdminDashboard />
+              </RoleBasedRedirect>
+            }
+          />
+          <Route
+            path="/mon-compte"
+            element={
+              <RoleBasedRedirect>
+                <MonCompte />
+              </RoleBasedRedirect>
+            }
+          />
 
           {/* Auth Routes */}
           <Route path="/se-connecter" element={<AuthPage />} />
@@ -212,8 +259,23 @@ const App: React.FC = () => {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-          <Route path="/user" element={<User />} />
-          <Route path="/stuff" element={<StaffManagement />} />
+          <Route
+            path="/user"
+            element={
+              <RoleBasedRedirect>
+                <User />
+              </RoleBasedRedirect>
+            }
+          />
+          <Route
+            path="/stuff"
+            element={
+              <RoleBasedRedirect>
+                <StaffManagement />
+              </RoleBasedRedirect>
+            }
+          />
+          <Route path="/staff/delivery" element={<DeliveryDashboard />} />
         </Routes>
       </div>
     </Router>

@@ -443,7 +443,7 @@ function ProductionCard({ item, onToggle }: ProductionCardProps) {
         <button
           onClick={onToggle}
           className={`
-            flex-shrink-0 w-6 h-6 rounded border-2 transition-all
+            shrink-0 w-6 h-6 rounded border-2 transition-all
             ${item.isCompleted 
               ? 'bg-gray-900 border-gray-900' 
               : 'bg-white border-gray-300 hover:border-gray-400'

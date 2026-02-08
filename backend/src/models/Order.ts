@@ -64,6 +64,7 @@ export interface IOrder extends Document {
     | "completed"
     | "cancelled"
     | "delivered";
+  deliveryStatus?: "pending" | "in_transit" | "arrived" | "delivered";
   notes?: string;
   changeHistory: IOrderChange[]; // Track all changes to the order
   createdAt: Date;
@@ -282,6 +283,11 @@ const OrderSchema = new Schema<IOrder>(
       default: "pending",
       index: true,
     },
+    deliveryStatus: {
+      type: String,
+      enum: ["pending", "in_transit", "arrived", "delivered"],
+      default: "pending",
+    },
     notes: {
       type: String,
       trim: true,
@@ -296,7 +302,13 @@ const OrderSchema = new Schema<IOrder>(
           newValue: { type: Schema.Types.Mixed },
           changeType: {
             type: String,
-            enum: ["created", "updated", "status_changed", "payment_updated", "items_modified"],
+            enum: [
+              "created",
+              "updated",
+              "status_changed",
+              "payment_updated",
+              "items_modified",
+            ],
             required: true,
           },
           notes: { type: String },
