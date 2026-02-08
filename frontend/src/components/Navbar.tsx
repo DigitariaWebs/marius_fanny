@@ -198,7 +198,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
       >
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center relative z-50">
           {/* LOGO */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <button onClick={handleHeroClick} className="cursor-pointer focus:outline-none">
               <img src="/logo.avif" alt="Logo" className="h-10 md:h-12 w-auto object-contain" />
             </button>
@@ -220,7 +220,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
           </div>
 
           {/* CART + PROFILE/LOGIN DESKTOP */}
-          <div className="hidden md:flex items-center gap-3 flex-shrink-0 pr-4">
+          <div className="hidden md:flex items-center gap-3 shrink-0 pr-4">
             <button onClick={onCartClick} className="relative p-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors focus:outline-none">
               <FiShoppingBag size={22} />
               {cartCount > 0 && (
@@ -311,7 +311,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
       <div ref={overlayRef} className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" style={{ opacity: 0, pointerEvents: "none" }} onClick={() => setIsOpen(false)} />
 
       {/* SIDEBAR MOBILE */}
-      <div ref={sidebarRef} className="fixed top-0 right-0 h-full w-[65vw] max-w-[260px] z-50 md:hidden shadow-2xl overflow-y-auto" style={{ backgroundColor: styles.cream, transform: "translateX(100%)" }}>
+      <div ref={sidebarRef} className="fixed top-0 right-0 h-full w-[65vw] max-w-65 z-50 md:hidden shadow-2xl overflow-y-auto" style={{ backgroundColor: styles.cream, transform: "translateX(100%)" }}>
         <div className="flex justify-between items-center p-4 border-b border-[#E5E0D8]">
           <h2 className="text-sm font-black uppercase tracking-wider" style={{ color: styles.text, fontFamily: styles.fontSans }}>Menu</h2>
           <button onClick={() => setIsOpen(false)} className="text-xl p-1 focus:outline-none" style={{ color: styles.text }}><FiX /></button>

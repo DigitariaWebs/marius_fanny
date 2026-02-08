@@ -13,7 +13,7 @@ const ClientVideo: React.FC = () => {
             {/* Décoration derrière la vidéo */}
             <div className="absolute -inset-4 border border-[#C5A065]/30 rounded-[3rem] -rotate-3" />
             
-            <div className="relative w-full max-w-[320px] aspect-[9/16] rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-[#2D2A26]">
+            <div className="relative w-full max-w-[320px] aspect-9/16 rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-[#2D2A26]">
               <video 
                 className="w-full h-full object-cover"
                 autoPlay 
