@@ -44,6 +44,7 @@ const Checkout: React.FC = () => {
     "contact" | "delivery" | "payment"
   >("contact");
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
+  const [availableHours, setAvailableHours] = useState<string[]>([]);
   const [paymentResultModal, setPaymentResultModal] = useState<{
     isOpen: boolean;
     type: "details" | "warning";
@@ -58,36 +59,32 @@ const Checkout: React.FC = () => {
     onClose: () => {},
   });
 
-  // Delivery time slots configuration - removed predefined slots for flexible selection
-  const availableHours = [
-    "08:00",
-    "08:30",
-    "09:00",
-    "09:30",
-    "10:00",
-    "10:30",
-    "11:00",
-    "11:30",
-    "12:00",
-    "12:30",
-    "13:00",
-    "13:30",
-    "14:00",
-    "14:30",
-    "15:00",
-    "15:30",
-    "16:00",
-    "16:30",
-    "17:00",
-    "17:30",
-    "18:00",
-    "18:30",
-    "19:00",
-    "19:30",
-    "20:00",
-    "20:30",
-    "21:00",
-  ];
+  // Delivery time slots configuration
+  const getAvailableHours = (selectedDate: string) => {
+    if (!selectedDate) return [];
+
+    const date = new Date(selectedDate + "T00:00:00");
+    const dayOfWeek = date.getDay(); // 0 = dimanche, 6 = samedi
+
+    // Weekend (samedi = 6, dimanche = 0)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return ["08:00", "09:00", "10:00", "11:00"]; // Créneaux d'1 heure
+    }
+
+    // Semaine (lundi à vendredi)
+    return [
+      "08:00", // 8-9
+      "09:00", // 9-10
+      "10:00", // 10-11
+      "11:00", // 11-11:30
+      "11:30", // 11:30-12
+      "12:00", // 12-12:30
+      "12:30", // 12:30-13
+      "13:00", // 13-13:30
+      "13:30", // 13:30-14
+      "14:00", // Ajouté pour permettre 13:30-14:00
+    ];
+  };
 
   // Calculate minimum delivery date based on preparation times
   const getMinimumDeliveryDate = () => {
@@ -185,6 +182,17 @@ const Checkout: React.FC = () => {
     validateDeliveryDate(newDate);
   };
 
+  // Mettre à jour les heures disponibles quand la date change
+  useEffect(() => {
+    if (deliveryDate) {
+      setAvailableHours(getAvailableHours(deliveryDate));
+      // Reset les heures sélectionnées si la date change
+      setDeliveryTimeFrom("");
+      setDeliveryTimeTo("");
+      setTimeSlotError("");
+    }
+  }, [deliveryDate]);
+
   // Validate time slot to ensure end time is after start time
   const validateTimeSlot = (from: string, to: string) => {
     if (!from || !to) {
@@ -205,7 +213,8 @@ const Checkout: React.FC = () => {
 
   const handleTimeFromChange = (time: string) => {
     setDeliveryTimeFrom(time);
-    validateTimeSlot(time, deliveryTimeTo);
+    setDeliveryTimeTo("");
+    setTimeSlotError("");
   };
 
   const handleTimeToChange = (time: string) => {
@@ -215,12 +224,77 @@ const Checkout: React.FC = () => {
 
   // Filter available end times based on selected start time
   const getAvailableEndTimes = () => {
-    if (!deliveryTimeFrom) return availableHours;
-    const fromTime = parseInt(deliveryTimeFrom.replace(":", ""));
-    return availableHours.filter((time) => {
-      const timeValue = parseInt(time.replace(":", ""));
-      return timeValue > fromTime;
-    });
+    if (!deliveryTimeFrom || !deliveryDate) return [];
+    
+    const date = new Date(deliveryDate + "T00:00:00");
+    const dayOfWeek = date.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    if (isWeekend) {
+      // Weekend: créneaux d'1 heure (8-9, 9-10, 10-11, 11-12)
+      const fromHour = parseInt(deliveryTimeFrom);
+      
+      // Le dernier créneau commence à 11:00 et finit à 12:00
+      if (fromHour === 11) {
+        return ["12:00"];
+      }
+      
+      const nextHour = String(fromHour + 1).padStart(2, '0') + ":00";
+      return [nextHour];
+    }
+
+    // Semaine: logique avec demi-heures
+    const endTimes: string[] = [];
+    
+    // Si l'heure de début se termine par :00 (heures pleines)
+    if (deliveryTimeFrom.endsWith(":00")) {
+      const fromHour = parseInt(deliveryTimeFrom);
+      
+      // Pour 8:00, 9:00, 10:00
+      if (fromHour >= 8 && fromHour <= 10) {
+        endTimes.push(String(fromHour) + ":30");
+        endTimes.push(String(fromHour + 1).padStart(2, '0') + ":00");
+      }
+      // Pour 11:00
+      else if (fromHour === 11) {
+        endTimes.push("11:30");
+        endTimes.push("12:00");
+      }
+      // Pour 12:00
+      else if (fromHour === 12) {
+        endTimes.push("12:30");
+        endTimes.push("13:00");
+      }
+      // Pour 13:00
+      else if (fromHour === 13) {
+        endTimes.push("13:30");
+        endTimes.push("14:00");
+      }
+    }
+    
+    // Si l'heure de début est :30
+    if (deliveryTimeFrom.endsWith(":30")) {
+      const fromHour = parseInt(deliveryTimeFrom);
+      
+      // Pour 11:30
+      if (fromHour === 11) {
+        endTimes.push("12:00");
+      }
+      // Pour 12:30
+      else if (fromHour === 12) {
+        endTimes.push("13:00");
+      }
+      // Pour 13:30
+      else if (fromHour === 13) {
+        endTimes.push("14:00");
+      }
+      // Pour les autres demi-heures (8:30, 9:30, 10:30)
+      else if (fromHour >= 8 && fromHour <= 10) {
+        endTimes.push(String(fromHour + 1).padStart(2, '0') + ":00");
+      }
+    }
+    
+    return endTimes;
   };
 
   useEffect(() => {
@@ -792,6 +866,7 @@ const Checkout: React.FC = () => {
                               : "border-stone-300 focus:ring-[#C5A065]"
                           }`}
                           required
+                          disabled={!deliveryTimeFrom}
                         >
                           <option value="">Heure de fin</option>
                           {getAvailableEndTimes().map((time) => (
@@ -831,9 +906,9 @@ const Checkout: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        disabled={!!dateValidationError || !!timeSlotError}
+                        disabled={!!dateValidationError || !!timeSlotError || !deliveryTimeFrom || !deliveryTimeTo}
                         className={`flex-1 py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-lg ${
-                          dateValidationError || timeSlotError
+                          dateValidationError || timeSlotError || !deliveryTimeFrom || !deliveryTimeTo
                             ? "bg-stone-400 text-stone-600 cursor-not-allowed"
                             : "bg-[#2D2A26] text-white hover:bg-[#C5A065]"
                         }`}

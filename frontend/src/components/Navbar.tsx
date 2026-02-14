@@ -64,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
   }, [showProfileMenu]);
 
   const mainLinks = [
-    { name: "Maison mère", id: "shop" },
+    { name: "La boutique", id: "shop" },
     { name: "Nos Favoris", id: "best-sellers" },
     { name: "Notre Histoire", id: "timeline" },
     {name: "Devenir partenaire", id: "devenir-partenaire"},
