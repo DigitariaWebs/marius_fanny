@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { ImageUpload } from "./ImageUpload";
 import type { Product } from "../types";
 import { CATEGORIES } from "../data";
 import { productAPI } from "../lib/ProductAPI";
@@ -490,21 +491,10 @@ export function ProductManagement() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium text-gray-700">
-                Image URL
-              </label>
-              <input
-                type="text"
+              <ImageUpload
                 value={productForm.image}
-                onChange={(e) =>
-                  setProductForm({ ...productForm, image: e.target.value })
-                }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
-                placeholder="https://exemple.com/image.jpg"
+                onChange={(url) => setProductForm({ ...productForm, image: url })}
               />
-              <p className="text-xs text-gray-500">
-                Laissez vide pour utiliser un placeholder
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -698,21 +688,10 @@ export function ProductManagement() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium text-gray-700">
-                Image URL
-              </label>
-              <input
-                type="text"
+              <ImageUpload
                 value={productForm.image}
-                onChange={(e) =>
-                  setProductForm({ ...productForm, image: e.target.value })
-                }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
-                placeholder="https://exemple.com/image.jpg"
+                onChange={(url) => setProductForm({ ...productForm, image: url })}
               />
-              <p className="text-xs text-gray-500">
-                Laissez vide pour utiliser un placeholder
-              </p>
             </div>
 
             <div className="space-y-2">
