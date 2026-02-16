@@ -167,8 +167,11 @@ app.use(errorHandler);
 // Export for programmatic use
 export default app;
 
-// Only start server when running locally (not imported as module)
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+// Only start server when running locally (not in Vercel or production)
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true" || !!process.env.NOW_REGION;
+const isProduction = process.env.NODE_ENV === "production";
+
+if (!isVercel && !isProduction) {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });
