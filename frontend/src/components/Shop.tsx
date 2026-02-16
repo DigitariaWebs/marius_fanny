@@ -28,6 +28,7 @@ const categories: Category[] = [
   { id: 4, title: "Chocolats et macarons", image: "./cho.jpg", size: 'small' },
   { id: 5, title: "Boîte à lunch Marius et Fanny", image: "./boite.jpg", size: 'large' },
   { id: 6, title: "À la carte", image: "./carte.jpg", size: 'small' },
+  { id: 7, title: "St-Valentin", image: "./saint.jpg", size: 'small' },
 ];
 
 const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick }) => {

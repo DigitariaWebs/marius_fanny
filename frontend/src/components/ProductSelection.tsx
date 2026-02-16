@@ -81,7 +81,7 @@ const ALL_PRODUCTS: Product[] = [
     price: 3.5,
     image: "./pain1.jpg",
     allergens: ["Gluten (Blé)"],
-    preparationTimeHours: 24,
+    preparationTimeHours: 48,
   },
   {
     id: 202,
@@ -91,7 +91,7 @@ const ALL_PRODUCTS: Product[] = [
     price: 5.95,
     image: "./pain2.jpg",
     allergens: ["Gluten (Blé)"],
-    preparationTimeHours: 24,
+    preparationTimeHours: 48,
   },
   {
     id: 301,
@@ -146,6 +146,17 @@ const ALL_PRODUCTS: Product[] = [
     allergens: ["Gluten", "Lait"],
     preparationTimeHours: 24,
   },
+  {
+    id: 701,
+    categoryId: 7,
+    name: "Le choco amour",
+    description: "Un cœur de chocolat au lait, recouvert de pâte à tartiner de cacao.",
+    price: 39.95,
+    image: "./saint1.jpg",
+    tag: "Spécial Saint-Valentin",
+    allergens: ["Lait", "Gluten"],
+    preparationTimeHours: 72,
+  }
 ];
 
 const ProductSelection: React.FC<ProductSelectionProps> = ({
@@ -172,7 +183,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   const [cakeSize, setCakeSize] = useState<"6" | "12">("6");
   const [allergyNote, setAllergyNote] = useState("");
   const [selectedBread, setSelectedBread] = useState<string>("Baguette");
-  const [selectedSize, setSelectedSize] = useState<string>("400g");
   const [isSliced, setIsSliced] = useState<boolean>(false);
 
   useEffect(() => {
@@ -184,7 +194,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     setCakeSize("6");
     setAllergyNote("");
     setSelectedBread("Baguette");
-    setSelectedSize("400g");
     setIsSliced(false);
   }, [selectedProduct]);
 
@@ -255,8 +264,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
       }
 
       if (selectedProduct.categoryId === 2) {
-        productToAdd.selectedBread = selectedBread;
-        productToAdd.selectedSize = selectedSize;
         productToAdd.isSliced = isSliced;
       }
 
@@ -445,52 +452,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 {/* OPTIONS POUR LES PAINS */}
                 {selectedProduct?.categoryId === 2 && (
                   <>
-                    <div className="mb-6">
-                      <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>
-                        Grandeur
-                      </h4>
-                      <div className="flex gap-2 flex-wrap">
-                        {["400g", "800g", "1kg"].map((size) => (
-                          <button
-                            key={size}
-                            type="button"
-                            onClick={() => setSelectedSize(size)}
-                            className={`flex-1 py-3 px-2 rounded text-sm font-medium transition-all ${
-                              selectedSize === size
-                                ? "bg-[#C5A065] text-white shadow-md"
-                                : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
-                            }`}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="mb-6">
-                      <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>
-                        Sorte de pain
-                      </h4>
-                      <div className="flex gap-2 flex-wrap">
-                        {["Baguette", "Carré Blanc", "Pain de Campagne"].map((pain) => (
-                          <button
-                            key={pain}
-                            type="button"
-                            onClick={() => setSelectedBread(pain)}
-                            className={`flex-1 py-3 px-2 rounded text-sm font-medium transition-all ${
-                              selectedBread === pain
-                                ? "bg-[#C5A065] text-white shadow-md"
-                                : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
-                            }`}
-                          >
-                            {pain}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
                     <div className="mb-6">
                       <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
                         <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>

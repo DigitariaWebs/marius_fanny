@@ -297,7 +297,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="relative flex h-screen bg-[#F9F7F2] font-sans text-stone-800">
-      {/* Golden Background */}
       <div className="fixed inset-0 z-0 opacity-30">
         <GoldenBackground />
       </div>

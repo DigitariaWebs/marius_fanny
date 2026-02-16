@@ -34,7 +34,7 @@ import type { Order } from "../types";
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([
     {
-      id: "1", // Changed to string
+      id: "1",
       orderNumber: "ORD-2024-001",
       clientId: 1,
       client: {
@@ -69,7 +69,7 @@ export function OrderManagement() {
       updatedAt: "2024-01-22T14:20:00Z",
     },
     {
-      id: "2", // Changed to string
+      id: "2",
       orderNumber: "ORD-2024-002",
       clientId: 2,
       client: {
@@ -115,7 +115,7 @@ export function OrderManagement() {
       updatedAt: "2024-01-25T09:00:00Z",
     },
     {
-      id: "3", // Changed to string
+      id: "3",
       orderNumber: "ORD-2024-003",
       clientId: 3,
       client: {
@@ -148,6 +148,42 @@ export function OrderManagement() {
       createdAt: "2024-01-22T09:00:00Z",
       updatedAt: "2024-01-22T09:00:00Z",
     },
+    // NOUVELLE COMMANDE LAVAL (pick-up)
+    {
+      id: "4",
+      orderNumber: "ORD-2024-004",
+      clientId: 4,
+      client: {
+        id: 4,
+        firstName: "Pierre",
+        lastName: "Lavoie",
+        email: "pierre.lavoie@email.com",
+        phone: "450-555-0404",
+        status: "active",
+        createdAt: "2024-01-15T10:00:00Z",
+        updatedAt: "2024-01-15T10:00:00Z",
+        addresses: [],
+        orders: [],
+      },
+      orderDate: "2024-01-23T11:30:00Z",
+      pickupDate: "2024-01-28T14:00:00Z",
+      pickupLocation: "Laval",
+      deliveryType: "pickup",
+      items: [],
+      subtotal: 95.0,
+      taxAmount: 14.21,
+      deliveryFee: 0,
+      total: 109.21,
+      depositAmount: 54.61,
+      depositPaid: true,
+      depositPaidAt: "2024-01-23T11:35:00Z",
+      balancePaid: false,
+      paymentStatus: "deposit_paid",
+      status: "confirmed",
+      source: "phone",
+      createdAt: "2024-01-23T11:30:00Z",
+      updatedAt: "2024-01-23T11:35:00Z",
+    },
   ]);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -166,6 +202,18 @@ export function OrderManagement() {
       (client, index, self) =>
         index === self.findIndex((c) => c.id === client.id),
     );
+
+  // Fonction pour déterminer la couleur de la commande selon le type
+  const getOrderColor = (order: Order) => {
+    if (order.pickupLocation === "Montreal" && order.deliveryType === "pickup") {
+      return "bg-blue-50 border-l-4 border-blue-500 hover:bg-blue-100"; // Bleu pour ramassage Montréal
+    } else if (order.deliveryType === "delivery") {
+      return "bg-yellow-50 border-l-4 border-yellow-500 hover:bg-yellow-100"; // Jaune pour livraison
+    } else if (order.pickupLocation === "Laval" && order.deliveryType === "pickup") {
+      return "bg-white border-l-4 border-gray-300 hover:bg-gray-50"; // Blanc pour pick-up Laval
+    }
+    return "bg-white hover:bg-gray-50"; // Couleur par défaut
+  };
 
   const getStatusBadge = (status: Order["status"]) => {
     const statusConfig = {
@@ -485,6 +533,7 @@ export function OrderManagement() {
           getSearchValue={getSearchValue}
           itemsPerPage={10}
           selectable={false}
+          rowClassName={(order: Order) => getOrderColor(order)}
         />
       </div>
 
