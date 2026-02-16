@@ -46,14 +46,6 @@ export const searchUsersSchema = z.object({
 });
 
 /**
- * Pagination query schema
- */
-export const paginationSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(10),
-});
-
-/**
  * User ID param schema
  */
 export const userIdParamSchema = z.object({
@@ -67,5 +59,4 @@ export type UpdateCurrentUserInput = z.infer<typeof updateCurrentUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type CreateUserProfileInput = z.infer<typeof createUserProfileSchema>;
 export type SearchUsersQuery = z.infer<typeof searchUsersSchema>;
-export type PaginationQuery = z.infer<typeof paginationSchema>;
 export type UserIdParam = z.infer<typeof userIdParamSchema>;

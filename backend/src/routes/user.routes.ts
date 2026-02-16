@@ -16,9 +16,11 @@ import {
   updateCurrentUserSchema,
   updateUserSchema,
   searchUsersSchema,
-  paginationSchema,
   userIdParamSchema,
 } from "../schemas/user.schema.js";
+import {
+  paginationQuerySchema,
+} from "../schemas/common.schema.js";
 
 const router = Router();
 
@@ -62,7 +64,7 @@ router.get(
   "/",
   requireAuth,
   requireAdmin,
-  validateQuery(paginationSchema),
+  validateQuery(paginationQuerySchema),
   asyncHandler(userController.getAllUsers),
 );
 

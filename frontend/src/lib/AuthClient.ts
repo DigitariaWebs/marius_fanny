@@ -36,7 +36,7 @@ export const forgotPassword = async (email: string) => {
     const errorData = contentType?.includes("application/json") 
       ? await response.json() 
       : { message: "Route introuvable (404)" };
-      
+
     throw new Error(errorData.message || "Une erreur est survenue");
   }
 

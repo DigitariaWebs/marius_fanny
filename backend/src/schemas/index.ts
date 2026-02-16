@@ -8,6 +8,9 @@ export * from "./auth.schema.js";
 // User schemas
 export * from "./user.schema.js";
 
+// Product schemas
+export * from "./product.schema.js";
+
 // Common schemas
 export {
   objectIdSchema,

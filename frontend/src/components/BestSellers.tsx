@@ -1,23 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { FiMinus, FiPlus } from 'react-icons/fi';
-
-const products = [
-  { id: 1, name: "Boîte à lunch", price: 19.95, img: "./fav1.jpg" },
-  { id: 2, name: "Salade repas", price: 20.95, img: "./fav2.jpg" },
-  { id: 3, name: "Gâteau croustillant", price: 37.50, img: "./fav3.jpg" },
-  { id: 4, name: "Tarte citron", price: 29.95, img: "./fav4.jpg" },
-  { id: 5, name: "Plateau sandwich", price: 42.95, img: "https://images.unsplash.com/photo-1554433607-66b5efe9d304?auto=format&fit=crop&w=500&q=80" },
-  { id: 6, name: "6 Croissants", price: 16.50, img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=500&q=80" },
-  { id: 7, name: "12 Macarons", price: 24.95, img: "https://images.unsplash.com/photo-1569864358642-9d1684040f43?auto=format&fit=crop&w=500&q=80" },
-];
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  img: string;
-}
+import { productAPI } from '../lib/ProductAPI';
+import type { Product } from '../types';
 
 interface BestSellersProps {
   onAddToCart: (product: any) => void;
@@ -29,9 +14,9 @@ const ProductCard: React.FC<{ product: Product; onAddToCart: (product: any, qty:
   return (
     <div className="relative flex flex-col items-center bg-white border-2 border-[#2D2A26]/10 rounded-t-[100px] rounded-b-[30px] p-6 pt-12 transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
       <div className="w-40 h-40 mb-4 rounded-full overflow-hidden shadow-md">
-        <img 
-          src={product.img} 
-          alt={product.name} 
+        <img
+          src={product.image || "./placeholder.jpg"}
+          alt={product.name}
           className="w-full h-full object-cover transform hover:scale-110 transition-all duration-500"
         />
       </div>
@@ -63,8 +48,8 @@ const ProductCard: React.FC<{ product: Product; onAddToCart: (product: any, qty:
 
       <button 
         onClick={() => {
-          // On adapte l'objet pour qu'il match le format attendu par le panier (image vs img)
-          onAddToCart({ ...product, image: product.img }, qty);
+          // On adapte l'objet pour qu'il match le format attendu par le panier
+          onAddToCart({ ...product, image: product.image }, qty);
           setQty(1); // Reset après ajout
         }}
         className="w-full bg-[#c69d75] py-3 rounded-full font-sans font-bold text-xs uppercase tracking-widest text-[#2D2A26] hover:bg-[#2D2A26] hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
@@ -78,6 +63,30 @@ const ProductCard: React.FC<{ product: Product; onAddToCart: (product: any, qty:
 
 const BestSellers: React.FC<BestSellersProps> = ({ onAddToCart }) => {
   const marqueeRef = useRef(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchBestSellers();
+  }, []);
+
+  const fetchBestSellers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await productAPI.getAllProducts();
+      // Show first 6 available products as "best sellers"
+      const bestSellers = response.data.products
+        .filter(p => p.available)
+        .slice(0, 6);
+      setProducts(bestSellers);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -113,15 +122,39 @@ const BestSellers: React.FC<BestSellersProps> = ({ onAddToCart }) => {
           <p className="font-sans text-[#2D2A26]/60 italic uppercase tracking-widest text-xs">Découvrez les créations préférées de nos clients</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-16">
-          {products.map((product) => (
-            <ProductCard 
-              key={product.id} 
-              product={product} 
-              onAddToCart={handleAddToCartWithQty} 
-            />
-          ))}
-        </div>
+        {loading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#c69d75] mx-auto mb-4"></div>
+              <p className="text-[#2D2A26] text-lg">Chargement des favoris...</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-16">
+            <div className="text-red-500 text-4xl mb-4">⚠️</div>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchBestSellers}
+              className="bg-[#c69d75] hover:bg-[#2D2A26] text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-16">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={handleAddToCartWithQty}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

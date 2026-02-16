@@ -586,11 +586,12 @@ export const createInvoice = async (req: Request, res: Response) => {
  */
 export const getInvoice = async (req: Request, res: Response) => {
   const { invoiceId } = req.params;
-  console.log(`🔍 [INVOICE] Fetching invoice: ${invoiceId}`);
+  const invoiceIdStr = Array.isArray(invoiceId) ? invoiceId[0] : invoiceId;
+  console.log(`🔍 [INVOICE] Fetching invoice: ${invoiceIdStr}`);
 
   try {
     const response = await squareClient.invoices.get({
-      invoiceId,
+      invoiceId: invoiceIdStr,
     });
     const invoice = (response as any).invoice;
 

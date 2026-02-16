@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { productAPI } from '../lib/ProductAPI';
+import type { Product } from '../types';
 
 const styles = {
   gold: '#C5A065',
@@ -8,19 +10,20 @@ const styles = {
   fontSans: '"Inter", sans-serif',
 };
 
-interface Product {
-  id: number;
-  categoryId: number;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  tag?: string;
-  allergens?: string[];
-  selectedSize?: string;
-  userAllergies?: string;
-  preparationTimeHours?: number;
-}
+// Category mapping from URL IDs to database category names
+const CATEGORY_MAPPING: { [key: number]: string } = {
+  1: "Gâteaux",
+  2: "Pains",
+  3: "Viennoiseries",
+  4: "Chocolats et macarons",
+  5: "Boîte à lunch Marius et Fanny",
+  6: "À la carte",
+  7: "St-Valentin",
+  51: "Boite à lunch",
+  52: "Salade repas",
+  53: "Plateau repas",
+  54: "Option végétarienne",
+};
 
 interface ProductSelectionProps {
   categoryId?: number;
@@ -36,129 +39,6 @@ const LUNCH_SUBCATEGORIES = [
   { id: 54, title: "Option végétarienne", image: "./salade3.jpg" },
 ];
 
-const ALL_PRODUCTS: Product[] = [
-  {
-    id: 101,
-    categoryId: 1,
-    name: "La Marguerite",
-    description:
-      "Mousse mascarpone légère, cœur framboise intense, biscuit roulé nature.",
-    price: 37.5,
-    image: "./gateau.jpg",
-    tag: "en stock",
-    allergens: ["Gluten", "Lait", "Oeufs"],
-    preparationTimeHours: 24,
-  },
-  {
-    id: 102,
-    categoryId: 1,
-    name: "Tarte Citron Meringuée",
-    description:
-      "L'équilibre parfait entre l'acidité du citron et la douceur de la meringue italienne.",
-    price: 29.95,
-    image: "./fav4.jpg",
-    tag: "en stock",
-    allergens: ["Lait", "Oeufs", "Gluten"],
-    preparationTimeHours: 24,
-  },
-  {
-    id: 103,
-    categoryId: 1,
-    name: "Le Croustillant",
-    description:
-      "Praliné noisette, feuilletine croquante, enrobage chocolat au lait.",
-    price: 37.5,
-    image: "./fav3.jpg",
-    tag: "en stock",
-    allergens: ["Lait", "Gluten"],
-    preparationTimeHours: 24,
-  },
-  {
-    id: 201,
-    categoryId: 2,
-    name: "Baguette Tradition",
-    description: "Croustillante et alvéolée. Farine blanche, levain naturel.",
-    price: 3.5,
-    image: "./pain1.jpg",
-    allergens: ["Gluten (Blé)"],
-    preparationTimeHours: 48,
-  },
-  {
-    id: 202,
-    categoryId: 2,
-    name: "Le Carré Blanc",
-    description: "Pain de mie moelleux, idéal pour vos tartines du matin.",
-    price: 5.95,
-    image: "./pain2.jpg",
-    allergens: ["Gluten (Blé)"],
-    preparationTimeHours: 48,
-  },
-  {
-    id: 301,
-    categoryId: 3,
-    name: "Croissant au Beurre",
-    description: "Feuilletage pur beurre AOP, doré à souhait.",
-    price: 2.75,
-    image: "./croi1.jpg",
-    tag: "Matin",
-    allergens: ["Gluten", "Lait"],
-    preparationTimeHours: 24,
-  },
-  {
-    id: 5101,
-    categoryId: 51,
-    name: "Le Parisien",
-    description: "Jambon blanc supérieur, beurre de baratte, emmental.",
-    price: 12.5,
-    image: "./boite.jpg",
-    allergens: ["Gluten", "Lait"],
-    preparationTimeHours: 24,
-  },
-  {
-    id: 5201,
-    categoryId: 52,
-    name: "Salade César",
-    description: "Poulet grillé, copeaux de parmesan, croûtons à l'ail.",
-    price: 14.0,
-    image: "./salade1.jpg",
-    allergens: ["Lait", "Gluten", "Oeufs"],
-    preparationTimeHours: 24,
-  },
-  {
-    id: 5301,
-    categoryId: 53,
-    name: "Plateau Affaires",
-    description:
-      "Repas complet pour vos réunions : entrée, plat, fromage, dessert.",
-    price: 22.0,
-    image: "./salade2.jpg",
-    allergens: ["Lait", "Gluten"],
-    preparationTimeHours: 48,
-  },
-  {
-    id: 5401,
-    categoryId: 54,
-    name: "Wrap Végétarien",
-    description: "Légumes du soleil grillés, houmous maison, feta.",
-    price: 11.5,
-    image: "./salade3.jpg",
-    tag: "Végé",
-    allergens: ["Gluten", "Lait"],
-    preparationTimeHours: 24,
-  },
-  {
-    id: 701,
-    categoryId: 7,
-    name: "Le choco amour",
-    description: "Un cœur de chocolat au lait, recouvert de pâte à tartiner de cacao.",
-    price: 39.95,
-    image: "./saint1.jpg",
-    tag: "Spécial Saint-Valentin",
-    allergens: ["Lait", "Gluten"],
-    preparationTimeHours: 72,
-  }
-];
-
 const ProductSelection: React.FC<ProductSelectionProps> = ({
   categoryId,
   categoryTitle,
@@ -167,6 +47,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [currentCategory, setCurrentCategory] = useState<{
     id: number;
@@ -184,6 +68,23 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   const [allergyNote, setAllergyNote] = useState("");
   const [selectedBread, setSelectedBread] = useState<string>("Baguette");
   const [isSliced, setIsSliced] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await productAPI.getAllProducts();
+      setProducts(response.data.products);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -220,12 +121,14 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   }, [location.search, categoryId, categoryTitle]);
 
   useEffect(() => {
-    if (!currentCategory) return;
-    let targetId = currentCategory.id;
-    if (currentCategory.id === 5 && subCategory) targetId = subCategory.id;
-    const products = ALL_PRODUCTS.filter((p) => p.categoryId === targetId);
-    setFilteredProducts(products);
-  }, [currentCategory, subCategory]);
+    if (!currentCategory || products.length === 0) return;
+    let targetCategory = CATEGORY_MAPPING[currentCategory.id];
+    if (currentCategory.id === 5 && subCategory) {
+      targetCategory = CATEGORY_MAPPING[subCategory.id];
+    }
+    const filtered = products.filter((p) => p.category === targetCategory && p.available);
+    setFilteredProducts(filtered);
+  }, [currentCategory, subCategory, products]);
 
   const handleBack = () => {
     if (currentCategory?.id === 5 && subCategory) {
@@ -239,11 +142,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   const getCurrentPrice = () => {
     if (!selectedProduct) return 0;
     let price = selectedProduct.price;
-    if (
-      (selectedProduct.id === 101 || selectedProduct.id === 103) &&
-      cakeSize === "12"
-    ) {
-      price += 21.5;
+    // For cakes, add size pricing (this logic might need to be updated based on your actual products)
+    if (selectedProduct.category === "Gâteaux" && cakeSize === "12") {
+      price += 21.5; // This is a placeholder - adjust based on your pricing logic
     }
     return price;
   };
@@ -252,7 +153,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     if (selectedProduct) {
       const productToAdd: any = { ...selectedProduct };
 
-      if (selectedProduct.id === 101 || selectedProduct.id === 103) {
+      // Handle cake sizing
+      if (selectedProduct.category === "Gâteaux") {
         if (cakeSize === "12") {
           productToAdd.price += 21.5;
           productToAdd.name = `${productToAdd.name} (12 pers.)`;
@@ -263,11 +165,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
         }
       }
 
-      if (selectedProduct.categoryId === 2) {
+      // Handle bread slicing
+      if (selectedProduct.category === "Pains") {
         productToAdd.isSliced = isSliced;
       }
 
-      if (selectedProduct.categoryId === 51) {
+      // Handle lunch box options
+      if (selectedProduct.category === "Boite à lunch") {
         productToAdd.selectedBread = selectedBread;
         if (allergyNote.trim() !== "") {
           productToAdd.userAllergies = allergyNote;
@@ -301,6 +205,35 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
         Chargement des délices...
       </div>
     );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C5A065] mx-auto mb-4"></div>
+          <p className="text-[#C5A065] text-lg">Chargement des produits...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Erreur de chargement</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchProducts}
+            className="bg-[#C5A065] hover:bg-[#2D2A26] text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Réessayer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const showSubCategories = currentCategory.id === 5 && !subCategory;
 
@@ -375,11 +308,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  {product.tag && (
-                    <span className="absolute top-3 left-3 bg-[#C5A065] text-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
-                      {product.tag}
-                    </span>
-                  )}
                 </div>
                 <div className="p-6 text-center grow">
                   <h3 className="text-xl font-serif mb-2 text-[#2D2A26] group-hover:text-[#C5A065] transition-colors">
@@ -450,7 +378,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 </div>
 
                 {/* OPTIONS POUR LES PAINS */}
-                {selectedProduct?.categoryId === 2 && (
+                {selectedProduct?.category === "Pains" && (
                   <>
                     <div className="mb-6">
                       <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
@@ -576,7 +504,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 )}
 
                 {/* OPTIONS BOÎTE À LUNCH */}
-                {selectedProduct?.categoryId === 51 && (
+                {selectedProduct?.category === "Boîtes à lunch" && (
                   <>
                     <div className="mb-6">
                       <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
@@ -617,25 +545,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   </>
                 )}
 
-                {/* ALLERGÈNES */}
-                {selectedProduct.allergens && selectedProduct.allergens.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-xs font-bold uppercase mb-2 text-stone-500">
-                      Allergènes
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProduct.allergens.map((a, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-1 bg-stone-100 text-[10px] rounded text-stone-500"
-                        >
-                          {a}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
                 {/* ESPACE SUPPLÉMENTAIRE POUR LE SCROLL */}
                 <div className="h-12 md:h-8"></div>
               </div>

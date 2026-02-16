@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -23,10 +23,13 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import type { Product } from "../types";
-import { MOCK_PRODUCTS, CATEGORIES } from "../data";
+import { CATEGORIES } from "../data";
+import { productAPI } from "../lib/ProductAPI";
 
 export function ProductManagement() {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -47,6 +50,23 @@ export function ProductManagement() {
     maxOrderQuantity: "10",
     preparationTimeHours: "",
   });
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await productAPI.getAllProducts();
+      setProducts(response.data.products);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getAvailabilityBadge = (available: boolean) => {
     return (
@@ -135,25 +155,26 @@ export function ProductManagement() {
   const handleDelete = async () => {
     if (!productToDelete) return;
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await productAPI.deleteProduct(productToDelete.id);
       setProducts(products.filter((p) => p.id !== productToDelete.id));
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete product');
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   const handleCreate = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      const newProduct: Product = {
-        id: Math.max(...products.map((p) => p.id)) + 1,
+    try {
+      const productData = {
         name: productForm.name,
         category: productForm.category,
         price: parseFloat(productForm.price),
-        description: productForm.description,
+        description: productForm.description || undefined,
         image: productForm.image || undefined,
         available: productForm.available,
         minOrderQuantity: parseInt(productForm.minOrderQuantity),
@@ -161,10 +182,10 @@ export function ProductManagement() {
         preparationTimeHours: productForm.preparationTimeHours
           ? parseInt(productForm.preparationTimeHours)
           : undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
-      setProducts([...products, newProduct]);
+
+      const response = await productAPI.createProduct(productData);
+      setProducts([...products, response.data!]);
       setIsCreateModalOpen(false);
       setProductForm({
         name: "",
@@ -177,34 +198,35 @@ export function ProductManagement() {
         maxOrderQuantity: "10",
         preparationTimeHours: "",
       });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create product');
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   const handleUpdate = async () => {
     if (!selectedProduct) return;
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const productData = {
+        name: productForm.name,
+        category: productForm.category,
+        price: parseFloat(productForm.price),
+        description: productForm.description || undefined,
+        image: productForm.image || undefined,
+        available: productForm.available,
+        minOrderQuantity: parseInt(productForm.minOrderQuantity),
+        maxOrderQuantity: parseInt(productForm.maxOrderQuantity),
+        preparationTimeHours: productForm.preparationTimeHours
+          ? parseInt(productForm.preparationTimeHours)
+          : undefined,
+      };
+
+      const response = await productAPI.updateProduct(selectedProduct.id, productData);
       setProducts(
         products.map((p) =>
-          p.id === selectedProduct.id
-            ? {
-                ...p,
-                name: productForm.name,
-                category: productForm.category,
-                price: parseFloat(productForm.price),
-                description: productForm.description,
-                image: productForm.image || undefined,
-                available: productForm.available,
-                minOrderQuantity: parseInt(productForm.minOrderQuantity),
-                maxOrderQuantity: parseInt(productForm.maxOrderQuantity),
-                preparationTimeHours: productForm.preparationTimeHours
-                  ? parseInt(productForm.preparationTimeHours)
-                  : undefined,
-                updatedAt: new Date().toISOString(),
-              }
-            : p,
+          p.id === selectedProduct.id ? response.data! : p,
         ),
       );
       setIsEditModalOpen(false);
@@ -220,22 +242,24 @@ export function ProductManagement() {
         maxOrderQuantity: "10",
         preparationTimeHours: "",
       });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update product');
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
-  const toggleAvailability = (product: Product) => {
-    setProducts(
-      products.map((p) =>
-        p.id === product.id
-          ? {
-              ...p,
-              available: !p.available,
-              updatedAt: new Date().toISOString(),
-            }
-          : p,
-      ),
-    );
+  const toggleAvailability = async (product: Product) => {
+    try {
+      const response = await productAPI.toggleProductAvailability(product.id);
+      setProducts(
+        products.map((p) =>
+          p.id === product.id ? response.data! : p,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to toggle product availability');
+    }
   };
 
   const columns = [
@@ -379,14 +403,38 @@ export function ProductManagement() {
       </header>
 
       <div className="p-4 md:p-8">
-        <DataTable
-          data={products}
-          columns={columns}
-          filters={filters}
-          searchPlaceholder="Rechercher un produit..."
-          searchKeys={["name", "category"]}
-          itemsPerPage={10}
-        />
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C5A065]"></div>
+            <span className="ml-2 text-gray-600">Chargement des produits...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <X className="w-5 h-5 text-red-500 mr-2" />
+              <span className="text-red-800">{error}</span>
+            </div>
+            <button
+              onClick={fetchProducts}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <DataTable
+            data={products}
+            columns={columns}
+            filters={filters}
+            searchPlaceholder="Rechercher un produit..."
+            searchKeys={["name", "category"]}
+            itemsPerPage={10}
+          />
+        )}
       </div>
 
       {/* Create Product Modal */}

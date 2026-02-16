@@ -30,7 +30,8 @@ import {
   SelectValue,
 } from "./ui/select";
 import type { Client, Address, Product } from "../types";
-import { TAX_RATE, MOCK_PRODUCTS } from "../data";
+import { TAX_RATE } from "../data";
+import { productAPI } from "../lib/ProductAPI";
 import {
   calculateDeliveryFee,
   validateMinimumOrder,
@@ -142,6 +143,25 @@ export default function OrderForm({
   } | null>(null);
   const [minimumOrderError, setMinimumOrderError] = useState<string>("");
 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const response = await productAPI.getAllProducts();
+      setProducts(response.data.products.filter(p => p.available));
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const subtotal = formData.items.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = subtotal * TAX_RATE;
@@ -237,7 +257,7 @@ export default function OrderForm({
   };
 
   const handleProductSelect = (itemId: string, productId: number) => {
-    const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (!product) return;
 
     setFormData((prev) => ({
@@ -264,7 +284,7 @@ export default function OrderForm({
       .filter((item) => item.id !== currentItemId && item.productId)
       .map((item) => item.productId);
 
-    return MOCK_PRODUCTS.filter(
+    return products.filter(
       (product) =>
         product.available && !selectedProductIds.includes(product.id),
     );
@@ -272,11 +292,11 @@ export default function OrderForm({
 
   const getProductById = (productId: number | null): Product | null => {
     if (!productId) return null;
-    return MOCK_PRODUCTS.find((p) => p.id === productId) || null;
+    return products.find((p) => p.id === productId) || null;
   };
 
   const validatePreparationTime = (orderDate: string, productId: number) => {
-    const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (!product || !product.preparationTimeHours) return true;
 
     const orderDateTime = new Date(orderDate);
@@ -288,7 +308,7 @@ export default function OrderForm({
   };
 
   const getPreparationTimeWarning = (productId: number) => {
-    const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (!product || !product.preparationTimeHours) return null;
 
     if (product.preparationTimeHours >= 24) {

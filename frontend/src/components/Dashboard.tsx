@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { productAPI } from "../lib/ProductAPI";
 import {
   Package,
   LayoutDashboard,
@@ -62,179 +63,9 @@ const CATEGORIES = [
   "À la carte",
 ];
 
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: "La Marguerite (6 pers.)",
-    category: "Gâteaux",
-    price: 37.5,
-    sales: 245,
-    revenue: 9187.5,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 5,
-    preparationTimeHours: 24,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 2,
-    name: "Tarte Citron Meringuée",
-    category: "Gâteaux",
-    price: 29.95,
-    sales: 189,
-    revenue: 5660.55,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 3,
-    preparationTimeHours: 24,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 3,
-    name: "Baguette Tradition",
-    category: "Pains",
-    price: 3.5,
-    sales: 312,
-    revenue: 1092,
-    available: false,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 20,
-    preparationTimeHours: 2,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 4,
-    name: "Pain Campagne Bio",
-    category: "Pains",
-    price: 4.8,
-    sales: 98,
-    revenue: 470.4,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 10,
-    preparationTimeHours: 4,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 5,
-    name: "Croissant Pur Beurre",
-    category: "Viennoiseries",
-    price: 2.2,
-    sales: 403,
-    revenue: 886.6,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 50,
-    preparationTimeHours: 2,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 6,
-    name: "Pain au Chocolat",
-    category: "Viennoiseries",
-    price: 2.4,
-    sales: 367,
-    revenue: 880.8,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 30,
-    preparationTimeHours: 2,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 7,
-    name: "Macarons Assortis (12 pcs)",
-    category: "Chocolats",
-    price: 24.0,
-    sales: 156,
-    revenue: 3744,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 10,
-    preparationTimeHours: 24,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 8,
-    name: "Chocolats Pralinés (250g)",
-    category: "Chocolats",
-    price: 18.5,
-    sales: 178,
-    revenue: 3293,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 15,
-    preparationTimeHours: 24,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 9,
-    name: "Plateau Affaires",
-    category: "Boîtes à lunch",
-    price: 22.0,
-    sales: 134,
-    revenue: 2948,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 20,
-    preparationTimeHours: 12,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 10,
-    name: "Sandwich Jambon-Beurre",
-    category: "À la carte",
-    price: 6.5,
-    sales: 289,
-    revenue: 1878.5,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 25,
-    preparationTimeHours: 1,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 11,
-    name: "Quiche Lorraine",
-    category: "À la carte",
-    price: 8.9,
-    sales: 156,
-    revenue: 1388.4,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 15,
-    preparationTimeHours: 2,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: 12,
-    name: "Éclair au Chocolat",
-    category: "Gâteaux",
-    price: 4.5,
-    sales: 423,
-    revenue: 1903.5,
-    available: true,
-    minOrderQuantity: 1,
-    maxOrderQuantity: 30,
-    preparationTimeHours: 4,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-  },
-];
-
 export default function AdminDashboard() {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -242,53 +73,55 @@ export default function AdminDashboard() {
   const gold = "#C5A065";
   const dark = "#2D2A26";
 
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const response = await productAPI.getAllProducts();
+      setProducts(response.data.products);
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const session = await authClient.getSession();
         if (!session) {
-          navigate("/se-connecter");
+          navigate("/login");
         }
       } catch (error) {
-        console.error("Session check error:", error);
-        // Redirect to login on error
-        navigate("/se-connecter");
+        console.error("Auth check failed:", error);
+        navigate("/login");
       }
     };
     checkAuth();
   }, [navigate]);
 
-  // Handle logout
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      navigate("/se-connecter");
+      navigate("/login");
     } catch (error) {
-      console.error("Logout error:", error);
-      // Navigate anyway to ensure user sees login page
-      navigate("/se-connecter");
+      console.error("Logout failed:", error);
     }
   };
 
-  // Calcul des statistiques
-  const calculateStats = (): Statistics => {
-    const totalProducts = products.length;
-    const totalRevenue = products.reduce((sum, p) => sum + (p.revenue || 0), 0);
-    const lowStock = products.filter((p) => !p.available).length;
-    const totalSales = products.reduce((sum, p) => sum + (p.sales || 0), 0);
-
-    return {
-      totalProducts,
-      totalRevenue,
-      lowStock,
-      totalSales,
-      revenueChange: 12.5,
-      salesChange: 8.3,
-    };
+  const statistics: Statistics = {
+    totalProducts: products.length,
+    totalRevenue: products.reduce((sum, p) => sum + (p.revenue || 0), 0),
+    lowStock: products.filter(p => !p.available).length,
+    totalSales: products.reduce((sum, p) => sum + (p.sales || 0), 0),
+    revenueChange: 12.5,
+    salesChange: 8.3,
   };
-
-  const stats = calculateStats();
 
   // Produits les plus vendus
   const topProducts = [...products]
@@ -370,6 +203,24 @@ export default function AdminDashboard() {
             </p>
             <div className="space-y-2">
               <NavItem
+                icon={<Package size={20} />}
+                label="Produits"
+                active={viewMode === "products"}
+                onClick={() => {
+                  setViewMode("products");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+              <NavItem
+                icon={<ClipboardList size={20} />}
+                label="Commandes"
+                active={viewMode === "orders"}
+                onClick={() => {
+                  setViewMode("orders");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+              <NavItem
                 icon={<Users size={20} />}
                 label="Personnel"
                 active={viewMode === "staff"}
@@ -384,24 +235,6 @@ export default function AdminDashboard() {
                 active={viewMode === "clients"}
                 onClick={() => {
                   setViewMode("clients");
-                  setIsMobileMenuOpen(false);
-                }}
-              />
-              <NavItem
-                icon={<ClipboardList size={20} />}
-                label="Commandes"
-                active={viewMode === "orders"}
-                onClick={() => {
-                  setViewMode("orders");
-                  setIsMobileMenuOpen(false);
-                }}
-              />
-              <NavItem
-                icon={<Package size={20} />}
-                label="Produits"
-                active={viewMode === "products"}
-                onClick={() => {
-                  setViewMode("products");
                   setIsMobileMenuOpen(false);
                 }}
               />
@@ -490,30 +323,30 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
                 <StatCard
                   title="Produits"
-                  value={stats.totalProducts}
+                  value={statistics.totalProducts}
                   icon={<Package size={24} />}
                   color="blue"
                 />
                 <StatCard
                   title="Chiffre d'affaires"
-                  value={`${stats.totalRevenue.toFixed(2)} $`}
-                  change={stats.revenueChange}
+                  value={`${statistics.totalRevenue.toFixed(2)} $`}
+                  change={statistics.revenueChange}
                   icon={<DollarSign size={24} />}
                   color="green"
                 />
                 <StatCard
                   title="Ventes totales"
-                  value={stats.totalSales}
-                  change={stats.salesChange}
+                  value={statistics.totalSales}
+                  change={statistics.salesChange}
                   icon={<ShoppingCart size={24} />}
                   color="purple"
                 />
                 <StatCard
                   title="Alertes stock"
-                  value={stats.lowStock}
+                  value={statistics.lowStock}
                   icon={<AlertCircle size={24} />}
                   color="red"
-                  alert={stats.lowStock > 0}
+                  alert={statistics.lowStock > 0}
                 />
               </div>
 
@@ -609,7 +442,6 @@ export default function AdminDashboard() {
         )}
 
         {/* GESTION DU PERSONNEL */}
-        {/* VUE PERSONNEL */}
         {viewMode === "staff" && <StaffManagement />}
 
         {/* VUE CLIENTS */}
