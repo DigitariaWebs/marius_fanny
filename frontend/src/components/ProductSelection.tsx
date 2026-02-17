@@ -16,10 +16,10 @@ const CATEGORY_MAPPING: { [key: number]: string } = {
   2: "Pains",
   3: "Viennoiseries",
   4: "Chocolats",
-  5: "Boîtes à lunch",
+  5: "Boîte à lunch",
   6: "À la carte",
   7: "St-Valentin",
-  51: "Boîtes à lunch",
+  51: "Boîte à lunch",
   52: "Salade repas",
   53: "Plateau repas",
   54: "Option végétarienne",
@@ -33,7 +33,7 @@ interface ProductSelectionProps {
 }
 
 const LUNCH_SUBCATEGORIES = [
-  { id: 51, title: "Boîtes à lunch", image: "./boite.jpg" },
+  { id: 51, title: "Boîte à lunch", image: "./boite.jpg" },
   { id: 52, title: "Salade repas", image: "./salade1.jpg" },
   { id: 53, title: "Plateau repas", image: "./salade2.jpg" },
   { id: 54, title: "Option végétarienne", image: "./salade3.jpg" },
@@ -69,6 +69,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   const [selectedBread, setSelectedBread] = useState<string>("Baguette");
   const [isSliced, setIsSliced] = useState<boolean>(false);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  const isLunchCategory = (category: string) => {
+    return [
+      "Boîtes à lunch",
+      "Boite à lunch",
+      "Boîte à lunch",
+      "Salade repas",
+      "Plateau repas",
+      "Option végétarienne"
+    ].includes(category);
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -128,7 +139,19 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     if (currentCategory.id === 5 && subCategory) {
       targetCategory = CATEGORY_MAPPING[subCategory.id];
     }
-    const filtered = products.filter((p) => p.category === targetCategory && p.available);
+    
+    const filtered = products.filter((p) => {
+      if (!p.available) return false;
+      if (p.category === targetCategory) return true;
+      
+      // Handle potential plural/singular or accent mismatches for Lunch Boxes
+      const lunchVariants = ["Boîte à lunch", "Boite à lunch", "Boîtes à lunch", "Boites à lunch"];
+      if (lunchVariants.includes(targetCategory) && lunchVariants.includes(p.category)) {
+        return true;
+      }
+      
+      return false;
+    });
     setFilteredProducts(filtered);
   }, [currentCategory, subCategory, products]);
 
@@ -170,11 +193,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
       // Handle bread slicing
       if (selectedProduct.category === "Pains") {
         productToAdd.isSliced = isSliced;
+        if (isSliced) {
+          productToAdd.name = `${productToAdd.name} (Tranché)`;
+        } else {
+          productToAdd.name = `${productToAdd.name} (Non tranché)`;
+        }
       }
 
       // Handle lunch box options
-      if (selectedProduct.category === "Boite à lunch") {
+      if (isLunchCategory(selectedProduct.category)) {
         productToAdd.selectedBread = selectedBread;
+        
+        // Append selected bread to the product name for the cart
+        if (selectedBread) {
+          productToAdd.name = `${productToAdd.name} (${selectedBread})`;
+        }
+        
         if (allergyNote.trim() !== "") {
           productToAdd.userAllergies = allergyNote;
         }
@@ -559,7 +593,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 )}
 
                 {/* OPTIONS BOÎTE À LUNCH (Legacy support) */}
-                {selectedProduct?.category === "Boîtes à lunch" && !selectedProduct.customOptions?.length && (
+                {isLunchCategory(selectedProduct?.category || "") && !selectedProduct.customOptions?.length && (
                   <>
                     <div className="mb-6">
                       <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">

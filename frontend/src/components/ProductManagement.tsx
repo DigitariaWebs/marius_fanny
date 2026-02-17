@@ -191,7 +191,12 @@ export function ProductManagement() {
           : undefined,
         hasTaxes: productForm.hasTaxes,
         allergens: productForm.allergens || undefined,
-        customOptions: productForm.customOptions.length > 0 ? productForm.customOptions : undefined,
+        customOptions: productForm.customOptions
+          .filter(opt => opt.name.trim() !== "")
+          .map(opt => ({
+            name: opt.name.trim(),
+            choices: opt.choices.filter(c => c.trim() !== "")
+          })),
       };
 
       const response = await productAPI.createProduct(productData);
@@ -236,7 +241,12 @@ export function ProductManagement() {
           : undefined,
         hasTaxes: productForm.hasTaxes,
         allergens: productForm.allergens || undefined,
-        customOptions: productForm.customOptions.length > 0 ? productForm.customOptions : undefined,
+        customOptions: productForm.customOptions
+          .filter(opt => opt.name.trim() !== "")
+          .map(opt => ({
+            name: opt.name.trim(),
+            choices: opt.choices.filter(c => c.trim() !== "")
+          })),
       };
 
       const response = await productAPI.updateProduct(selectedProduct.id, productData);

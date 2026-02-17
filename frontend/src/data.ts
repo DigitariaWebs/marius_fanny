@@ -364,7 +364,7 @@ export const CATEGORIES = [
   "Pains",
   "Viennoiseries",
   "Chocolats",
-  "Boîtes à lunch",
+  "Boîte à lunch",
   "Salade repas",
   "Plateau repas",
   "Option végétarienne",
