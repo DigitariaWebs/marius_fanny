@@ -21,6 +21,7 @@ import {
   DELIVERY_ZONES,
 } from "../utils/deliveryZones";
 import { authClient } from "../lib/AuthClient";
+import { TAX_RATE } from "../data";
 
 interface CartItem {
   id: number;
@@ -28,6 +29,7 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  hasTaxes?: boolean;
 }
 
 interface CartProps {
@@ -74,11 +76,20 @@ const CartDrawer: React.FC<CartProps> = ({
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
+
+  const taxes = items.reduce((sum, item) => {
+    if (item.hasTaxes) {
+      return sum + item.price * item.quantity * TAX_RATE;
+    }
+    return sum;
+  }, 0);
+
   const delivery =
     deliveryType === "delivery" && deliveryZoneInfo?.isValid
       ? deliveryZoneInfo.fee
       : 0;
-  const total = subtotal + delivery;
+
+  const total = subtotal + taxes + delivery;
 
   // Validate minimum order
   const minimumOrderValidation =
@@ -141,6 +152,7 @@ const CartDrawer: React.FC<CartProps> = ({
               deliveryType === "pickup" ? pickupLocation : undefined,
             deliveryFee: delivery,
             subtotal: subtotal,
+            taxes: taxes,
             total: total,
             timestamp: Date.now(),
           }),
@@ -175,6 +187,7 @@ const CartDrawer: React.FC<CartProps> = ({
       pickupLocation: deliveryType === "pickup" ? pickupLocation : undefined,
       deliveryFee: delivery,
       subtotal: subtotal,
+      taxes: taxes,
       total: total,
     };
     console.log("📦 [CART] Checkout state:", checkoutState);
@@ -429,6 +442,12 @@ const CartDrawer: React.FC<CartProps> = ({
                   <span>Sous-total</span>
                   <span>{subtotal.toFixed(2)} $</span>
                 </div>
+                {taxes > 0 && (
+                  <div className="flex justify-between text-sm text-stone-500 font-light">
+                    <span>Taxes</span>
+                    <span>{taxes.toFixed(2)} $</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm text-stone-500 font-light">
                   <span>Frais de livraison</span>
                   <span>

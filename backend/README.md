@@ -46,6 +46,21 @@ FRONTEND_URL=http://localhost:5173
 
 > **Important**: Change `BETTER_AUTH_SECRET` to a secure random string (at least 32 characters) in production.
 
+### Cloudinary Setup (for Image Uploads)
+
+1. Create a free account at [Cloudinary](https://cloudinary.com)
+2. Go to your [Cloudinary Dashboard](https://cloudinary.com/console)
+3. Copy your Cloud Name, API Key, and API Secret
+4. Add them to your `.env` file:
+
+```env
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+> **Note**: Image uploads will be disabled if Cloudinary credentials are not configured.
+
 ## Running
 
 ### Development mode (with hot reload):
@@ -67,7 +82,8 @@ bun run start
 src/
 ├── config/
 │   ├── db.ts           # MongoDB & Mongoose connection setup
-│   └── auth.ts         # Better Auth configuration
+│   ├── auth.ts         # Better Auth configuration
+│   └── cloudinary.ts   # Cloudinary image upload configuration
 ├── controllers/
 │   ├── auth.controller.ts   # Auth-related business logic
 │   └── user.controller.ts   # User CRUD operations
@@ -80,7 +96,8 @@ src/
 ├── routes/
 │   ├── index.ts             # Main router aggregator
 │   ├── profile.routes.ts    # Profile/auth routes
-│   └── user.routes.ts       # User management routes
+│   ├── user.routes.ts       # User management routes
+│   └── upload.routes.ts     # Image upload routes
 ├── schemas/
 │   ├── index.ts             # Schema exports
 │   ├── auth.schema.ts       # Auth validation schemas
@@ -320,6 +337,9 @@ throw new AppError("Custom error message", 400);
 | `BETTER_AUTH_SECRET` | Secret key for Better Auth (min 32 chars) | - |
 | `FRONTEND_URL` | Frontend URL for CORS | `http://localhost:5173` |
 | `NODE_ENV` | Environment mode | `development` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for image uploads | - |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | - |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | - |
 
 ## Notes
 

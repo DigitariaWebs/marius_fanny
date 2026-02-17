@@ -12,12 +12,18 @@ export const productSchema = z.object({
   minOrderQuantity: z.number().int().positive().default(1),
   maxOrderQuantity: z.number().int().positive().default(10),
   description: z.string().max(500).optional(),
-  image: z.string().url().optional(),
+  image: z.string().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
   sales: z.number().int().nonnegative().default(0),
   revenue: z.number().nonnegative().default(0),
   preparationTimeHours: z.number().int().positive().optional(),
+  hasTaxes: z.boolean().default(true),
+  allergens: z.string().optional(),
+  customOptions: z.array(z.object({
+    name: z.string().min(1),
+    choices: z.array(z.string().min(1)),
+  })).optional(),
 });
 
 /**
@@ -31,8 +37,14 @@ export const createProductSchema = z.object({
   minOrderQuantity: z.number().int().positive().optional().default(1),
   maxOrderQuantity: z.number().int().positive().optional().default(10),
   description: z.string().max(500).optional(),
-  image: z.string().url().optional(),
+  image: z.string().optional(),
   preparationTimeHours: z.number().int().positive().optional(),
+  hasTaxes: z.boolean().optional().default(true),
+  allergens: z.string().optional(),
+  customOptions: z.array(z.object({
+    name: z.string().min(1),
+    choices: z.array(z.string().min(1)),
+  })).optional(),
 });
 
 /**
@@ -46,8 +58,14 @@ export const updateProductSchema = z.object({
   minOrderQuantity: z.number().int().positive().optional(),
   maxOrderQuantity: z.number().int().positive().optional(),
   description: z.string().max(500).optional(),
-  image: z.string().url().optional(),
+  image: z.string().optional(),
   preparationTimeHours: z.number().int().positive().optional(),
+  hasTaxes: z.boolean().optional(),
+  allergens: z.string().optional(),
+  customOptions: z.array(z.object({
+    name: z.string().min(1),
+    choices: z.array(z.string().min(1)),
+  })).optional(),
 });
 
 /**

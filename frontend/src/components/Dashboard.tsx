@@ -60,7 +60,11 @@ const CATEGORIES = [
   "Viennoiseries",
   "Chocolats",
   "Boîtes à lunch",
+  "Salade repas",
+  "Plateau repas",
+  "Option végétarienne",
   "À la carte",
+  "St-Valentin",
 ];
 
 export default function AdminDashboard() {
@@ -108,7 +112,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      navigate("/login");
+      navigate("/se-connecter");
     } catch (error) {
       console.error("Logout failed:", error);
     }

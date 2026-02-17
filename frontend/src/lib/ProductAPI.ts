@@ -18,6 +18,12 @@ export interface Product {
   sales?: number;
   revenue?: number;
   preparationTimeHours?: number;
+  hasTaxes?: boolean;
+  allergens?: string;
+  customOptions?: Array<{
+    name: string;
+    choices: string[];
+  }>;
 }
 
 export interface CreateProductData {
@@ -30,6 +36,12 @@ export interface CreateProductData {
   description?: string;
   image?: string;
   preparationTimeHours?: number;
+  hasTaxes?: boolean;
+  allergens?: string;
+  customOptions?: Array<{
+    name: string;
+    choices: string[];
+  }>;
 }
 
 export interface UpdateProductData {
@@ -42,6 +54,12 @@ export interface UpdateProductData {
   description?: string;
   image?: string;
   preparationTimeHours?: number;
+  hasTaxes?: boolean;
+  allergens?: string;
+  customOptions?: Array<{
+    name: string;
+    choices: string[];
+  }>;
 }
 
 export interface ApiResponse<T> {

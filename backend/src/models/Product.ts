@@ -15,6 +15,12 @@ export interface IProduct {
   sales?: number;
   revenue?: number;
   preparationTimeHours?: number;
+  hasTaxes?: boolean;
+  allergens?: string;
+  customOptions?: Array<{
+    name: string;
+    choices: string[];
+  }>;
 }
 
 const productSchema = new Schema<IProduct>({
@@ -32,6 +38,12 @@ const productSchema = new Schema<IProduct>({
   sales: { type: Number, default: 0 },
   revenue: { type: Number, default: 0 },
   preparationTimeHours: { type: Number },
+  hasTaxes: { type: Boolean, default: true },
+  allergens: { type: String },
+  customOptions: [{
+    name: { type: String, required: true },
+    choices: [{ type: String, required: true }]
+  }]
 });
 
 export const Product = model<IProduct>('Product', productSchema);

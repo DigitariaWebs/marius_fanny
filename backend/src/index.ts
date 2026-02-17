@@ -10,6 +10,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { toNodeHandler } from "better-auth/node";
 import { getAuth } from "./config/auth.js";
+import { uploadsDir } from "./config/paths.js";
 import apiRoutes from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { sanitizeBody } from "./middleware/validation.js";
@@ -55,9 +56,10 @@ mongoose
     try {
       const auth = await getAuth();
       authHandler = toNodeHandler(auth);
-      console.log("✅ Better Auth initialized");
+      console.log("✅ Better Auth initialized and ready");
     } catch (error) {
       console.error("❌ Failed to initialize Better Auth:", error);
+      console.error("⚠️  Auth endpoints will be unavailable");
     }
   })
   .catch((err) => {
@@ -100,11 +102,39 @@ app.use(cors(corsOptions));
 // 3. BETTER AUTH (REGISTER BEFORE JSON BODY PARSING)
 // Initialize auth handler once
 let authHandler: any = null;
+let authInitPromise: Promise<void> | null = null;
+
+// Function to wait for auth initialization
+async function waitForAuth() {
+  if (authHandler) return;
+  
+  if (!authInitPromise) {
+    authInitPromise = new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (authHandler) {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 50);
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve();
+      }, 10000);
+    });
+  }
+  
+  return authInitPromise;
+}
 
 app.all(/^\/api\/auth\/.*/, async (req, res) => {
   try {
+    // Wait for auth handler to be initialized
     if (!authHandler) {
-      console.log("⚠️ Auth handler not initialized yet");
+      await waitForAuth();
+    }
+    
+    if (!authHandler) {
       return res.status(503).json({ error: "Auth service not ready" });
     }
     return authHandler(req, res);
@@ -116,6 +146,10 @@ app.all(/^\/api\/auth\/.*/, async (req, res) => {
 
 app.use(express.json());
 app.use(sanitizeBody);
+
+// Serve uploaded files
+console.log("📁 Serving static files from:", uploadsDir);
+app.use("/uploads", express.static(uploadsDir));
 
 // 4. TES ROUTES PERSONNALISÉES (EN PREMIER)
 // On monte apiRoutes sur /api.
@@ -133,8 +167,11 @@ app.use(errorHandler);
 // Export for programmatic use
 export default app;
 
-// Only start server when running locally (not imported as module)
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+// Only start server when running locally (not in Vercel or production)
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true" || !!process.env.NOW_REGION;
+const isProduction = process.env.NODE_ENV === "production";
+
+if (!isVercel && !isProduction) {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });

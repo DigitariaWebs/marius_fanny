@@ -73,6 +73,9 @@ export async function createProduct(req: AuthRequest, res: Response) {
       description,
       image,
       preparationTimeHours,
+      hasTaxes,
+      allergens,
+      customOptions,
     } = req.body;
 
     // Get the next ID
@@ -90,6 +93,9 @@ export async function createProduct(req: AuthRequest, res: Response) {
       description,
       image,
       preparationTimeHours,
+      hasTaxes,
+      allergens,
+      customOptions,
     });
 
     await product.save();

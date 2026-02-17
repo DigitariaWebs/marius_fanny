@@ -43,7 +43,7 @@ const Hero = () => {
           playsInline
           className="w-full h-full object-cover scale-110"
         >
-          <source src="/HeroSection.mp4" type="video/mp4" />
+          <source src="/hero.mp4" type="video/mp4" />
         </video>
       </div>
 

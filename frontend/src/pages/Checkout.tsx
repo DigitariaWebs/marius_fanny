@@ -24,6 +24,7 @@ interface CheckoutState {
   pickupLocation?: "Montreal" | "Laval";
   deliveryFee: number;
   subtotal: number;
+  taxes: number;
   total: number;
 }
 
@@ -1064,6 +1065,12 @@ const Checkout: React.FC = () => {
                     <span>Livraison</span>
                     <span>{state.deliveryFee.toFixed(2)} $</span>
                   </div>
+                  {state.taxes > 0 && (
+                    <div className="flex justify-between text-stone-600">
+                      <span>Taxes</span>
+                      <span>{state.taxes.toFixed(2)} $</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-xl font-serif text-[#2D2A26] pt-2 border-t border-stone-200">
                     <span>Total</span>
                     <span className="text-[#C5A065]">

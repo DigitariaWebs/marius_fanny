@@ -33,6 +33,12 @@ export interface Product {
   sales?: number;
   revenue?: number;
   preparationTimeHours?: number; // Hours required to prepare the product
+  hasTaxes?: boolean;
+  allergens?: string;
+  customOptions?: Array<{
+    name: string;
+    choices: string[];
+  }>;
 }
 
 // Statistics Types
