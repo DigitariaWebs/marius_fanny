@@ -37,15 +37,14 @@ const Checkout: React.FC = () => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [deliveryTimeFrom, setDeliveryTimeFrom] = useState("");
-  const [deliveryTimeTo, setDeliveryTimeTo] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
   const [dateValidationError, setDateValidationError] = useState("");
   const [timeSlotError, setTimeSlotError] = useState("");
   const [currentStep, setCurrentStep] = useState<
     "contact" | "delivery" | "payment"
   >("contact");
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
-  const [availableHours, setAvailableHours] = useState<string[]>([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [paymentResultModal, setPaymentResultModal] = useState<{
     isOpen: boolean;
     type: "details" | "warning";
@@ -61,7 +60,7 @@ const Checkout: React.FC = () => {
   });
 
   // Delivery time slots configuration
-  const getAvailableHours = (selectedDate: string) => {
+  const getAvailableTimeSlots = (selectedDate: string) => {
     if (!selectedDate) return [];
 
     const date = new Date(selectedDate + "T00:00:00");
@@ -69,21 +68,25 @@ const Checkout: React.FC = () => {
 
     // Weekend (samedi = 6, dimanche = 0)
     if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return ["08:00", "09:00", "10:00", "11:00"]; // Créneaux d'1 heure
+      return [
+        "08:00 - 09:00",
+        "09:00 - 10:00",
+        "10:00 - 11:00",
+        "11:00 - 12:00"
+      ];
     }
 
     // Semaine (lundi à vendredi)
     return [
-      "08:00", // 8-9
-      "09:00", // 9-10
-      "10:00", // 10-11
-      "11:00", // 11-11:30
-      "11:30", // 11:30-12
-      "12:00", // 12-12:30
-      "12:30", // 12:30-13
-      "13:00", // 13-13:30
-      "13:30", // 13:30-14
-      "14:00", // Ajouté pour permettre 13:30-14:00
+      "08:00 - 09:00",
+      "09:00 - 10:00",
+      "10:00 - 11:00",
+      "11:00 - 11:30",
+      "11:30 - 12:00",
+      "12:00 - 12:30",
+      "12:30 - 13:00",
+      "13:00 - 13:30",
+      "13:30 - 14:00"
     ];
   };
 
@@ -181,121 +184,20 @@ const Checkout: React.FC = () => {
     const newDate = e.target.value;
     setDeliveryDate(newDate);
     validateDeliveryDate(newDate);
-  };
-
-  // Mettre à jour les heures disponibles quand la date change
-  useEffect(() => {
-    if (deliveryDate) {
-      setAvailableHours(getAvailableHours(deliveryDate));
-      // Reset les heures sélectionnées si la date change
-      setDeliveryTimeFrom("");
-      setDeliveryTimeTo("");
-      setTimeSlotError("");
-    }
-  }, [deliveryDate]);
-
-  // Validate time slot to ensure end time is after start time
-  const validateTimeSlot = (from: string, to: string) => {
-    if (!from || !to) {
-      setTimeSlotError("");
-      return;
-    }
-
-    // Convert time strings to comparable numbers (e.g., "15:30" -> 1530)
-    const fromTime = parseInt(from.replace(":", ""));
-    const toTime = parseInt(to.replace(":", ""));
-
-    if (toTime <= fromTime) {
-      setTimeSlotError("⚠️ L'heure de fin doit être après l'heure de début");
-    } else {
+    
+    // Mettre à jour les créneaux disponibles quand la date change
+    if (newDate) {
+      setAvailableTimeSlots(getAvailableTimeSlots(newDate));
+      // Réinitialiser l'heure sélectionnée
+      setDeliveryTime("");
       setTimeSlotError("");
     }
   };
 
-  const handleTimeFromChange = (time: string) => {
-    setDeliveryTimeFrom(time);
-    setDeliveryTimeTo("");
+  // Handle time slot selection
+  const handleTimeSlotChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDeliveryTime(e.target.value);
     setTimeSlotError("");
-  };
-
-  const handleTimeToChange = (time: string) => {
-    setDeliveryTimeTo(time);
-    validateTimeSlot(deliveryTimeFrom, time);
-  };
-
-  // Filter available end times based on selected start time
-  const getAvailableEndTimes = () => {
-    if (!deliveryTimeFrom || !deliveryDate) return [];
-    
-    const date = new Date(deliveryDate + "T00:00:00");
-    const dayOfWeek = date.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-    if (isWeekend) {
-      // Weekend: créneaux d'1 heure (8-9, 9-10, 10-11, 11-12)
-      const fromHour = parseInt(deliveryTimeFrom);
-      
-      // Le dernier créneau commence à 11:00 et finit à 12:00
-      if (fromHour === 11) {
-        return ["12:00"];
-      }
-      
-      const nextHour = String(fromHour + 1).padStart(2, '0') + ":00";
-      return [nextHour];
-    }
-
-    // Semaine: logique avec demi-heures
-    const endTimes: string[] = [];
-    
-    // Si l'heure de début se termine par :00 (heures pleines)
-    if (deliveryTimeFrom.endsWith(":00")) {
-      const fromHour = parseInt(deliveryTimeFrom);
-      
-      // Pour 8:00, 9:00, 10:00
-      if (fromHour >= 8 && fromHour <= 10) {
-        endTimes.push(String(fromHour) + ":30");
-        endTimes.push(String(fromHour + 1).padStart(2, '0') + ":00");
-      }
-      // Pour 11:00
-      else if (fromHour === 11) {
-        endTimes.push("11:30");
-        endTimes.push("12:00");
-      }
-      // Pour 12:00
-      else if (fromHour === 12) {
-        endTimes.push("12:30");
-        endTimes.push("13:00");
-      }
-      // Pour 13:00
-      else if (fromHour === 13) {
-        endTimes.push("13:30");
-        endTimes.push("14:00");
-      }
-    }
-    
-    // Si l'heure de début est :30
-    if (deliveryTimeFrom.endsWith(":30")) {
-      const fromHour = parseInt(deliveryTimeFrom);
-      
-      // Pour 11:30
-      if (fromHour === 11) {
-        endTimes.push("12:00");
-      }
-      // Pour 12:30
-      else if (fromHour === 12) {
-        endTimes.push("13:00");
-      }
-      // Pour 13:30
-      else if (fromHour === 13) {
-        endTimes.push("14:00");
-      }
-      // Pour les autres demi-heures (8:30, 9:30, 10:30)
-      else if (fromHour >= 8 && fromHour <= 10) {
-        endTimes.push(String(fromHour + 1).padStart(2, '0') + ":00");
-      }
-    }
-    
-    return endTimes;
   };
 
   useEffect(() => {
@@ -392,19 +294,8 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    if (!deliveryTimeFrom) {
-      alert("Veuillez sélectionner l'heure de début de votre créneau.");
-      return;
-    }
-
-    if (!deliveryTimeTo) {
-      alert("Veuillez sélectionner l'heure de fin de votre créneau.");
-      return;
-    }
-
-    // Validate that end time is after start time
-    if (deliveryTimeFrom >= deliveryTimeTo) {
-      alert("L'heure de fin doit être après l'heure de début.");
+    if (!deliveryTime) {
+      alert("Veuillez sélectionner un créneau horaire.");
       return;
     }
 
@@ -415,7 +306,7 @@ const Checkout: React.FC = () => {
     }
 
     console.log(
-      `📅 [CHECKOUT] Delivery info collected: ${deliveryDate} de ${deliveryTimeFrom} à ${deliveryTimeTo}, moving to payment step`,
+      `📅 [CHECKOUT] Delivery info collected: ${deliveryDate} - ${deliveryTime}, moving to payment step`,
     );
     setCurrentStep("payment");
   };
@@ -450,7 +341,7 @@ const Checkout: React.FC = () => {
         },
         deliveryType: state.deliveryType,
         deliveryDate: deliveryDate,
-        deliveryTimeSlot: `${deliveryTimeFrom} - ${deliveryTimeTo}`,
+        deliveryTimeSlot: deliveryTime,
         deliveryAddress:
           state.deliveryType === "delivery" && state.postalCode
             ? {
@@ -474,7 +365,7 @@ const Checkout: React.FC = () => {
         paymentType: "full",
         depositPaid: true, // Payment was made
         squarePaymentId: paymentId,
-        notes: `Square Payment ID: ${paymentId} | Livraison prévue: ${deliveryDate} de ${deliveryTimeFrom} à ${deliveryTimeTo}`,
+        notes: `Square Payment ID: ${paymentId} | Livraison prévue: ${deliveryDate} ${deliveryTime}`,
       };
 
       const response = await fetch(`${normalizedApiUrl}/api/orders`, {
@@ -833,64 +724,31 @@ const Checkout: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="flex text-sm text-stone-600 mb-2 items-center gap-2">
-                          <Clock size={16} />
-                          De *
-                        </label>
-                        <select
-                          value={deliveryTimeFrom}
-                          onChange={(e) => handleTimeFromChange(e.target.value)}
-                          className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065] bg-white"
-                          required
-                        >
-                          <option value="">Heure de début</option>
-                          {availableHours.map((time) => (
-                            <option key={time} value={time}>
-                              {time}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="flex text-sm text-stone-600 mb-2 items-center gap-2">
-                          <Clock size={16} />À *
-                        </label>
-                        <select
-                          value={deliveryTimeTo}
-                          onChange={(e) => handleTimeToChange(e.target.value)}
-                          className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 bg-white ${
-                            timeSlotError
-                              ? "border-red-500 focus:ring-red-500"
-                              : "border-stone-300 focus:ring-[#C5A065]"
-                          }`}
-                          required
-                          disabled={!deliveryTimeFrom}
-                        >
-                          <option value="">Heure de fin</option>
-                          {getAvailableEndTimes().map((time) => (
-                            <option key={time} value={time}>
-                              {time}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    <div>
+                      <label className="flex text-sm text-stone-600 mb-2 items-center gap-2">
+                        <Clock size={16} />
+                        Créneau horaire *
+                      </label>
+                      <select
+                        value={deliveryTime}
+                        onChange={handleTimeSlotChange}
+                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065] bg-white"
+                        required
+                        disabled={!deliveryDate || !!dateValidationError}
+                      >
+                        <option value="">Sélectionnez un créneau</option>
+                        {availableTimeSlots.map((slot, index) => (
+                          <option key={index} value={slot}>
+                            {slot}
+                          </option>
+                        ))}
+                      </select>
+                      {deliveryTime && (
+                        <p className="mt-2 text-sm text-green-600 bg-green-50 p-3 rounded-lg border border-green-200">
+                          ✅ Créneau sélectionné: {deliveryTime}
+                        </p>
+                      )}
                     </div>
-
-                    {timeSlotError && (
-                      <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                        {timeSlotError}
-                      </p>
-                    )}
-
-                    {deliveryTimeFrom && deliveryTimeTo && !timeSlotError && (
-                      <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg border border-green-200">
-                        ✅ <strong>Créneau sélectionné:</strong>{" "}
-                        {deliveryTimeFrom} - {deliveryTimeTo}
-                      </div>
-                    )}
 
                     <div className="flex gap-3 pt-4">
                       <button
@@ -907,9 +765,9 @@ const Checkout: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        disabled={!!dateValidationError || !!timeSlotError || !deliveryTimeFrom || !deliveryTimeTo}
+                        disabled={!!dateValidationError || !deliveryTime}
                         className={`flex-1 py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-lg ${
-                          dateValidationError || timeSlotError || !deliveryTimeFrom || !deliveryTimeTo
+                          dateValidationError || !deliveryTime
                             ? "bg-stone-400 text-stone-600 cursor-not-allowed"
                             : "bg-[#2D2A26] text-white hover:bg-[#C5A065]"
                         }`}
@@ -951,8 +809,7 @@ const Checkout: React.FC = () => {
                     </p>
                     <p className="text-sm text-stone-600">
                       <strong>Livraison:</strong>{" "}
-                      {new Date(deliveryDate).toLocaleDateString("fr-CA")} de{" "}
-                      {deliveryTimeFrom} à {deliveryTimeTo}
+                      {new Date(deliveryDate).toLocaleDateString("fr-CA")} - {deliveryTime}
                     </p>
                   </div>
                   <SquarePaymentForm

@@ -8,6 +8,8 @@ import {
   CreditCard,
   MapPin,
   AlertCircle,
+  User,
+  ShoppingCart,
 } from "lucide-react";
 import {
   Select,
@@ -61,6 +63,10 @@ const CartDrawer: React.FC<CartProps> = ({
     zoneName: string;
     isValid: boolean;
   } | null>(null);
+  
+  // État pour le modal de choix de connexion
+  const [showLoginChoiceModal, setShowLoginChoiceModal] = useState(false);
+  const [orderData, setOrderData] = useState<any>(null);
 
   // Log cart open/close events
   useEffect(() => {
@@ -119,6 +125,7 @@ const CartDrawer: React.FC<CartProps> = ({
       pickupLocation,
       itemsCount: items.length,
     });
+    
     if (deliveryType === "delivery" && !selectedPostalCode) {
       alert("Veuillez sélectionner un code postal pour la livraison.");
       return;
@@ -131,56 +138,8 @@ const CartDrawer: React.FC<CartProps> = ({
       return;
     }
 
-    // Check if user is authenticated
-    console.log("🔐 [CART] Checking authentication status...");
-    try {
-      const session = await authClient.getSession({
-        query: { disableCookieCache: true },
-      });
-      console.log("🔐 [CART] Session result:", session);
-
-      if (!session.data) {
-        console.log("⚠️ [CART] User not authenticated, redirecting to login");
-        // Save checkout intent to localStorage
-        localStorage.setItem(
-          "checkout_intent",
-          JSON.stringify({
-            items: items,
-            postalCode: selectedPostalCode,
-            deliveryType: deliveryType,
-            pickupLocation:
-              deliveryType === "pickup" ? pickupLocation : undefined,
-            deliveryFee: delivery,
-            subtotal: subtotal,
-            taxes: taxes,
-            total: total,
-            timestamp: Date.now(),
-          }),
-        );
-
-        alert(
-          "Vous devez être connecté pour passer une commande. Votre panier sera conservé.",
-        );
-        onClose();
-        navigate("/se-connecter");
-        return;
-      }
-
-      console.log("✅ [CART] User authenticated, proceeding to checkout");
-    } catch (error) {
-      console.error("❌ [CART] Error checking authentication:", error);
-      alert(
-        "Erreur lors de la vérification de la connexion. Veuillez réessayer.",
-      );
-      return;
-    }
-
-    console.log(
-      `💳 [FRONTEND] Navigating to checkout page for order total: ${total.toFixed(2)}$`,
-    );
-
-    // Navigate to checkout page with order data
-    const checkoutState = {
+    // Stocker les informations de commande avant de proposer le choix
+    const newOrderData = {
       items: items,
       postalCode: selectedPostalCode,
       deliveryType: deliveryType,
@@ -189,24 +148,142 @@ const CartDrawer: React.FC<CartProps> = ({
       subtotal: subtotal,
       taxes: taxes,
       total: total,
+      timestamp: Date.now(),
     };
-    console.log("📦 [CART] Checkout state:", checkoutState);
 
-    navigate("/checkout", {
-      state: checkoutState,
-    });
+    // Sauvegarder les données de commande dans localStorage
+    localStorage.setItem("checkout_data", JSON.stringify(newOrderData));
+    
+    // Stocker dans l'état et ouvrir le modal
+    setOrderData(newOrderData);
+    setShowLoginChoiceModal(true);
+  };
 
-    // Close the cart drawer
-    onClose();
+  const handleLoginChoice = (wantsToLogin: boolean) => {
+    setShowLoginChoiceModal(false);
+    
+    if (wantsToLogin) {
+      // L'utilisateur veut se connecter/créer un compte
+      console.log("🔐 [CART] User wants to login, redirecting to login page");
+      
+      // Sauvegarder l'intention de checkout pour après la connexion
+      localStorage.setItem(
+        "checkout_intent",
+        JSON.stringify({
+          ...orderData,
+          redirectAfterLogin: true
+        })
+      );
+      
+      onClose();
+      navigate("/se-connecter", { 
+        state: { 
+          redirectTo: "/checkout",
+          fromCart: true 
+        } 
+      });
+    } else {
+      // L'utilisateur veut continuer sans compte
+      console.log("✅ [CART] User proceeds as guest");
+      
+      // Marquer dans le localStorage que c'est une commande invité
+      localStorage.setItem("is_guest_checkout", "true");
+      
+      // Naviguer directement vers le checkout
+      navigate("/checkout", {
+        state: {
+          ...orderData,
+          isGuest: true
+        },
+      });
+      
+      onClose();
+    }
   };
 
   return (
     <>
+      {/* Modal de choix de connexion */}
+      {showLoginChoiceModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl transform transition-all">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-serif text-[#2D2A26]">
+                  Choisissez votre option
+                </h3>
+                <button
+                  onClick={() => setShowLoginChoiceModal(false)}
+                  className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <p className="text-stone-600 mb-6">
+                Comment souhaitez-vous continuer ?
+              </p>
+              
+              <div className="space-y-3">
+                {/* Option Se connecter */}
+                <button
+                  onClick={() => handleLoginChoice(true)}
+                  className="w-full p-4 bg-[#C5A065]/10 hover:bg-[#C5A065]/20 border-2 border-[#C5A065] rounded-xl transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center text-white">
+                      <User size={24} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <h4 className="font-bold text-[#2D2A26] group-hover:text-[#C5A065] transition-colors">
+                        Se connecter / Créer un compte
+                      </h4>
+                      <p className="text-sm text-stone-500">
+                        ✓ Suivi de commande • ✓ Historique d'achats • ✓ Paiement plus rapide
+                      </p>
+                    </div>
+                  </div>
+                </button>
+                
+                {/* Option Invité */}
+                <button
+                  onClick={() => handleLoginChoice(false)}
+                  className="w-full p-4 bg-stone-50 hover:bg-stone-100 border-2 border-stone-200 rounded-xl transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-stone-400 rounded-full flex items-center justify-center text-white">
+                      <ShoppingCart size={24} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <h4 className="font-bold text-[#2D2A26] group-hover:text-[#C5A065] transition-colors">
+                        Continuer sans compte
+                      </h4>
+                      <p className="text-sm text-stone-500">
+                        Paiement rapide sans création de compte
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setShowLoginChoiceModal(false)}
+                className="w-full mt-4 py-3 text-stone-500 hover:text-stone-700 text-sm transition-colors"
+              >
+                Retour au panier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay du panier */}
       <div
         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-150 transition-opacity duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
 
+      {/* Panier */}
       <div
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-200 shadow-2xl transform transition-transform duration-500 ease-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >

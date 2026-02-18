@@ -18,6 +18,8 @@ import {
   UserCircle,
   ClipboardList,
   Truck,
+  ChefHat,
+  Clock,
 } from "lucide-react";
 import StaffManagement from "./StaffManagement";
 import ClientManagement from "./ClientManagement";
@@ -25,6 +27,7 @@ import { OrderManagement } from "./OrderManagement";
 import { ProductManagement } from "./ProductManagement";
 import SettingsManagement from "./SettingsManagement";
 import DeliveryAssignment from "./DeliveryAssignment";
+import ProductionList from "./ProductionList";
 import { authClient } from "../lib/AuthClient";
 import GoldenBackground from "./GoldenBackground";
 import type { Product } from "../types";
@@ -52,7 +55,8 @@ type ViewMode =
   | "orders"
   | "products"
   | "delivery"
-  | "settings";
+  | "settings"
+  | "production";
 
 const CATEGORIES = [
   "Gâteaux",
@@ -194,6 +198,24 @@ export default function AdminDashboard() {
                 active={viewMode === "overview"}
                 onClick={() => {
                   setViewMode("overview");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Production Section */}
+          <div className="pb-4 border-t border-stone-200/50 pt-4">
+            <p className="text-[9px] font-black text-stone-400 uppercase tracking-[0.3em] mb-3 px-3">
+              Production
+            </p>
+            <div className="space-y-2">
+              <NavItem
+                icon={<ChefHat size={20} />}
+                label="Liste de production"
+                active={viewMode === "production"}
+                onClick={() => {
+                  setViewMode("production");
                   setIsMobileMenuOpen(false);
                 }}
               />
@@ -444,6 +466,9 @@ export default function AdminDashboard() {
             </div>
           </>
         )}
+
+        {/* LISTE DE PRODUCTION */}
+        {viewMode === "production" && <ProductionList />}
 
         {/* GESTION DU PERSONNEL */}
         {viewMode === "staff" && <StaffManagement />}
