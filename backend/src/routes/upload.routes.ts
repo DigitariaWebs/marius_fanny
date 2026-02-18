@@ -3,8 +3,11 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { uploadsDir } from '../config/paths.js';
-import { createCloudinaryStorage, hasValidConfig } from '../config/cloudinary';
-import { requireAuth, requireRole } from '../middleware/auth';
+import {
+  createCloudinaryStorage,
+  hasValidConfig,
+} from "../config/cloudinary.js";
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
