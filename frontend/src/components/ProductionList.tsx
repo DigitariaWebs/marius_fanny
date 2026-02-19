@@ -10,20 +10,32 @@ import {
   Search,
   Printer,
   Download,
-  Eye
+  Eye,
+  MapPin,
+  Phone,
+  RefreshCw
 } from "lucide-react";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 interface ProductionItem {
   id: string;
+  orderId: string;
   orderNumber: string;
+  productId: number;
   productName: string;
   quantity: number;
+  unitPrice: number;
   customerName: string;
+  customerPhone: string;
   deliveryDate: string;
   deliveryTimeSlot: string;
-  status: "à produire" | "en cours" | "produit" | "urgent";
-  preparationTime: number;
-  notes?: string;
+  deliveryType: "pickup" | "delivery";
+  pickupLocation: string;
+  orderStatus: string;
+  notes: string;
+  // Local-only production tracking
+  productionStatus: "à produire" | "en cours" | "produit" | "urgent";
 }
 
 const ProductionList: React.FC = () => {
@@ -36,166 +48,72 @@ const ProductionList: React.FC = () => {
     new Date().toISOString().split('T')[0]
   );
 
-  // Récupération API des commandes
-  useEffect(() => {
-    const fetchOrdersForProduction = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Essayer différentes routes possibles
-        let response;
-        const routes = [
-          `/api/orders?date=${selectedDate}&status=pending,processing`,
-          `/api/orders/production?date=${selectedDate}`,
-          `/api/admin/orders?date=${selectedDate}`,
-          `/api/orders`
-        ];
-
-        for (const route of routes) {
-          try {
-            response = await fetch(route, {
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            });
-            
-            if (response.ok) {
-              console.log(`✅ Route trouvée: ${route}`);
-              break;
-            }
-          } catch (e) {
-            console.log(`❌ Route échouée: ${route}`);
-          }
-        }
-
-        if (!response || !response.ok) {
-          throw new Error("Aucune route API disponible pour les commandes");
-        }
-
-        const result = await response.json();
-        
-        // Transformer les données API en format ProductionItem
-        // Adapter selon la structure de votre API
-        const orders = result.data || result.orders || result;
-        
-        const items: ProductionItem[] = orders
-          .filter((order: any) => {
-            // Ne garder que les commandes qui nécessitent production
-            const today = new Date(selectedDate).setHours(0,0,0,0);
-            const orderDate = new Date(order.deliveryDate).setHours(0,0,0,0);
-            return orderDate === today && 
-                   (order.status === "confirmée" || order.status === "payée" || order.status === "en production");
-          })
-          .flatMap((order: any) => {
-            // Créer un item par produit dans la commande
-            return (order.items || []).map((item: any) => ({
-              id: `${order.id}-${item.productId}`,
-              orderNumber: order.orderNumber,
-              productName: item.productName,
-              quantity: item.quantity,
-              customerName: order.clientInfo?.name || "Client",
-              deliveryDate: order.deliveryDate,
-              deliveryTimeSlot: order.deliveryTimeSlot || "À déterminer",
-              status: order.productionStatus || "à produire",
-              preparationTime: item.preparationTime || 2,
-              notes: order.notes || item.notes,
-            }));
-          });
-
-        setProductionItems(items);
-      } catch (err) {
-        console.error("❌ Erreur lors du chargement:", err);
-        setError("Impossible de charger la liste de production. Veuillez réessayer.");
-        
-        // Optionnel: Utiliser des données mockées en cas d'erreur
-        useMockData();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrdersForProduction();
-  }, [selectedDate]);
-
-  // Données mockées en cas d'erreur API
-  const useMockData = () => {
-    const mockData: ProductionItem[] = [
-      {
-        id: "1",
-        orderNumber: "CMD-2024-001",
-        productName: "Gâteau au Chocolat",
-        quantity: 2,
-        customerName: "Jean Dupont",
-        deliveryDate: selectedDate,
-        deliveryTimeSlot: "10:00 - 11:00",
-        status: "urgent",
-        preparationTime: 3,
-        notes: "Sans gluten"
-      },
-      {
-        id: "2",
-        orderNumber: "CMD-2024-002",
-        productName: "Baguettes Tradition",
-        quantity: 6,
-        customerName: "Marie Martin",
-        deliveryDate: selectedDate,
-        deliveryTimeSlot: "09:00 - 10:00",
-        status: "à produire",
-        preparationTime: 2,
-      },
-      {
-        id: "3",
-        orderNumber: "CMD-2024-003",
-        productName: "Croissants Pur Beurre",
-        quantity: 12,
-        customerName: "Pierre Durand",
-        deliveryDate: selectedDate,
-        deliveryTimeSlot: "11:30 - 12:00",
-        status: "en cours",
-        preparationTime: 1.5,
-      },
-    ];
-    
-    setProductionItems(mockData);
+  // Load saved production statuses from localStorage
+  const loadSavedStatuses = (): Record<string, ProductionItem["productionStatus"]> => {
+    try {
+      const saved = localStorage.getItem(`production-statuses-${selectedDate}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
   };
 
-  const updateProductionStatus = async (itemId: string, newStatus: ProductionItem["status"]) => {
+  const saveStatuses = (items: ProductionItem[]) => {
+    const statuses: Record<string, string> = {};
+    items.forEach((item) => {
+      if (item.productionStatus !== "à produire") {
+        statuses[item.id] = item.productionStatus;
+      }
+    });
+    localStorage.setItem(`production-statuses-${selectedDate}`, JSON.stringify(statuses));
+  };
+
+  // Fetch production data from API
+  useEffect(() => {
+    fetchProductionData();
+  }, [selectedDate]);
+
+  const fetchProductionData = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      // Extraire l'ID de commande et l'ID de produit
-      const [orderId, productId] = itemId.split('-');
-      
-      const response = await fetch(`/api/orders/${orderId}/items/${productId}/status`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ productionStatus: newStatus }),
-      });
+      const response = await fetch(
+        `${API_URL}/api/orders/production?date=${selectedDate}`,
+        {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       if (!response.ok) {
-        // Si l'API échoue, on met à jour l'état local quand même pour la démo
-        console.log("⚠️ API non disponible, mise à jour locale uniquement");
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
-      // Mettre à jour l'état local
-      setProductionItems(prev =>
-        prev.map(item =>
-          item.id === itemId ? { ...item, status: newStatus } : item
-        )
-      );
+      const result = await response.json();
+      const apiItems = result.data?.items || [];
+      const savedStatuses = loadSavedStatuses();
 
-    } catch (err) {
-      console.error("❌ Erreur:", err);
-      // Mise à jour locale même en cas d'erreur
-      setProductionItems(prev =>
-        prev.map(item =>
-          item.id === itemId ? { ...item, status: newStatus } : item
-        )
-      );
+      const items: ProductionItem[] = apiItems.map((item: any) => ({
+        ...item,
+        productionStatus: savedStatuses[item.id] || "à produire",
+      }));
+
+      setProductionItems(items);
+    } catch (err: any) {
+      console.error("❌ Erreur chargement production:", err);
+      setError(err.message || "Impossible de charger la liste de production");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const updateProductionStatus = (itemId: string, newStatus: ProductionItem["productionStatus"]) => {
+    setProductionItems(prev => {
+      const updated = prev.map(item =>
+        item.id === itemId ? { ...item, productionStatus: newStatus } : item
+      );
+      saveStatuses(updated);
+      return updated;
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -220,7 +138,7 @@ const ProductionList: React.FC = () => {
 
   // Filtrer les articles
   const filteredItems = productionItems.filter(item => {
-    if (filter !== "all" && item.status !== filter) return false;
+    if (filter !== "all" && item.productionStatus !== filter) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       return (
@@ -232,10 +150,10 @@ const ProductionList: React.FC = () => {
     return true;
   });
 
-  const urgentItems = filteredItems.filter(item => item.status === "urgent");
-  const toProduceItems = filteredItems.filter(item => item.status === "à produire");
-  const inProgressItems = filteredItems.filter(item => item.status === "en cours");
-  const producedItems = filteredItems.filter(item => item.status === "produit");
+  const urgentItems = filteredItems.filter(item => item.productionStatus === "urgent");
+  const toProduceItems = filteredItems.filter(item => item.productionStatus === "à produire");
+  const inProgressItems = filteredItems.filter(item => item.productionStatus === "en cours");
+  const producedItems = filteredItems.filter(item => item.productionStatus === "produit");
 
   const ProductionCard = ({ item }: { item: ProductionItem }) => (
     <div className="bg-white rounded-xl border border-stone-200 p-4 hover:shadow-md transition-all">
@@ -245,10 +163,10 @@ const ProductionList: React.FC = () => {
             <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
               {item.orderNumber}
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(item.status)}`}>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(item.productionStatus)}`}>
               <span className="flex items-center gap-1">
-                {getStatusIcon(item.status)}
-                {item.status}
+                {getStatusIcon(item.productionStatus)}
+                {item.productionStatus}
               </span>
             </span>
           </div>
@@ -258,10 +176,16 @@ const ProductionList: React.FC = () => {
         <div className="text-right">
           <p className="text-xs text-stone-400">Client</p>
           <p className="text-sm font-medium text-[#2D2A26]">{item.customerName}</p>
+          {item.customerPhone && (
+            <p className="text-xs text-stone-400 flex items-center gap-1 justify-end mt-0.5">
+              <Phone size={10} />
+              {item.customerPhone}
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-3 text-sm">
+      <div className="flex items-center gap-4 mb-3 text-sm flex-wrap">
         <div className="flex items-center gap-1 text-stone-500">
           <Calendar size={14} />
           <span>{new Date(item.deliveryDate).toLocaleDateString('fr-CA')}</span>
@@ -271,8 +195,8 @@ const ProductionList: React.FC = () => {
           <span>{item.deliveryTimeSlot}</span>
         </div>
         <div className="flex items-center gap-1 text-stone-500">
-          <ChefHat size={14} />
-          <span>{item.preparationTime}h</span>
+          <MapPin size={14} />
+          <span>{item.deliveryType === "pickup" ? `Cueillette - ${item.pickupLocation}` : "Livraison"}</span>
         </div>
       </div>
 
@@ -283,7 +207,7 @@ const ProductionList: React.FC = () => {
       )}
 
       <div className="flex gap-2 mt-2">
-        {item.status === "à produire" && (
+        {item.productionStatus === "à produire" && (
           <>
             <button
               onClick={() => updateProductionStatus(item.id, "urgent")}
@@ -301,7 +225,7 @@ const ProductionList: React.FC = () => {
             </button>
           </>
         )}
-        {item.status === "urgent" && (
+        {item.productionStatus === "urgent" && (
           <button
             onClick={() => updateProductionStatus(item.id, "en cours")}
             className="flex-1 py-2 px-3 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors border border-blue-200"
@@ -310,7 +234,7 @@ const ProductionList: React.FC = () => {
             Commencer
           </button>
         )}
-        {item.status === "en cours" && (
+        {item.productionStatus === "en cours" && (
           <button
             onClick={() => updateProductionStatus(item.id, "produit")}
             className="flex-1 py-2 px-3 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors border border-green-200"
@@ -319,7 +243,7 @@ const ProductionList: React.FC = () => {
             Terminer
           </button>
         )}
-        {item.status === "produit" && (
+        {item.productionStatus === "produit" && (
           <button
             onClick={() => updateProductionStatus(item.id, "à produire")}
             className="flex-1 py-2 px-3 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors border border-amber-200"
@@ -328,9 +252,6 @@ const ProductionList: React.FC = () => {
             Reproduire
           </button>
         )}
-        <button className="p-2 border border-stone-200 rounded-lg text-stone-400 hover:text-[#C5A065] hover:border-[#C5A065] transition-colors">
-          <Eye size={16} />
-        </button>
       </div>
     </div>
   );
@@ -341,6 +262,24 @@ const ProductionList: React.FC = () => {
         <div className="text-center">
           <ChefHat size={48} className="mx-auto mb-4 text-[#C5A065] animate-pulse" />
           <p className="text-stone-500">Chargement de la liste de production...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle size={48} className="mx-auto mb-4 text-red-400" />
+          <p className="text-stone-600 mb-4">{error}</p>
+          <button
+            onClick={fetchProductionData}
+            className="px-6 py-2 bg-[#C5A065] text-white rounded-lg hover:bg-[#b08a50] transition-colors"
+          >
+            <RefreshCw size={14} className="inline mr-2" />
+            Réessayer
+          </button>
         </div>
       </div>
     );
@@ -365,6 +304,13 @@ const ProductionList: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={fetchProductionData}
+              className="p-2 border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50 transition-colors"
+              title="Rafraîchir"
+            >
+              <RefreshCw size={20} />
+            </button>
             <button className="p-2 border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50 transition-colors">
               <Printer size={20} />
             </button>

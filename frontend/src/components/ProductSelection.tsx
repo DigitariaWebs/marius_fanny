@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { productAPI } from '../lib/ProductAPI';
-import type { Product } from '../types';
+import { categoryAPI } from '../lib/CategoryAPI';
+import type { Product, Category as CategoryType } from '../types';
 
 const styles = {
   gold: '#C5A065',
@@ -10,20 +11,9 @@ const styles = {
   fontSans: '"Inter", sans-serif',
 };
 
-// Category mapping from URL IDs to database category names
-const CATEGORY_MAPPING: { [key: number]: string } = {
-  1: "Gâteaux",
-  2: "Pains",
-  3: "Viennoiseries",
-  4: "Chocolats",
-  5: "Boîte à lunch",
-  6: "À la carte",
-  7: "St-Valentin",
-  51: "Boîte à lunch",
-  52: "Salade repas",
-  53: "Plateau repas",
-  54: "Option végétarienne",
-};
+interface ApiCategoryNode extends CategoryType {
+  children?: ApiCategoryNode[];
+}
 
 interface ProductSelectionProps {
   categoryId?: number;
@@ -31,13 +21,6 @@ interface ProductSelectionProps {
   onBack?: () => void;
   onAddToCart: (product: any) => void;
 }
-
-const LUNCH_SUBCATEGORIES = [
-  { id: 51, title: "Boîte à lunch", image: "./boite.jpg" },
-  { id: 52, title: "Salade repas", image: "./salade1.jpg" },
-  { id: 53, title: "Plateau repas", image: "./salade2.jpg" },
-  { id: 54, title: "Option végétarienne", image: "./salade3.jpg" },
-];
 
 const ProductSelection: React.FC<ProductSelectionProps> = ({
   categoryId,
@@ -52,6 +35,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Category tree from API
+  const [categoryTree, setCategoryTree] = useState<ApiCategoryNode[]>([]);
+
   const [currentCategory, setCurrentCategory] = useState<{
     id: number;
     title: string;
@@ -60,6 +46,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     id: number;
     title: string;
   } | null>(null);
+  const [childCategories, setChildCategories] = useState<ApiCategoryNode[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -81,18 +68,70 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     ].includes(category);
   };
 
+  // Flatten API tree to get all nodes, then rebuild from parentId
+  const flattenTree = (nodes: ApiCategoryNode[]): ApiCategoryNode[] => {
+    const result: ApiCategoryNode[] = [];
+    const walk = (items: ApiCategoryNode[]) => {
+      items.forEach((item) => {
+        result.push(item);
+        if (item.children?.length) walk(item.children);
+      });
+    };
+    walk(nodes);
+    return result;
+  };
+
+  // Find a category node by ID in the flat list
+  const findCategoryById = (id: number): ApiCategoryNode | undefined => {
+    const all = flattenTree(categoryTree);
+    return all.find((c) => c.id === id);
+  };
+
+  // Get all descendant category names for product filtering
+  const getDescendantNames = (node: ApiCategoryNode): string[] => {
+    const names: string[] = [node.name];
+    if (node.children?.length) {
+      node.children.forEach((child) => {
+        names.push(...getDescendantNames(child));
+      });
+    }
+    return names;
+  };
+
   useEffect(() => {
-    fetchProducts();
+    fetchCategoriesAndProducts();
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchCategoriesAndProducts = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await productAPI.getAllProducts();
-      setProducts(response.data.products);
+      const [catRes, prodRes] = await Promise.all([
+        categoryAPI.getAllCategories(),
+        productAPI.getAllProducts(),
+      ]);
+
+      // Rebuild tree from parentId to handle any shape from API
+      const rawNodes = (catRes.data.categories || []) as ApiCategoryNode[];
+      const allFlat = flattenTree(rawNodes);
+      const byId = new Map<number, ApiCategoryNode>();
+      allFlat.forEach((n) => {
+        if (typeof n.id === 'number') {
+          byId.set(n.id, { ...n, children: [] });
+        }
+      });
+      byId.forEach((node) => {
+        if (node.parentId && byId.has(node.parentId)) {
+          byId.get(node.parentId)!.children!.push(node);
+        }
+      });
+      const roots = Array.from(byId.values()).filter(
+        (n) => !n.parentId || !byId.has(n.parentId)
+      );
+      setCategoryTree(roots);
+      setProducts(prodRes.data.products);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+      setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -133,30 +172,56 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     }
   }, [location.search, categoryId, categoryTitle]);
 
+  // When currentCategory changes, find its children in the tree
+  useEffect(() => {
+    if (!currentCategory || categoryTree.length === 0) return;
+    const node = findCategoryById(currentCategory.id);
+    if (node && node.children && node.children.length > 0) {
+      setChildCategories(node.children);
+    } else {
+      setChildCategories([]);
+    }
+  }, [currentCategory, categoryTree]);
+
   useEffect(() => {
     if (!currentCategory || products.length === 0) return;
-    let targetCategory = CATEGORY_MAPPING[currentCategory.id];
-    if (currentCategory.id === 5 && subCategory) {
-      targetCategory = CATEGORY_MAPPING[subCategory.id];
+
+    // Determine which category names to filter products by
+    let targetNames: string[] = [];
+
+    if (subCategory) {
+      // A sub-category is selected: show products from it and its descendants
+      const subNode = findCategoryById(subCategory.id);
+      if (subNode) {
+        targetNames = getDescendantNames(subNode);
+      } else {
+        targetNames = [subCategory.title];
+      }
+    } else if (childCategories.length > 0) {
+      // Parent has children but none selected yet: show ALL products (parent + all descendants)
+      const parentNode = findCategoryById(currentCategory.id);
+      if (parentNode) {
+        targetNames = getDescendantNames(parentNode);
+      } else {
+        targetNames = [currentCategory.title];
+      }
+    } else {
+      // Leaf category: show products matching this category name
+      targetNames = [currentCategory.title];
     }
-    
+
+    const lowerNames = targetNames.map((n) => n.toLowerCase());
+
     const filtered = products.filter((p) => {
       if (!p.available) return false;
-      if (p.category === targetCategory) return true;
-      
-      // Handle potential plural/singular or accent mismatches for Lunch Boxes
-      const lunchVariants = ["Boîte à lunch", "Boite à lunch", "Boîtes à lunch", "Boites à lunch"];
-      if (lunchVariants.includes(targetCategory) && lunchVariants.includes(p.category)) {
-        return true;
-      }
-      
-      return false;
+      return lowerNames.includes(p.category.toLowerCase());
     });
     setFilteredProducts(filtered);
-  }, [currentCategory, subCategory, products]);
+  }, [currentCategory, subCategory, childCategories, products, categoryTree]);
 
   const handleBack = () => {
-    if (currentCategory?.id === 5 && subCategory) {
+    if (subCategory) {
+      // Go back to the parent category (show sub-categories)
       setSubCategory(null);
       return;
     }
@@ -271,7 +336,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Erreur de chargement</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={fetchProducts}
+            onClick={fetchCategoriesAndProducts}
             className="bg-[#C5A065] hover:bg-[#2D2A26] text-white px-6 py-2 rounded-lg transition-colors"
           >
             Réessayer
@@ -281,7 +346,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     );
   }
 
-  const showSubCategories = currentCategory.id === 5 && !subCategory;
+  const showSubCategories = childCategories.length > 0 && !subCategory;
 
   return (
     <div
@@ -320,21 +385,21 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
         {showSubCategories ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {LUNCH_SUBCATEGORIES.map((sub) => (
+            {childCategories.map((child) => (
               <div
-                key={sub.id}
-                onClick={() => setSubCategory({ id: sub.id, title: sub.title })}
+                key={child.id}
+                onClick={() => setSubCategory({ id: child.id, title: child.name })}
                 className="group relative h-80 overflow-hidden rounded-xl cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500 border-4 border-white"
               >
                 <img
-                  src={sub.image}
-                  alt={sub.title}
+                  src={child.image || './gateau.jpg'}
+                  alt={child.name}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <h3 className="text-white text-4xl font-serif drop-shadow-lg">
-                    {sub.title}
+                    {child.name}
                   </h3>
                 </div>
               </div>

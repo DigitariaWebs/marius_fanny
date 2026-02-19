@@ -3,6 +3,7 @@ import {
   createOrder,
   getOrders,
   getOrderById,
+  getProductionList,
   updateOrder,
   deleteOrder,
   validateDelivery,
@@ -42,6 +43,9 @@ router.post(
 
 // Create a new order (requires authentication)
 router.post("/", requireAuth, validateBody(createOrderSchema), createOrder);
+
+// Get production list for kitchen (requires authentication)
+router.get("/production", requireAuth, getProductionList);
 
 // Get all orders with pagination and filters (requires authentication)
 router.get("/", requireAuth, validateQuery(orderQuerySchema), getOrders);

@@ -41,6 +41,36 @@ export interface Product {
   }>;
 }
 
+// Category Management Types
+export interface Category {
+  id: number;
+  name: string;
+  description?: string;
+  image?: string;
+  parentId?: number;
+  displayOrder: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategoryData {
+  name: string;
+  description?: string;
+  image?: string;
+  parentId?: number;
+  displayOrder?: number;
+}
+
+export interface UpdateCategoryData {
+  name?: string;
+  description?: string;
+  image?: string;
+  parentId?: number;
+  displayOrder?: number;
+  active?: boolean;
+}
+
 // Statistics Types
 export interface Statistics {
   totalProducts: number;

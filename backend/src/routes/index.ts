@@ -6,6 +6,7 @@ import orderRoutes from "./order.routes.js";
 import paymentRoutes from "./payment.routes.js";
 import productRoutes from "./product.routes.js";
 import uploadRoutes from "./upload.routes.js";
+import categoryRoutes from "./category.routes.js";
 
 const router = Router();
 
@@ -29,6 +30,7 @@ router.use("/auth-password", authRoutes);
 router.use("/orders", orderRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/products", productRoutes);
+router.use("/categories", categoryRoutes);
 router.use("/upload", uploadRoutes);
 
 export default router;

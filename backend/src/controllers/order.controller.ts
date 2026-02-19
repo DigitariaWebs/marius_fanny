@@ -157,6 +157,78 @@ export const createOrder = async (
 };
 
 /**
+ * Get production list - orders broken down by product for kitchen staff
+ * GET /api/orders/production
+ */
+export const getProductionList = async (
+  req: Request,
+  res: Response<ApiResponse>,
+) => {
+  try {
+    const { date } = req.query as { date?: string };
+
+    // Build query: orders that need production
+    const query: any = {
+      status: { $in: ["confirmed", "in_production", "pending"] },
+    };
+
+    // Filter by pickup/delivery date if provided
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      query.$or = [
+        { pickupDate: { $gte: startOfDay, $lte: endOfDay } },
+        { deliveryDate: date },
+        // Also include orders created on this day if no pickup/delivery date set
+        { orderDate: { $gte: startOfDay, $lte: endOfDay } },
+      ];
+    }
+
+    const orders = await Order.find(query).sort({ createdAt: -1 });
+
+    // Flatten orders into production items (one per product per order)
+    const productionItems = orders.flatMap((order) =>
+      order.items.map((item, idx) => ({
+        id: `${order._id}-${idx}`,
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        customerName: `${order.clientInfo.firstName} ${order.clientInfo.lastName}`,
+        customerPhone: order.clientInfo.phone,
+        deliveryDate: order.deliveryDate || (order.pickupDate ? order.pickupDate.toISOString().split('T')[0] : order.orderDate.toISOString().split('T')[0]),
+        deliveryTimeSlot: order.deliveryTimeSlot || "Non spécifié",
+        deliveryType: order.deliveryType,
+        pickupLocation: order.pickupLocation,
+        orderStatus: order.status,
+        notes: item.notes || order.notes || "",
+      }))
+    );
+
+    res.json({
+      success: true,
+      data: {
+        items: productionItems,
+        totalOrders: orders.length,
+        totalItems: productionItems.length,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching production list:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la récupération de la liste de production",
+      message: error.message,
+    });
+  }
+};
+
+/**
  * Get all orders with pagination and filters
  * GET /api/orders
  */

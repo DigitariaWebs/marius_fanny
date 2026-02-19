@@ -25,6 +25,7 @@ import StaffManagement from "./StaffManagement";
 import ClientManagement from "./ClientManagement";
 import { OrderManagement } from "./OrderManagement";
 import { ProductManagement } from "./ProductManagement";
+import { CategoryManagement } from "./CategoryManagement";
 import SettingsManagement from "./SettingsManagement";
 import DeliveryAssignment from "./DeliveryAssignment";
 import ProductionList from "./ProductionList";
@@ -54,6 +55,7 @@ type ViewMode =
   | "clients"
   | "orders"
   | "products"
+  | "categories"
   | "delivery"
   | "settings"
   | "production";
@@ -234,6 +236,15 @@ export default function AdminDashboard() {
                 active={viewMode === "products"}
                 onClick={() => {
                   setViewMode("products");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+              <NavItem
+                icon={<Package size={20} />}
+                label="Catégories"
+                active={viewMode === "categories"}
+                onClick={() => {
+                  setViewMode("categories");
                   setIsMobileMenuOpen(false);
                 }}
               />
@@ -481,6 +492,9 @@ export default function AdminDashboard() {
 
         {/* VUE PRODUITS */}
         {viewMode === "products" && <ProductManagement />}
+
+        {/* VUE CATÉGORIES */}
+        {viewMode === "categories" && <CategoryManagement />}
 
         {/* VUE LIVRAISONS */}
         {viewMode === "delivery" && <DeliveryAssignment />}

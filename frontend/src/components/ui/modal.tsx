@@ -43,11 +43,11 @@ export interface ModalProps {
 }
 
 const sizeClasses = {
-  sm: "max-w-md max-h-[80vh]",
-  md: "max-w-lg max-h-[80vh]",
-  lg: "max-w-2xl max-h-[85vh]",
-  xl: "max-w-4xl max-h-[90vh]",
-  full: "max-w-7xl max-h-[95vh]",
+  sm: "max-w-md max-h-[80vh] flex flex-col overflow-hidden",
+  md: "max-w-lg max-h-[80vh] flex flex-col overflow-hidden",
+  lg: "max-w-2xl max-h-[85vh] flex flex-col overflow-hidden",
+  xl: "max-w-4xl max-h-[90vh] flex flex-col overflow-hidden",
+  full: "max-w-7xl max-h-[95vh] flex flex-col overflow-hidden",
 };
 
 const defaultSizes: Record<ModalProps["type"], keyof typeof sizeClasses> = {
@@ -105,7 +105,7 @@ export function Modal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className={cn(sizeClasses[modalSize], typeStyles[type].container)}
+        className={cn(sizeClasses[modalSize], typeStyles[type].container || "")}
         onInteractOutside={(e) => {
           if (!canClose) {
             e.preventDefault();
@@ -117,7 +117,7 @@ export function Modal({
           }
         }}
       >
-        <DialogHeader className={cn(typeStyles[type].header)}>
+        <DialogHeader className={cn("shrink-0", typeStyles[type]?.header || "")}>
           <div className="flex items-start gap-3">
             {modalIcon && <div className="mt-0.5">{modalIcon}</div>}
             <div className="flex-1">
@@ -131,13 +131,13 @@ export function Modal({
           </div>
         </DialogHeader>
 
-        <div className="py-4 px-2 overflow-y-auto max-h-[calc(85vh-12rem)]">
+        <div className="py-4 px-2 overflow-y-auto flex-1 min-h-0">
           {children}
         </div>
 
         {actions &&
           (actions.primary || actions.secondary || actions.tertiary) && (
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 shrink-0 border-t pt-4">
               <div className="flex items-center justify-between w-full gap-2">
                 <div className="flex gap-2">
                   {actions.tertiary && (

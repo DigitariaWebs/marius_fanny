@@ -23,12 +23,13 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { ImageUpload } from "./ImageUpload";
-import type { Product } from "../types";
-import { CATEGORIES } from "../data";
+import type { Product, Category } from "../types";
 import { productAPI } from "../lib/ProductAPI";
+import { categoryAPI } from "../lib/CategoryAPI";
 
 export function ProductManagement() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +43,7 @@ export function ProductManagement() {
 
   const [productForm, setProductForm] = useState({
     name: "",
-    category: "Gâteaux",
+    category: "",
     price: "",
     description: "",
     image: "",
@@ -56,17 +57,49 @@ export function ProductManagement() {
   });
 
   useEffect(() => {
-    fetchProducts();
+    fetchData();
   }, []);
 
-  const fetchProducts = async () => {
+  const flattenCategoriesWithIndentation = (cats: any[] = [], level: number = 0): Array<{ id: number; name: string; display: string }> => {
+    const result: Array<{ id: number; name: string; display: string }> = [];
+    const indent = '  '.repeat(level) + (level > 0 ? '> ' : '');
+    
+    cats.forEach(cat => {
+      result.push({
+        id: cat.id,
+        name: cat.name,
+        display: indent + cat.name
+      });
+      if (cat.children && Array.isArray(cat.children)) {
+        result.push(...flattenCategoriesWithIndentation(cat.children, level + 1));
+      }
+    });
+    
+    return result;
+  };
+
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await productAPI.getAllProducts();
-      setProducts(response.data.products);
+      const [productsRes, categoriesRes] = await Promise.all([
+        productAPI.getAllProducts(),
+        categoryAPI.getAllCategories(),
+      ]);
+      setProducts(productsRes.data.products);
+      setCategories(categoriesRes.data.categories);
+      // Set default category to first available category
+      if (categoriesRes.data.categories.length > 0) {
+        const flattened = flattenCategoriesWithIndentation(categoriesRes.data.categories);
+        if (flattened.length > 0) {
+          setProductForm(prev => ({
+            ...prev,
+            category: flattened[0].name,
+          }));
+        }
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+      setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -116,7 +149,7 @@ export function ProductManagement() {
       label: "Catégorie",
       options: [
         { value: "all", label: "Toutes les catégories" },
-        ...CATEGORIES.map((cat) => ({ value: cat, label: cat })),
+        ...categories.map((cat) => ({ value: cat.name, label: cat.name })),
       ],
     },
     {
@@ -204,7 +237,7 @@ export function ProductManagement() {
       setIsCreateModalOpen(false);
       setProductForm({
         name: "",
-        category: "Gâteaux",
+        category: categories.length > 0 ? categories[0].name : "",
         price: "",
         description: "",
         image: "",
@@ -259,7 +292,7 @@ export function ProductManagement() {
       setSelectedProduct(null);
       setProductForm({
         name: "",
-        category: "Gâteaux",
+        category: categories.length > 0 ? categories[0].name : "",
         price: "",
         description: "",
         image: "",
@@ -446,7 +479,7 @@ export function ProductManagement() {
               <span className="text-red-800">{error}</span>
             </div>
             <button
-              onClick={fetchProducts}
+              onClick={fetchData}
               className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
             >
               Réessayer
@@ -487,7 +520,7 @@ export function ProductManagement() {
               setIsCreateModalOpen(false);
               setProductForm({
                 name: "",
-                category: "Gâteaux",
+                category: categories.length > 0 ? categories[0].name : "",
                 price: "",
                 description: "",
                 image: "",
@@ -539,9 +572,9 @@ export function ProductManagement() {
                 }
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
               >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {flattenCategoriesWithIndentation(categories).map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.display}
                   </option>
                 ))}
               </select>
@@ -814,7 +847,7 @@ export function ProductManagement() {
               setSelectedProduct(null);
               setProductForm({
                 name: "",
-                category: "Gâteaux",
+                category: categories.length > 0 ? categories[0].name : "",
                 price: "",
                 description: "",
                 image: "",
@@ -866,9 +899,9 @@ export function ProductManagement() {
                 }
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
               >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {flattenCategoriesWithIndentation(categories).map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.display}
                   </option>
                 ))}
               </select>
