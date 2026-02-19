@@ -18,6 +18,8 @@ import AuthPage from "./components/Autpage";
 import AdminDashboard from "./components/Dashboard";
 import Contact from "./components/Contact";
 import MonCompte from "./components/Moncompte";
+import DevenirPartenaire from "./components/DevenirPartenaire";
+import ProDashboard from "./components/ProDashboard";
 
 // Pages
 import User from "./pages/user";
@@ -241,6 +243,30 @@ const App: React.FC = () => {
             element={
               <RoleBasedRedirect>
                 <MonCompte />
+              </RoleBasedRedirect>
+            }
+          />
+
+          {/* Pro Partner Routes */}
+          <Route
+            path="/devenir-partenaire"
+            element={
+              <RoleBasedRedirect>
+                <DevenirPartenaire
+                  onCartClick={() => setIsCartOpen(true)}
+                  cartCount={cartItems.reduce(
+                    (sum, item) => sum + item.quantity,
+                    0,
+                  )}
+                />
+              </RoleBasedRedirect>
+            }
+          />
+          <Route
+            path="/pro"
+            element={
+              <RoleBasedRedirect>
+                <ProDashboard />
               </RoleBasedRedirect>
             }
           />

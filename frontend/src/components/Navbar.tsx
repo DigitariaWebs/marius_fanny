@@ -85,6 +85,10 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
       navigate("/contact");
       return;
     }
+    if (id === "devenir-partenaire") {
+      navigate("/devenir-partenaire");
+      return;
+    }
     if (id === "se-connecter") {
       navigate("/se-connecter");
       return;
@@ -96,6 +100,9 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
       if (role === "admin") {
         console.log("➡️ Navigation vers /dashboard (admin)");
         navigate("/dashboard");
+      } else if (role === "pro") {
+        console.log("➡️ Navigation vers /pro (pro)");
+        navigate("/pro");
       } else if (role === "client") {
         console.log("➡️ Navigation vers /mon-compte (client)");
         navigate("/mon-compte");
@@ -163,6 +170,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
   // Fonction pour obtenir le texte du bouton selon le rôle
   const getDashboardButtonText = () => {
     if (role === "client") return "Mon Compte";
+    if (role === "pro") return "Espace Pro";
     if (role === "admin") return "Dashboard Admin";
     if (role === "kitchen_staff" || role === "customer_service" || role === "deliveryDriver") return "Dashboard Staff";
     return "Dashboard";
@@ -235,7 +243,18 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                           Dashboard
                         </button>
                       )}
-                      {role !== "admin" && (
+                      {role === "pro" && (
+                        <button
+                          onClick={() => {
+                            navigate("/pro");
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#C5A065]/10 transition-colors text-center"
+                        >
+                          Espace Pro
+                        </button>
+                      )}
+                      {role !== "admin" && role !== "pro" && (
                         <button
                           onClick={() => {
                             navigate("/mon-compte");
@@ -327,6 +346,18 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                   style={{ fontFamily: styles.fontSans }}
                 >
                   Dashboard
+                </button>
+              )}
+              {role === "pro" && (
+                <button
+                  onClick={() => {
+                    navigate("/pro");
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#2D2A26] border-2 border-[#2D2A26] rounded-full hover:bg-[#2D2A26] hover:text-white transition-all"
+                  style={{ fontFamily: styles.fontSans }}
+                >
+                  Espace Pro
                 </button>
               )}
               {role === "client" && (

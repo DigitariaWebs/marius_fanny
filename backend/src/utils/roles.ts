@@ -4,6 +4,7 @@
 
 export const USER_ROLES = {
   USER: "user",
+  PRO: "pro",
   STAFF: "staff",
   CUSTOMER_SERVICE: "customerService",
   ADMIN: "admin",
@@ -17,6 +18,7 @@ export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
  */
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   user: 1,
+  pro: 1,
   staff: 2,
   deliveryDriver: 3,
   customerService: 4,
@@ -117,6 +119,7 @@ export function isValidRole(role: string): role is UserRole {
 export function getRoleDisplayName(role: UserRole): string {
   const displayNames: Record<UserRole, string> = {
     user: "User",
+    pro: "Partenaire Pro",
     staff: "Staff",
     customerService: "Customer Service",
     admin: "Administrator",
@@ -133,6 +136,7 @@ export function getRoleDisplayName(role: UserRole): string {
 export function getRoleDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
     user: "Basic user with standard access permissions",
+    pro: "Professional partner with access to the product catalog",
     staff: "Staff member with enhanced access for operational tasks",
     customerService:
       "Customer service representative with support and management capabilities",
