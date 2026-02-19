@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { categoryAPI } from '../lib/CategoryAPI';
 import type { Category as CategoryType } from '../types';
+import { getImageUrl } from '../utils/api';
 
 const styles = {
   cream: '#F9F7F2',
@@ -195,7 +196,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick }) => {
               style={{ position: 'relative', isolation: 'isolate' }}
             >
               <img
-                src={cat.image}
+                src={getImageUrl(cat.image)}
                 alt={cat.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 style={{ zIndex: 1 }}

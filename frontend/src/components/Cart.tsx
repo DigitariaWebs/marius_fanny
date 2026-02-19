@@ -24,6 +24,7 @@ import {
 } from "../utils/deliveryZones";
 import { authClient } from "../lib/AuthClient";
 import { TAX_RATE } from "../data";
+import { getImageUrl } from "../utils/api";
 
 interface CartItem {
   id: number;
@@ -328,7 +329,7 @@ const CartDrawer: React.FC<CartProps> = ({
                   {/* Image Produit */}
                   <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 bg-stone-100 border border-stone-100">
                     <img
-                      src={item.image}
+                      src={getImageUrl(item.image)}
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { User, Package, MapPin, LogOut, ArrowLeft, Clock, CheckCircle } from 'lucide-react';
 import GoldenBackground from '../components/GoldenBackground'; 
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl } from '../utils/api';
 
 const MOCK_USER = {
   fullName: "Jean Dupont",
@@ -138,7 +139,7 @@ const UserProfile: React.FC = () => {
                       {order.items.map((item, index) => (
                         <div key={index} className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-stone-100 rounded-md overflow-hidden shrink-0 border border-stone-200">
-                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                            <img src={getImageUrl(item.image)} alt={item.name} className="w-full h-full object-cover" />
                           </div>
                           
                           <div className="grow">

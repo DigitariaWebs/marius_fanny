@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { productAPI } from '../lib/ProductAPI';
 import { categoryAPI } from '../lib/CategoryAPI';
 import type { Product, Category as CategoryType } from '../types';
+import { getImageUrl } from '../utils/api';
 
 const styles = {
   gold: '#C5A065',
@@ -392,7 +393,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 className="group relative h-80 overflow-hidden rounded-xl cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500 border-4 border-white"
               >
                 <img
-                  src={child.image || './gateau.jpg'}
+                  src={getImageUrl(child.image, './gateau.jpg')}
                   alt={child.name}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 />
@@ -415,7 +416,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
               >
                 <div className="relative h-64 overflow-hidden">
                   <img
-                    src={product.image}
+                    src={getImageUrl(product.image)}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
@@ -458,7 +459,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
             <div className="w-full md:w-1/2 h-64 md:h-auto shrink-0 relative">
               <img
-                src={selectedProduct.image}
+                src={getImageUrl(selectedProduct.image)}
                 alt={selectedProduct.name}
                 className="w-full h-full object-cover"
               />

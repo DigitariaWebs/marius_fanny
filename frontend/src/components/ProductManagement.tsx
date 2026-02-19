@@ -26,6 +26,7 @@ import { ImageUpload } from "./ImageUpload";
 import type { Product, Category } from "../types";
 import { productAPI } from "../lib/ProductAPI";
 import { categoryAPI } from "../lib/CategoryAPI";
+import { getImageUrl } from "../utils/api";
 
 export function ProductManagement() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -333,7 +334,7 @@ export function ProductManagement() {
         <div className="flex items-center gap-3">
           {product.image ? (
             <img
-              src={product.image}
+              src={getImageUrl(product.image)}
               alt={product.name}
               className="w-12 h-12 rounded-lg object-cover"
             />
@@ -1174,7 +1175,7 @@ export function ProductManagement() {
             {selectedProduct.image ? (
               <div className="flex justify-center mb-4">
                 <img
-                  src={selectedProduct.image}
+                  src={getImageUrl(selectedProduct.image)}
                   alt={selectedProduct.name}
                   className="max-w-xs rounded-lg shadow-md"
                 />

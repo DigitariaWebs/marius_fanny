@@ -175,7 +175,7 @@ const Dashboard: React.FC = () => {
         // Récupérer les commandes depuis l'API backend
         console.log("📡 Récupération des commandes depuis le backend...");
 
-        const apiUrl = "http://localhost:3000/api/orders?limit=100";
+        const apiUrl = `${(await import('../utils/api')).API_URL}/api/orders?limit=100`;
         console.log(`🔗 Appel: ${apiUrl}`);
 
         const response = await fetch(apiUrl, {

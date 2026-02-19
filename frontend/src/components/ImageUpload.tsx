@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Upload, X, ImageIcon } from 'lucide-react';
+import { API_URL, getImageUrl } from '../utils/api';
 
 interface ImageUploadProps {
   value: string;
@@ -35,10 +36,7 @@ export function ImageUpload({ value, onChange, className = '' }: ImageUploadProp
       const formData = new FormData();
       formData.append('image', file);
 
-      // The backend serves API on port 3000
-      const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
-      
-      const response = await fetch(`${apiUrl}/api/upload/single`, {
+      const response = await fetch(`${API_URL}/api/upload/single`, {
         method: 'POST',
         body: formData,
         credentials: 'include', // Include auth cookies
@@ -51,11 +49,8 @@ export function ImageUpload({ value, onChange, className = '' }: ImageUploadProp
 
       const data = await response.json();
       
-      // If the URL is relative (local storage fallback), prepend backend URL if in dev
-      let finalUrl = data.url;
-      if (finalUrl.startsWith('/uploads/') && window.location.hostname === 'localhost') {
-        finalUrl = `http://localhost:3000${finalUrl}`;
-      }
+      // Resolve relative URLs to full backend URLs
+      const finalUrl = getImageUrl(data.url);
       
       onChange(finalUrl);
     } catch (err) {

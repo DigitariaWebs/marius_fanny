@@ -21,6 +21,7 @@ import {
 import { ImageUpload } from "./ImageUpload";
 import type { Category } from "../types";
 import { categoryAPI } from "../lib/CategoryAPI";
+import { getImageUrl } from "../utils/api";
 
 export function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -223,7 +224,7 @@ export function CategoryManagement() {
         <div className="flex items-center justify-center">
           {category.image ? (
             <img
-              src={category.image}
+              src={getImageUrl(category.image)}
               alt={category.name}
               className="w-12 h-12 rounded-lg object-cover"
             />
@@ -615,7 +616,7 @@ export function CategoryManagement() {
           <div className="space-y-4">
             {selectedCategory.image && (
               <img
-                src={selectedCategory.image}
+                src={getImageUrl(selectedCategory.image)}
                 alt={selectedCategory.name}
                 className="w-full h-48 object-cover rounded-lg"
               />
