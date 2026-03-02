@@ -41,7 +41,7 @@ export const urlSchema = z.string().url("Invalid URL format");
  */
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(10),
+  limit: z.coerce.number().int().positive().max(1000).default(10),
   sort: z.string().optional(),
   order: z.enum(["asc", "desc"]).default("desc"),
 });
@@ -52,7 +52,7 @@ export const paginationQuerySchema = z.object({
 export const searchQuerySchema = z.object({
   q: z.string().min(1, "Search query is required"),
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(20),
+  limit: z.coerce.number().int().positive().max(1000).default(20),
 });
 
 /**

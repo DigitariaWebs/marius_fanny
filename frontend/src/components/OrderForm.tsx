@@ -77,6 +77,7 @@ interface OrderFormData {
   total: number;
   depositAmount: number;
   balance: number;
+  paymentMethod: "in_store" | "payment_link";
 }
 
 interface OrderFormItem {
@@ -129,6 +130,7 @@ export default function OrderForm({
       total: 0,
       depositAmount: 0,
       balance: 0,
+      paymentMethod: initialData?.paymentMethod || "in_store",
     };
   });
 
@@ -176,7 +178,7 @@ export default function OrderForm({
   const fetchProducts = async () => {
     try {
       setProductsLoading(true);
-      const response = await productAPI.getAllProducts();
+      const response = await productAPI.getAllProducts(1, 1000);
       setProducts(response.data.products.filter(p => p.available));
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -1403,6 +1405,31 @@ export default function OrderForm({
           rows={3}
           placeholder="Notes supplémentaires..."
         />
+      </div>
+
+      {/* SECTION 7.5: Méthode de paiement */}
+      <div className="space-y-3 pb-4 border-b border-gray-200">
+        <Label className="text-xs font-bold text-gray-700 uppercase">
+          MÉTHODE DE PAIEMENT:
+        </Label>
+        <RadioGroup
+          value={formData.paymentMethod}
+          onValueChange={(value) => handleInputChange("paymentMethod", value)}
+          className="grid grid-cols-2 gap-4"
+        >
+          <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-[#C5A065] transition-colors">
+            <RadioGroupItem value="in_store" id="in_store" />
+            <Label htmlFor="in_store" className="cursor-pointer text-sm">
+              Payer en magasin
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-[#C5A065] transition-colors">
+            <RadioGroupItem value="payment_link" id="payment_link" />
+            <Label htmlFor="payment_link" className="cursor-pointer text-sm">
+              Envoyer lien de paiement
+            </Label>
+          </div>
+        </RadioGroup>
       </div>
 
       {/* SECTION 8: Totaux */}

@@ -43,6 +43,7 @@ export interface Product {
     name: string;
     choices: string[];
   }>;
+  recommendations?: number[]; // IDs des produits recommandés
 }
 
 // Category Management Types

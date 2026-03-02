@@ -29,6 +29,7 @@ import { CategoryManagement } from "./CategoryManagement";
 import SettingsManagement from "./SettingsManagement";
 import DeliveryAssignment from "./DeliveryAssignment";
 import ProductionList from "./ProductionList";
+import InventaireJournalier from "./InventaireJournalier";
 import { authClient } from "../lib/AuthClient";
 import GoldenBackground from "./GoldenBackground";
 import type { Product } from "../types";
@@ -58,7 +59,8 @@ type ViewMode =
   | "categories"
   | "delivery"
   | "settings"
-  | "production";
+  | "production"
+  | "inventaire";
 
 const CATEGORIES = [
   "Gâteaux",
@@ -90,7 +92,7 @@ export default function AdminDashboard() {
   const fetchProducts = async () => {
     try {
       setProductsLoading(true);
-      const response = await productAPI.getAllProducts();
+      const response = await productAPI.getAllProducts(1, 1000);
       setProducts(response.data.products);
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -218,6 +220,15 @@ export default function AdminDashboard() {
                 active={viewMode === "production"}
                 onClick={() => {
                   setViewMode("production");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+              <NavItem
+                icon={<ClipboardList size={20} />}
+                label="Inventaire journalier"
+                active={viewMode === "inventaire"}
+                onClick={() => {
+                  setViewMode("inventaire");
                   setIsMobileMenuOpen(false);
                 }}
               />
@@ -480,6 +491,9 @@ export default function AdminDashboard() {
 
         {/* LISTE DE PRODUCTION */}
         {viewMode === "production" && <ProductionList />}
+
+        {/* INVENTAIRE JOURNALIER */}
+        {viewMode === "inventaire" && <InventaireJournalier />}
 
         {/* GESTION DU PERSONNEL */}
         {viewMode === "staff" && <StaffManagement />}
