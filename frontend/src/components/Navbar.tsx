@@ -66,7 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
   const mainLinks = [
     { name: "La boutique", id: "shop" },
     { name: "Notre Histoire", id: "timeline" },
-    {name: "Devenir partenaire", id: "devenir-partenaire"},
+    {name: "Devenir partenaire", id: "inscription"},
     { name: "Contacter", id: "contact" },
   ];
 

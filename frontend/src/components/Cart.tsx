@@ -657,44 +657,9 @@ const CartDrawer: React.FC<CartProps> = ({
                   Passer au paiement
                 </button>
 
-                <button
-                  onClick={handleInStorePayment}
-                  className="w-full py-3 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all shadow mt-3 border border-dashed border-[#C5A065] text-[#2D2A26] bg-white hover:bg-[#C5A065] hover:text-white"
-                >
-                  <CreditCard size={16} />
-                  Payer en magasin
-                </button>
               </>
             )}
 
-            {inStoreConfirmation && (
-              <div className="mt-4 rounded-2xl border border-dashed border-[#C5A065] bg-[#FFF9F3] p-4 text-sm space-y-2">
-                <p className="text-[#2D2A26] font-semibold">
-                  Bon de commande enregistré{" "}
-                  <span className="text-[#C5A065]">
-                    #{inStoreConfirmation.orderId}
-                  </span>
-                </p>
-                <p className="text-stone-500">
-                  {inStoreConfirmation.itemsCount} article(s) • Total{" "}
-                  <strong>{inStoreConfirmation.total.toFixed(2)} $</strong>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={handleDownloadOrderSlip}
-                    className="flex-1 py-2 rounded-lg bg-[#C5A065] text-white text-xs font-semibold uppercase tracking-widest"
-                  >
-                    Télécharger le bon de commande
-                  </button>
-                  <button
-                    onClick={() => setInStoreConfirmation(null)}
-                    className="flex-1 py-2 rounded-lg border border-stone-300 text-[#2D2A26] text-xs font-semibold uppercase tracking-widest"
-                  >
-                    Refermer
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Footer */}
             {items.length > 0 && (
