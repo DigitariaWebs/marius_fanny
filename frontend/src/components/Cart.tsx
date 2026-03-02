@@ -10,6 +10,8 @@ import {
   AlertCircle,
   User,
   ShoppingCart,
+  Tag,
+  Check,
 } from "lucide-react";
 import {
   Select,
@@ -76,6 +78,42 @@ const CartDrawer: React.FC<CartProps> = ({
     itemsCount: number;
   } | null>(null);
 
+  // Code promo
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    label: string;
+    type: "percent" | "fixed";
+    value: number;
+  } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+
+  const PROMO_CODES: Record<string, { label: string; type: "percent" | "fixed"; value: number }> = {
+    "BIENVENUE10": { label: "Bienvenue -10%",  type: "percent", value: 10  },
+    "FIDELITE15":  { label: "Fidélité -15%",   type: "percent", value: 15  },
+    "ETE2026":     { label: "Été 2026 -5$",    type: "fixed",   value: 5   },
+    "VIP20":       { label: "VIP -20%",        type: "percent", value: 20  },
+  };
+
+  const handleApplyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    const promo = PROMO_CODES[code];
+    if (promo) {
+      setAppliedPromo({ code, ...promo });
+      setPromoError(null);
+      setPromoInput("");
+    } else {
+      setPromoError("Code promo invalide ou expiré.");
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoError(null);
+    setPromoInput("");
+  };
+
   // Log cart open/close events
   useEffect(() => {
     if (isOpen) {
@@ -114,7 +152,13 @@ const CartDrawer: React.FC<CartProps> = ({
       ? deliveryZoneInfo.fee
       : 0;
 
-  const total = subtotal + taxes + delivery;
+  const discount = appliedPromo
+    ? appliedPromo.type === "percent"
+      ? Math.min(subtotal * (appliedPromo.value / 100), subtotal)
+      : Math.min(appliedPromo.value, subtotal)
+    : 0;
+
+  const total = subtotal - discount + taxes + delivery;
 
   // Validate minimum order
   const minimumOrderValidation =
@@ -165,6 +209,7 @@ const CartDrawer: React.FC<CartProps> = ({
       pickupLocation: deliveryType === "pickup" ? pickupLocation : undefined,
       deliveryFee: delivery,
       subtotal: subtotal,
+      discount: discount,
       taxes: taxes,
       total: total,
       timestamp: Date.now(),
@@ -601,6 +646,56 @@ const CartDrawer: React.FC<CartProps> = ({
                   <span>Sous-total</span>
                   <span>{subtotal.toFixed(2)} $</span>
                 </div>
+
+                {/* Code promo */}
+                {!appliedPromo ? (
+                  <div className="pt-1">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                        <input
+                          type="text"
+                          value={promoInput}
+                          onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
+                          onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
+                          placeholder="Code promo"
+                          className="w-full pl-8 pr-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-[#C5A065] focus:ring-1 focus:ring-[#C5A065]/30 bg-white"
+                        />
+                      </div>
+                      <button
+                        onClick={handleApplyPromo}
+                        disabled={!promoInput.trim()}
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#2D2A26] text-white hover:bg-[#C5A065] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Appliquer
+                      </button>
+                    </div>
+                    {promoError && (
+                      <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle size={12} />{promoError}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between py-1.5 px-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Check size={14} className="text-emerald-600" />
+                      <span className="text-sm font-semibold text-emerald-700">{appliedPromo.code}</span>
+                      <span className="text-xs text-emerald-600">{appliedPromo.label}</span>
+                    </div>
+                    <button onClick={handleRemovePromo} className="text-emerald-500 hover:text-red-500 transition-colors ml-2">
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm font-medium text-emerald-600">
+                    <span>Réduction ({appliedPromo?.code})</span>
+                    <span>- {discount.toFixed(2)} $</span>
+                  </div>
+                )}
+
                 {taxes > 0 && (
                   <div className="flex justify-between text-sm text-stone-500 font-light">
                     <span>Taxes</span>

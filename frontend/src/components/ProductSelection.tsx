@@ -74,8 +74,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
       setLoading(true);
       const [catRes, prodRes, allProdRes] = await Promise.all([
         categoryAPI.getAllCategories(),
-        productAPI.getAllProducts(1, 100, "clients"),
-        productAPI.getAllProducts(1, 100),
+        productAPI.getAllProducts(1, 1000, "clients"),
+        productAPI.getAllProducts(1, 1000),
       ]);
 
       const rawNodes = (catRes.data.categories || []) as ApiCategoryNode[];
@@ -100,15 +100,25 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
   // Filtrage des produits
   useEffect(() => {
-    if (products.length === 0) return;
-    const targetCategoryName = subCategory ? subCategory.title : categoryTitle;
-    const filtered = targetCategoryName
-      ? products.filter(p => p.available && p.category.toLowerCase() === targetCategoryName.toLowerCase())
-      : products.filter(p => p.available);
-    setFilteredProducts(filtered);
+    const currentName = (subCategory?.title || categoryTitle || "").toLowerCase();
+    const allNodes = flattenTree(categoryTree);
+    const currentNode = allNodes.find(c => c.name.toLowerCase() === currentName);
+    const children = currentNode?.children || [];
+    setChildCategories(children);
 
-    const currentNode = flattenTree(categoryTree).find(c => c.id === (subCategory?.id || categoryId));
-    setChildCategories(currentNode?.children || []);
+    // Si on est au niveau parent avec des sous-catégories → vide, l'user doit choisir
+    if (!subCategory && children.length > 0) {
+      setFilteredProducts([]);
+      return;
+    }
+
+    if (products.length === 0) return;
+
+    const filtered = currentName
+      ? products.filter(p => p.available && p.category.toLowerCase() === currentName)
+      : products.filter(p => p.available);
+
+    setFilteredProducts(filtered);
   }, [categoryId, categoryTitle, subCategory, products, categoryTree]);
 
   const getCurrentPrice = () => {
@@ -152,7 +162,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   };
 
   const getRelatedProducts = (product: Product): Product[] => {
-    return [];
+    if (!product.recommendations || product.recommendations.length === 0) return [];
+    return product.recommendations
+      .map((id) => allProducts.find((p) => p.id === id))
+      .filter((p): p is Product => !!p);
   };
 
   const getPreparationBadge = (hours: number) => {
@@ -242,29 +255,65 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
         )}
 
         {/* Liste des produits */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {filteredProducts.map(product => {
             const prepBadge = product.preparationTimeHours ? getPreparationBadge(product.preparationTimeHours) : null;
-            
+            const hasDiscount = Number(product.discountPercentage) > 0;
+            const discountedPrice = hasDiscount
+              ? product.price * (1 - product.discountPercentage! / 100)
+              : product.price;
+            const showPrice = product.price > 0;
+
             return (
-              <div 
-                key={product.id} 
+              <div
+                key={product.id}
                 onClick={() => handleProductClick(product)}
-                className="group bg-white rounded-xl p-4 shadow-sm hover:shadow-xl transition-all cursor-pointer border border-stone-50 relative"
+                className="group relative overflow-hidden rounded-xl cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-stone-200"
+                style={{ aspectRatio: '4/5' }}
               >
-                <div className="h-48 rounded-lg overflow-hidden mb-4 relative">
-                  <img src={getImageUrl(product.image)} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt=""/>
-                  
-                  {/* Étiquette jolie pour la préparation */}
+                <img
+                  src={getImageUrl(product.image)}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt={product.name}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                <div className="absolute top-2 left-2 flex flex-col gap-1">
+                  {hasDiscount && (
+                    <span className="text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full shadow tracking-wide">
+                      -{product.discountPercentage}%
+                    </span>
+                  )}
                   {prepBadge && (
-                    <div className={`absolute top-2 left-2 ${prepBadge.bgColor} ${prepBadge.textColor} text-xs font-bold px-3 py-1.5 rounded-sm border ${prepBadge.borderColor} shadow-sm uppercase tracking-wider`}>
-                      {prepBadge.text}
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow tracking-wide ${prepBadge.bgColor} ${prepBadge.textColor}`}>
+                      ⏱ {prepBadge.text}
+                    </span>
+                  )}
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3">
+                  <h3
+                    className="text-white font-semibold text-[11px] md:text-xs leading-tight mb-1 drop-shadow-md line-clamp-2"
+                    style={{ fontFamily: '"Century Gothic", sans-serif' }}
+                  >
+                    {product.name}
+                  </h3>
+                  {showPrice && (
+                    <div className="flex items-center gap-1.5">
+                      {hasDiscount && (
+                        <span className="text-white/50 line-through text-[10px]">
+                          {product.price.toFixed(2)}$
+                        </span>
+                      )}
+                      <span className="text-[#C5A065] font-bold text-xs">
+                        {discountedPrice.toFixed(2)} $
+                      </span>
                     </div>
                   )}
                 </div>
-                
-                <h3 className="font-medium text-lg mb-1" style={{ fontFamily: '"Century Gothic", sans-serif' }}>{product.name}</h3>
-                <p className="text-gold font-bold">{product.price.toFixed(2)} $</p>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span className="bg-white/90 text-[#2D2A26] text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full shadow-lg">
+                    Voir
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -559,7 +608,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   </>
                 )}
 
-                {isLunchCategory(selectedProduct.category) && getRelatedProducts(selectedProduct).length > 0 && (
+                {getRelatedProducts(selectedProduct).length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
                       <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>
