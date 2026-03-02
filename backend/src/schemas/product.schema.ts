@@ -53,6 +53,7 @@ export const createProductSchema = z.object({
     name: z.string().min(1),
     choices: z.array(z.string().min(1)),
   })).optional(),
+  recommendations: z.array(z.number().int().positive()).optional(),
 });
 
 /**
@@ -78,6 +79,7 @@ export const updateProductSchema = z.object({
     name: z.string().min(1),
     choices: z.array(z.string().min(1)),
   })).optional(),
+  recommendations: z.array(z.number().int().positive()).optional(),
 });
 
 /**

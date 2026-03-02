@@ -57,28 +57,8 @@ interface GroupedProduct {
   allergies: string[]; // Liste des allergies uniques pour ce produit
 }
 
-interface InventoryItem {
-  _id: string;
-  productId: number;
-  productName: string;
-  location: "Montreal" | "Laval";
-  quantity: number;
-}
-
-interface GroupedInventory {
-  productId: number;
-  productName: string;
-  locations: {
-    Montreal: number;
-    Laval: number;
-  };
-  total: number;
-}
-
 const ProductionList: React.FC = () => {
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [inventoryLoading, setInventoryLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,31 +71,6 @@ const ProductionList: React.FC = () => {
   useEffect(() => {
     fetchProductionData();
   }, [selectedDate]);
-
-  useEffect(() => {
-    fetchInventory();
-  }, []);
-
-  const fetchInventory = async () => {
-    setInventoryLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/api/inventory`, {
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      setInventoryItems(result.data?.items || []);
-    } catch (err: any) {
-      console.error("❌ Erreur chargement inventaire:", err);
-    } finally {
-      setInventoryLoading(false);
-    }
-  };
 
   const fetchProductionData = async () => {
     setLoading(true);
@@ -183,8 +138,6 @@ const ProductionList: React.FC = () => {
       if (!response.ok) {
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
-
-      await fetchInventory();
     } catch (err: any) {
       console.error("❌ Erreur mise à jour statut:", err);
       setProductionItems((prev) =>
@@ -241,36 +194,6 @@ const ProductionList: React.FC = () => {
     return Array.from(groups.values());
   }, [productionItems]);
 
-  // Grouper l'inventaire par produit
-  const groupedInventory: GroupedInventory[] = React.useMemo(() => {
-    const groups = new Map<number, GroupedInventory>();
-    
-    inventoryItems.forEach(item => {
-      if (!groups.has(item.productId)) {
-        groups.set(item.productId, {
-          productId: item.productId,
-          productName: item.productName,
-          locations: {
-            Montreal: 0,
-            Laval: 0
-          },
-          total: 0
-        });
-      }
-      
-      const group = groups.get(item.productId)!;
-      group.locations[item.location] = item.quantity;
-      group.total += item.quantity;
-    });
-    
-    return Array.from(groups.values());
-  }, [inventoryItems]);
-
-  // Fonction pour obtenir l'inventaire d'un produit
-  const getInventoryForProduct = (productId: number) => {
-    return groupedInventory.find(g => g.productId === productId) || null;
-  };
-
   // Filtrer les articles
   const filteredItems = productionItems.filter(item => {
     if (searchTerm) {
@@ -295,13 +218,6 @@ const ProductionList: React.FC = () => {
 
   const doneItems = filteredItems.filter(item => item.done);
   const notDoneItems = filteredItems.filter(item => !item.done);
-  const inventoryAvailable = inventoryItems
-    .filter((i) => i.quantity > 0)
-    .sort(
-      (a, b) =>
-        a.location.localeCompare(b.location) ||
-        a.productName.localeCompare(b.productName),
-    );
 
   // Inventory adjustments are handled elsewhere (not from the production list).
 
@@ -355,14 +271,12 @@ const ProductionList: React.FC = () => {
               <th className="text-left py-3 px-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Produit</th>
               <th className="text-left py-3 px-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Quantité totale</th>
               <th className="text-left py-3 px-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Allergies</th>
-              <th className="text-left py-3 px-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Stock disponible</th>
               <th className="text-left py-3 px-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Non fait / fait</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
             {filteredGroups.map(group => {
               const totalCount = group.items.length;
-              const inventory = getInventoryForProduct(group.productId);
               
               return (
                 <tr key={group.productId} className="hover:bg-stone-50/50 transition-colors">
@@ -389,25 +303,6 @@ const ProductionList: React.FC = () => {
                             ⚠️ {allergy}
                           </span>
                         ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-stone-400">-</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    {inventory ? (
-                      <div className="text-sm">
-                        <div className="font-medium text-blue-600">{inventory.total} unités</div>
-                        <div className="text-xs text-stone-400 mt-1">
-                          <span className="inline-block mr-2"> MTL: {inventory.locations.Montreal}</span>
-                          <span> Laval: {inventory.locations.Laval}</span>
-                        </div>
-                        {inventory.total < group.totalQuantity && (
-                          <div className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                            <AlertCircle size={12} />
-                            Manque {group.totalQuantity - inventory.total}
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <span className="text-xs text-stone-400">-</span>
@@ -714,51 +609,6 @@ const ProductionList: React.FC = () => {
       </div>
 
 
-
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-200">
-        <h3 className="text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
-          <Package size={20} />
-          Stock disponible en boutique
-        </h3>
-
-        {inventoryLoading ? (
-          <p className="text-sm text-blue-600">Chargement...</p>
-        ) : groupedInventory.length === 0 ? (
-          <p className="text-sm text-blue-600">Aucun produit en boutique actuellement</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {groupedInventory.map((inv) => (
-              <div key={inv.productId} className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
-                <div className="flex items-start justify-between mb-2">
-                  <p className="font-semibold text-stone-700">{inv.productName}</p>
-                  <span className="text-xl font-bold text-[#C5A065]">{inv.total}</span>
-                </div>
-                
-                {/* Détail par boutique */}
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                    <span className="text-stone-500">MTL:</span>
-                    <span className="font-medium">{inv.locations.Montreal}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                    <span className="text-stone-500">Laval:</span>
-                    <span className="font-medium">{inv.locations.Laval}</span>
-                  </div>
-                </div>
-
-                {/* Alerte si stock faible */}
-                {inv.total < 5 && (
-                  <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-1 rounded">
-                    ⚠️ Stock faible
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Affichage selon la vue */}
       {viewMode === "list" ? <ListView /> : <OrdersView />}

@@ -86,6 +86,7 @@ export async function createProduct(req: AuthRequest, res: Response) {
       customOptions,
       productionType,
       targetAudience,
+      recommendations,
     } = req.body;
 
     // Get the next ID
@@ -110,6 +111,7 @@ export async function createProduct(req: AuthRequest, res: Response) {
       customOptions,
       productionType,
       targetAudience,
+      recommendations,
     });
 
     await product.save();

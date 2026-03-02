@@ -60,6 +60,7 @@ type ProductFormState = {
   productionType: "patisserie" | "cuisinier" | "four";
   targetAudience: "clients" | "pro";
   customOptions: CustomOptionField[];
+  recommendations: number[]; // IDs des produits recommandés
 };
 
 const buildPayloadOptions = (options: CustomOptionField[]) =>
@@ -91,6 +92,7 @@ const createDefaultProductForm = (category = ""): ProductFormState => ({
   productionType: "patisserie",
   targetAudience: "clients",
   customOptions: [],
+  recommendations: [],
 });
 
 const DAY_OPTIONS = [
@@ -160,7 +162,7 @@ export function ProductManagement() {
       setLoading(true);
       setError(null);
       const [productsRes, categoriesRes] = await Promise.all([
-        productAPI.getAllProducts(),
+        productAPI.getAllProducts(1, 1000),
         categoryAPI.getAllCategories(),
       ]);
       setProducts(productsRes.data.products);
@@ -269,6 +271,7 @@ export function ProductManagement() {
       productionType: product.productionType,
       targetAudience: product.targetAudience,
       customOptions: mapStoredOptionsToForm(product.customOptions),
+      recommendations: product.recommendations || [],
     });
     setIsEditModalOpen(true);
   };
@@ -315,6 +318,7 @@ export function ProductManagement() {
         productionType: productForm.productionType,
         targetAudience: productForm.targetAudience,
         customOptions: buildPayloadOptions(productForm.customOptions),
+        recommendations: productForm.recommendations.length > 0 ? productForm.recommendations : undefined,
       };
 
       const response = await productAPI.createProduct(productData);
@@ -355,6 +359,7 @@ export function ProductManagement() {
         productionType: productForm.productionType,
         targetAudience: productForm.targetAudience,
         customOptions: buildPayloadOptions(productForm.customOptions),
+        recommendations: productForm.recommendations.length > 0 ? productForm.recommendations : undefined,
       };
 
       const response = await productAPI.updateProduct(selectedProduct.id, productData);
@@ -999,6 +1004,80 @@ export function ProductManagement() {
                   </div>
                 ))}
               </div>
+
+              {/* Recommendations Section */}
+              <div className="space-y-3 md:col-span-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium text-gray-700">
+                    Produits recommandés (optionnel)
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {productForm.recommendations.length} sélectionné(s)
+                  </span>
+                </div>
+                
+                {/* Selected recommendations display */}
+                {productForm.recommendations.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {productForm.recommendations.map((recId) => {
+                      const recProduct = products.find(p => p.id === recId);
+                      return (
+                        <div key={recId} className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-sm">
+                          <span className="text-amber-800">
+                            {recProduct ? recProduct.name : `Produit #${recId}`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newRecs = productForm.recommendations.filter(id => id !== recId);
+                              setProductForm({ ...productForm, recommendations: newRecs });
+                            }}
+                            className="text-amber-600 hover:text-amber-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Dropdown to add recommendations */}
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const selectedId = parseInt(e.target.value);
+                    if (selectedId && !productForm.recommendations.includes(selectedId)) {
+                      setProductForm({
+                        ...productForm,
+                        recommendations: [...productForm.recommendations, selectedId]
+                      });
+                    }
+                    e.target.value = ""; // Reset select
+                  }}
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                >
+                  <option value="">+ Ajouter un produit recommandé</option>
+                  {products
+                    .filter(p =>
+                      // Exclude current product being edited/created
+                      p.id !== selectedProduct?.id &&
+                      // Exclude already selected recommendations
+                      !productForm.recommendations.includes(p.id)
+                    )
+                    .map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} - ${p.price.toFixed(2)}
+                      </option>
+                    ))}
+                </select>
+                
+                {products.filter(p => p.id !== selectedProduct?.id && !productForm.recommendations.includes(p.id)).length === 0 && (
+                  <p className="text-xs text-gray-500 italic">
+                    Tous les produits disponibles ont été ajoutés
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1424,6 +1503,72 @@ export function ProductManagement() {
                   </div>
                 ))}
               </div>
+
+              {/* Recommendations Section - Edit Modal */}
+              <div className="space-y-3 md:col-span-2 pt-4 border-t border-gray-100">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium text-gray-700">
+                    Produits recommandés (optionnel)
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {productForm.recommendations.length} sélectionné(s)
+                  </span>
+                </div>
+                
+                {/* Selected recommendations display */}
+                {productForm.recommendations.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {productForm.recommendations.map((recId) => {
+                      const recProduct = products.find(p => p.id === recId);
+                      return (
+                        <div key={recId} className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-sm">
+                          <span className="text-amber-800">
+                            {recProduct ? recProduct.name : `Produit #${recId}`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newRecs = productForm.recommendations.filter(id => id !== recId);
+                              setProductForm({ ...productForm, recommendations: newRecs });
+                            }}
+                            className="text-amber-600 hover:text-amber-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Dropdown to add recommendations */}
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const selectedId = parseInt(e.target.value);
+                    if (selectedId && !productForm.recommendations.includes(selectedId)) {
+                      setProductForm({
+                        ...productForm,
+                        recommendations: [...productForm.recommendations, selectedId]
+                      });
+                    }
+                    e.target.value = ""; // Reset select
+                  }}
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                >
+                  <option value="">+ Ajouter un produit recommandé</option>
+                  {products
+                    .filter(p => 
+                      p.id !== selectedProduct?.id && 
+                      !productForm.recommendations.includes(p.id)
+                    )
+                    .map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} - ${p.price.toFixed(2)}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -1599,6 +1744,36 @@ export function ProductManagement() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Affichage des recommandations */}
+              {selectedProduct.recommendations && selectedProduct.recommendations.length > 0 && (
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-500">
+                    Produits recommandés
+                  </label>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedProduct.recommendations.map((recId) => {
+                      // Convert to number for comparison (backend might return strings)
+                      const numericRecId = typeof recId === 'string' ? parseInt(recId) : recId;
+                      const recProduct = products.find(p => p.id === numericRecId);
+                      if (!recProduct) {
+                        // Show ID if product not found in list yet
+                        return (
+                          <div key={recId} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-sm">
+                            <span className="text-gray-600">Produit ID: {recId}</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={recId} className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-sm">
+                          <span className="text-amber-800">{recProduct.name}</span>
+                          <span className="text-amber-600">${recProduct.price.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

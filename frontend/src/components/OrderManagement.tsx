@@ -51,6 +51,7 @@ interface OrderItemWithPacking {
 
 interface OrderWithPacking extends Omit<Order, 'items'> {
   items: OrderItemWithPacking[];
+  paymentMethod?: "in_store" | "payment_link";
 }
 
 export function OrderManagement() {
@@ -1320,6 +1321,29 @@ export function OrderManagement() {
 
               <TabsContent value="payments" className="space-y-4">
                 <div className="space-y-3">
+                  {/* Méthode de paiement */}
+                  <div className="border rounded-lg p-4 bg-amber-50 border-amber-200">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          Méthode de paiement
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {selectedOrder.paymentMethod === "payment_link"
+                            ? "Lien de paiement envoyé"
+                            : "Paiement en magasin"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
+                          {selectedOrder.paymentMethod === "payment_link"
+                            ? "Lien de paiement"
+                            : "En magasin"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="border rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <div>
@@ -1611,6 +1635,7 @@ export function OrderManagement() {
                 paymentStatus: "unpaid",
                 status: "pending",
                 source: "in_store",
+                paymentMethod: formData.paymentMethod || "in_store",
                 notes: formData.notes || undefined,
                 createdAt: now,
                 updatedAt: now,

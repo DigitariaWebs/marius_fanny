@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import GoldenBackground from './GoldenBackground'; // Assurez-vous que le chemin est bon
+import GoldenBackground from './GoldenBackground'; 
 
 import {
   Mail,
@@ -105,11 +105,11 @@ const WholesaleSection = () => {
             </span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-8 leading-[0.95] tracking-tighter text-[#2D2A26]">
-            L'EXCELLENCE POUR
-            <span className="block text-[#C5A065] mt-2">
-              VOS CLIENTS
-            </span>
+          <h1 
+            className="text-3xl md:text-4xl lg:text-5xl mb-6"
+            style={{ fontFamily: '"Great Vibes", cursive', color: '#C5A065' }}
+          >
+            L'excellence pour vos clients
           </h1>
           
           <p className="text-lg md:text-xl text-[#2D2A26]/80 max-w-3xl mx-auto leading-relaxed font-light mb-10">
@@ -118,10 +118,10 @@ const WholesaleSection = () => {
           </p>
 
           <a 
-            href="#inscription" 
+            href="#inscription"
             className="inline-flex items-center gap-2 bg-[#2D2A26] text-white px-10 py-5 rounded-full font-bold uppercase text-sm tracking-widest hover:bg-[#C5A065] transition-all duration-300 shadow-xl hover:scale-105"
           >
-            Créer un compte pro
+            Demander l'accès
             <Send size={16} />
           </a>
         </div>
@@ -168,7 +168,7 @@ const WholesaleSection = () => {
                     <span className="text-[#C5A065]">Compte Pro</span>
                   </h2>
                   <p className="text-[#2D2A26]/70 leading-relaxed">
-                    Remplissez ce formulaire pour initier notre partenariat. Notre responsable commercial vous recontactera sous 24h pour définir vos besoins.
+                    Remplissez ce formulaire pour initier notre partenariat. Notre responsable commercial vous recontactera 
                   </p>
                 </div>
 
@@ -316,7 +316,7 @@ const WholesaleSection = () => {
                       type="submit"
                       className="w-full bg-[#C5A065] text-white py-5 rounded-xl font-black uppercase text-sm tracking-widest hover:bg-[#2D2A26] transition-all duration-300 shadow-lg hover:shadow-xl mt-4"
                     >
-                      Continuer vers le formulaire partenaire
+                      Demander l'accès
                     </button>
                   </form>
                 )}
