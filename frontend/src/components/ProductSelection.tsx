@@ -6,7 +6,7 @@ import { getImageUrl } from '../utils/api';
 import { formatChoiceDisplay, getChoicePrice } from '../utils/customOptions';
 
 const styles = {
-  gold: '#C5A065',
+  gold: '#337957',
   dark: '#2D2A26',
   fontSans: '"Century Gothic", sans-serif',
 };
@@ -303,7 +303,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                           {product.price.toFixed(2)}$
                         </span>
                       )}
-                      <span className="text-[#C5A065] font-bold text-xs">
+                      <span className="text-[#337957] font-bold text-xs">
                         {discountedPrice.toFixed(2)} $
                       </span>
                     </div>
@@ -334,7 +334,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
             
             <button
               onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 z-20 w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:bg-[#C5A065] hover:text-white transition-all text-lg font-bold"
+              className="absolute top-4 right-4 z-20 w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:bg-[#337957] hover:text-white transition-all text-lg font-bold"
             >
               ✕
             </button>
@@ -363,11 +363,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 style={{ 
                   WebkitOverflowScrolling: 'touch',
                   scrollbarWidth: 'thin',
-                  scrollbarColor: '#C5A065 #f1f1f1'
+                  scrollbarColor: '#337957 #f1f1f1'
                 }}
               >
                 
-                <span className="text-[#C5A065] text-xs font-bold uppercase tracking-widest mb-2 block">
+                <span className="text-[#337957] text-xs font-bold uppercase tracking-widest mb-2 block">
                   Artisan Pâtissier
                 </span>
                 
@@ -375,7 +375,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   {selectedProduct.name}
                 </h2>
                 
-                <div className="text-2xl font-medium text-[#C5A065] mb-6">
+                <div className="text-2xl font-medium text-[#337957] mb-6">
                   {/* Prix de base */}
                   <div className="mb-2">
                     {selectedProduct.discountPercentage && selectedProduct.discountPercentage > 0 ? (
@@ -403,7 +403,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   {/* Prix avec options (seulement si des options sont sélectionnées) */}
                   {Object.keys(selectedOptions).length > 0 && (
                     <div className="text-sm text-stone-500 border-t pt-2 mt-2">
-                      Prix avec options : <span className="text-[#C5A065] font-bold">{getCurrentPrice().toFixed(2)} $</span>
+                      Prix avec options : <span className="text-[#337957] font-bold">{getCurrentPrice().toFixed(2)} $</span>
                     </div>
                   )}
                 </div>
@@ -422,7 +422,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                     {selectedProduct.customOptions.map((option, idx) => (
                       <div key={idx}>
                         <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                          <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>
+                          <span className="w-1 h-4 bg-[#337957] rounded-full"></span>
                           {option.name}
                         </h4>
                         <div className="flex gap-2 flex-wrap">
@@ -445,7 +445,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                                 }
                                 className={`flex-1 py-3 px-2 rounded text-sm font-medium transition-all min-w-[100px] ${
                                   selectedOptions[option.name] === choice
-                                    ? "bg-[#C5A065] text-white shadow-md"
+                                    ? "bg-[#337957] text-white shadow-md"
                                     : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
                                 }`}
                               >
@@ -467,7 +467,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   <>
                     <div className="mb-6">
                       <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>
+                        <span className="w-1 h-4 bg-[#337957] rounded-full"></span>
                         Tranché ?
                       </h4>
                       <div className="flex gap-2">
@@ -476,7 +476,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                           onClick={() => setIsSliced(true)}
                           className={`flex-1 py-3 px-2 rounded text-sm font-medium transition-all ${
                             isSliced
-                              ? "bg-[#C5A065] text-white shadow-md"
+                              ? "bg-[#337957] text-white shadow-md"
                               : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
                           }`}
                         >
@@ -487,7 +487,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                           onClick={() => setIsSliced(false)}
                           className={`flex-1 py-3 px-2 rounded text-sm font-medium transition-all ${
                             !isSliced
-                              ? "bg-[#C5A065] text-white shadow-md"
+                              ? "bg-[#337957] text-white shadow-md"
                               : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
                           }`}
                         >
@@ -571,7 +571,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   <>
                     <div className="mb-6">
                       <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>
+                        <span className="w-1 h-4 bg-[#337957] rounded-full"></span>
                         Pain
                       </h4>
                       <div className="flex gap-2 flex-wrap">
@@ -582,7 +582,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                             onClick={() => setSelectedBread(pain)}
                             className={`flex-1 py-3 px-2 rounded text-sm font-medium transition-all ${
                               selectedBread === pain
-                                ? "bg-[#C5A065] text-white shadow-md"
+                                ? "bg-[#337957] text-white shadow-md"
                                 : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
                             }`}
                           >
@@ -601,7 +601,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                         value={allergyNote}
                         onChange={(e) => setAllergyNote(e.target.value)}
                         placeholder="Ex: Arachides, Sans gluten..."
-                        className="w-full p-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-[#C5A065] bg-stone-50"
+                        className="w-full p-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-[#337957] bg-stone-50"
                         rows={2}
                       />
                     </div>
@@ -611,7 +611,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 {getRelatedProducts(selectedProduct).length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                      <span className="w-1 h-4 bg-[#C5A065] rounded-full"></span>
+                      <span className="w-1 h-4 bg-[#337957] rounded-full"></span>
                        Recommandations
                     </h4>
                     <div className="space-y-2">
@@ -634,7 +634,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                                 ),
                               })
                             }
-                            className="px-3 py-1 text-xs font-bold rounded bg-[#2D2A26] text-white hover:bg-[#C5A065] transition-colors"
+                            className="px-3 py-1 text-xs font-bold rounded bg-[#2D2A26] text-white hover:bg-[#337957] transition-colors"
                           >
                             Ajouter
                           </button>
@@ -671,7 +671,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 bg-[#2D2A26] text-white h-14 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-[#C5A065] transition-all shadow-lg active:scale-95"
+                    className="flex-1 bg-[#2D2A26] text-white h-14 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-[#337957] transition-all shadow-lg active:scale-95"
                   >
                     Ajouter
                     <span className="ml-2 opacity-70 font-normal normal-case hidden sm:inline">

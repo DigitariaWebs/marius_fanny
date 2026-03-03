@@ -10,12 +10,12 @@ const Politique: React.FC = () => {
     <div className="min-h-screen bg-linear-to-b from-[#F9F7F2] to-white relative overflow-hidden">
       <GoldenBackground />
 
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-[#C5A065]/20">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-[#337957]/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-16">
             <Link
               to="/"
-              className="flex items-center gap-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors"
+              className="flex items-center gap-2 text-[#2D2A26] hover:text-[#337957] transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="font-semibold">Retour à la boutique</span>
@@ -27,15 +27,15 @@ const Politique: React.FC = () => {
       {/* En-tête */}
       <header className="relative overflow-hidden py-20">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-32 h-32 border-2 border-[#C5A065] rounded-full"></div>
-          <div className="absolute bottom-10 right-10 w-24 h-24 border-2 border-[#C5A065] rounded-full"></div>
+          <div className="absolute top-10 left-10 w-32 h-32 border-2 border-[#337957] rounded-full"></div>
+          <div className="absolute bottom-10 right-10 w-24 h-24 border-2 border-[#337957] rounded-full"></div>
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1
             className="text-5xl md:text-6xl font-bold mb-4"
             style={{
               fontFamily: '"Great Vibes", cursive',
-              color: "#C5A065",
+              color: "#337957",
             }}
           >
             Politique de retour
@@ -43,13 +43,13 @@ const Politique: React.FC = () => {
           <p className="text-lg text-[#2D2A26]/70 max-w-3xl mx-auto">
             Transparence et engagement envers l'excellence de nos produits
           </p>
-          <div className="mt-8 h-1 w-24 bg-gradient-to-r from-transparent via-[#C5A065] to-transparent mx-auto"></div>
+          <div className="mt-8 h-1 w-24 bg-gradient-to-r from-transparent via-[#337957] to-transparent mx-auto"></div>
         </div>
       </header>
 
       {/* Contenu principal */}
       <main className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 md:p-12 mb-8 border border-[#C5A065]/10">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 md:p-12 mb-8 border border-[#337957]/10">
           <p className="text-lg text-[#2D2A26] mb-8 leading-relaxed">
             Nous nous engageons à vous offrir des produits de qualité supérieure
             et un service irréprochable. Toutefois, si un produit que vous avez
@@ -77,7 +77,7 @@ const Politique: React.FC = () => {
                 "Produits alimentaires entamés ou consommés",
               ].map((item, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#C5A065] mt-2 shrink-0"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#337957] mt-2 shrink-0"></div>
                   <span className="text-[#2D2A26]">{item}</span>
                 </li>
               ))}
@@ -153,7 +153,7 @@ const Politique: React.FC = () => {
                     "Ramenez le produit en magasin",
                   ].map((step, index) => (
                     <li key={index} className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-[#C5A065] text-white flex items-center justify-center shrink-0 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-[#337957] text-white flex items-center justify-center shrink-0 text-sm">
                         {index + 1}
                       </div>
                       <span className="text-[#2D2A26] pt-0.5">{step}</span>
@@ -168,14 +168,14 @@ const Politique: React.FC = () => {
                 </h3>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
-                    <Phone className="w-5 h-5 text-[#C5A065]" />
+                    <Phone className="w-5 h-5 text-[#337957]" />
                     <span className="text-[#2D2A26]">
                       Par téléphone : 450-689-0655
                     </span>
                   </li>
                   <li className="flex items-center gap-3">
                     <svg
-                      className="w-5 h-5 text-[#C5A065]"
+                      className="w-5 h-5 text-[#337957]"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
@@ -187,7 +187,7 @@ const Politique: React.FC = () => {
                   </li>
                   <li className="flex items-center gap-3">
                     <svg
-                      className="w-5 h-5 text-[#C5A065]"
+                      className="w-5 h-5 text-[#337957]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -243,7 +243,7 @@ const Politique: React.FC = () => {
             </section>
           ))}
 
-          <div className="mt-12 pt-8 border-t border-[#C5A065]/20 text-center">
+          <div className="mt-12 pt-8 border-t border-[#337957]/20 text-center">
             <p className="text-lg text-[#2D2A26] mb-4">
               Nous vous remercions de votre compréhension et de votre fidélité.
             </p>
@@ -260,14 +260,14 @@ const Politique: React.FC = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
           <div className="grid lg:grid-cols-3 gap-12 mb-16">
             <div>
-              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
+              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#337957]">
                 Nos Boutiques
               </h3>
               <div className="space-y-6 text-sm">
                 <div>
                   <div className="flex items-start gap-3 mb-2">
                     <svg
-                      className="w-5 h-5 shrink-0 mt-1 text-[#C5A065]"
+                      className="w-5 h-5 shrink-0 mt-1 text-[#337957]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -286,7 +286,7 @@ const Politique: React.FC = () => {
                       />
                     </svg>
                     <div>
-                      <p className="font-black text-[#C5A065] uppercase mb-1">
+                      <p className="font-black text-[#337957] uppercase mb-1">
                         Laval
                       </p>
                       <p className="font-bold">239-E Boulevard Samson, Laval</p>
@@ -298,10 +298,10 @@ const Politique: React.FC = () => {
                     <p>Samedi-dimanche : 8h00 à 18h00</p>
                   </div>
                   <div className="flex items-center gap-3 ml-8 mt-2">
-                    <Phone className="w-[18px] h-[18px] shrink-0 text-[#C5A065]" />
+                    <Phone className="w-[18px] h-[18px] shrink-0 text-[#337957]" />
                     <a
                       href="tel:+14506890655"
-                      className="hover:text-[#C5A065] transition-colors font-bold"
+                      className="hover:text-[#337957] transition-colors font-bold"
                     >
                       450-689-0655
                     </a>
@@ -310,7 +310,7 @@ const Politique: React.FC = () => {
                 <div>
                   <div className="flex items-start gap-3 mb-2">
                     <svg
-                      className="w-5 h-5 shrink-0 mt-1 text-[#C5A065]"
+                      className="w-5 h-5 shrink-0 mt-1 text-[#337957]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -329,7 +329,7 @@ const Politique: React.FC = () => {
                       />
                     </svg>
                     <div>
-                      <p className="font-black text-[#C5A065] uppercase mb-1">
+                      <p className="font-black text-[#337957] uppercase mb-1">
                         Montréal
                       </p>
                       <p className="font-bold">2006 rue St-Hubert, Montréal</p>
@@ -341,10 +341,10 @@ const Politique: React.FC = () => {
                     <p>Dimanche : 8h00 à 17h00</p>
                   </div>
                   <div className="flex items-center gap-3 ml-8 mt-2">
-                    <Phone className="w-[18px] h-[18px] shrink-0 text-[#C5A065]" />
+                    <Phone className="w-[18px] h-[18px] shrink-0 text-[#337957]" />
                     <a
                       href="tel:+15143791898"
-                      className="hover:text-[#C5A065] transition-colors font-bold"
+                      className="hover:text-[#337957] transition-colors font-bold"
                     >
                       514-379-1898
                     </a>
@@ -356,7 +356,7 @@ const Politique: React.FC = () => {
                   href="https://www.instagram.com/patisseriemariusetfanny/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
+                  className="w-12 h-12 bg-[#337957] rounded-full flex items-center justify-center hover:bg-[#B59055] transition-colors"
                 >
                   <Instagram className="w-6 h-6 text-white" />
                 </a>
@@ -364,14 +364,14 @@ const Politique: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
+              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#337957]">
                 Navigation
               </h3>
               <ul className="space-y-3">
                 <li>
                   <a
                     href="#biscuits"
-                    className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
+                    className="text-lg font-bold hover:text-[#337957] transition-colors uppercase"
                   >
                     Biscuits
                   </a>
@@ -379,7 +379,7 @@ const Politique: React.FC = () => {
                 <li>
                   <a
                     href="#gateaux"
-                    className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
+                    className="text-lg font-bold hover:text-[#337957] transition-colors uppercase"
                   >
                     Gâteaux
                   </a>
@@ -387,7 +387,7 @@ const Politique: React.FC = () => {
                 <li>
                   <a
                     href="#apropos"
-                    className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
+                    className="text-lg font-bold hover:text-[#337957] transition-colors uppercase"
                   >
                     À propos
                   </a>
@@ -395,7 +395,7 @@ const Politique: React.FC = () => {
                 <li>
                   <a
                     href="#contact"
-                    className="text-lg font-bold hover:text-[#C5A065] transition-colors uppercase"
+                    className="text-lg font-bold hover:text-[#337957] transition-colors uppercase"
                   >
                     Contact
                   </a>
@@ -404,7 +404,7 @@ const Politique: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#C5A065]">
+              <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#337957]">
                 Abonnez-vous à notre infolettre
               </h3>
               <p className="text-sm mb-6 leading-relaxed text-[#2D2A26]/70">
@@ -415,11 +415,11 @@ const Politique: React.FC = () => {
                   type="email"
                   placeholder="EMAIL"
                   required
-                  className="flex-1 bg-white border-2 border-[#C5A065] text-[#2D2A26] px-6 py-4 rounded-full font-bold uppercase text-sm focus:outline-none"
+                  className="flex-1 bg-white border-2 border-[#337957] text-[#2D2A26] px-6 py-4 rounded-full font-bold uppercase text-sm focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="bg-[#C5A065] text-white px-8 py-4 rounded-full font-black uppercase text-sm hover:scale-105 transition-all"
+                  className="bg-[#337957] text-white px-8 py-4 rounded-full font-black uppercase text-sm hover:scale-105 transition-all"
                 >
                   S'abonner
                 </button>
@@ -428,14 +428,14 @@ const Politique: React.FC = () => {
           </div>
 
           <div className="relative overflow-hidden py-12">
-            <h2 className="text-[4rem] md:text-[6rem] lg:text-[8rem] font-black uppercase leading-none text-[#C5A065] tracking-tighter opacity-20">
+            <h2 className="text-[4rem] md:text-[6rem] lg:text-[8rem] font-black uppercase leading-none text-[#337957] tracking-tighter opacity-20">
               PATISSERIE
               <br />
               PROVENCALE
             </h2>
           </div>
 
-          <div className="border-t-2 border-[#C5A065]/30 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+          <div className="border-t-2 border-[#337957]/30 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
             <p className="text-[#2D2A26]/70">
               Copyright {currentYear} | Pâtisserie Provençale
             </p>

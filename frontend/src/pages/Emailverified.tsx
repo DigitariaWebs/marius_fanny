@@ -54,8 +54,8 @@ export default function EmailVerified() {
       <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40 max-w-md w-full text-center">
         {status === "loading" && (
           <>
-            <div className="w-20 h-20 bg-[#C5A065]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Loader className="text-[#C5A065] animate-spin" size={40} />
+            <div className="w-20 h-20 bg-[#337957]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Loader className="text-[#337957] animate-spin" size={40} />
             </div>
             <h1 className="text-2xl font-bold mb-6 text-[#2D2A26]">
               Vérification en cours...
@@ -77,7 +77,7 @@ export default function EmailVerified() {
             <p className="text-stone-600 mb-8">{message}</p>
             <button
               onClick={() => navigate("/se-connecter")}
-              className="w-full px-6 py-3 text-sm font-bold text-white bg-[#C5A065] rounded-xl hover:opacity-90 transition-all"
+              className="w-full px-6 py-3 text-sm font-bold text-white bg-[#337957] rounded-xl hover:opacity-90 transition-all"
             >
               Se connecter
             </button>

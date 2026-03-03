@@ -8,7 +8,7 @@ import ProductSelection from './ProductSelection';
 const styles = {
   cream: '#F9F7F2',
   text: '#2D2A26',
-  gold: '#C5A065',
+  gold: '#337957',
   fontScript: '"Great Vibes", cursive',
   fontSans: '"Inter", sans-serif',
 };
@@ -134,7 +134,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.id, cat.title)}
                   className={`group relative h-32 md:h-40 overflow-hidden rounded-xl cursor-pointer transition-all duration-300
-                    ${isSelected ? 'ring-4 ring-[#C5A065] shadow-inner' : 'hover:shadow-md'}`}
+                    ${isSelected ? 'ring-4 ring-[#337957] shadow-inner' : 'hover:shadow-md'}`}
                 >
                   <img
                     src={getImageUrl(cat.image)}

@@ -66,7 +66,7 @@ const Hero = () => {
                 navigate("/products");
               }
             }}
-            className="bg-bakery-gold text-bakery-dark px-8 py-3 md:px-10 md:py-4 rounded-sm font-bold uppercase tracking-widest text-xs md:text-sm hover:bg-white hover:scale-105 transition-all duration-300 shadow-[0_10px_30px_rgba(197,160,101,0.3)] hover:shadow-[0_15px_40px_rgba(197,160,101,0.4)]"
+            className="bg-[#337957] text-bakery-dark px-8 py-3 md:px-10 md:py-4 rounded-sm font-bold uppercase tracking-widest text-xs md:text-sm hover:bg-white hover:scale-105 transition-all duration-300 shadow-[0_10px_30px_rgba(197,160,101,0.3)] hover:shadow-[0_15px_40px_rgba(197,160,101,0.4)]"
           >
             Commander maintenant
           </button>

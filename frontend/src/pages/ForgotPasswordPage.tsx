@@ -6,7 +6,7 @@ import { Mail, ArrowLeft, ArrowRight } from "lucide-react";
 import { forgotPassword } from "../lib/AuthClient.ts";
 
 const styles = {
-  gold: "#C5A065",
+  gold: "#337957",
   text: "#2D2A26",
   fontScript: '"Great Vibes", cursive',
   fontSans: '"Inter", sans-serif',
@@ -54,8 +54,8 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onSuccess, onError }) =
         </div>
         <div className="relative z-10 w-full max-w-md px-6 text-center">
           <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
-            <div className="w-20 h-20 bg-[#C5A065]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Mail className="text-[#C5A065]" size={40} />
+            <div className="w-20 h-20 bg-[#337957]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Mail className="text-[#337957]" size={40} />
             </div>
             <h2 className="text-3xl mb-4" style={{ fontFamily: styles.fontScript, color: styles.gold }}>
               Email Envoyé
@@ -72,7 +72,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onSuccess, onError }) =
             </button>
             <button
               onClick={() => setIsSuccess(false)}
-              className="mt-6 text-[10px] font-bold uppercase tracking-widest text-[#2D2A26]/60 hover:text-[#C5A065] transition-all"
+              className="mt-6 text-[10px] font-bold uppercase tracking-widest text-[#2D2A26]/60 hover:text-[#337957] transition-all"
             >
               Renvoyer l'email
             </button>
@@ -108,14 +108,14 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onSuccess, onError }) =
             )}
 
             <div className="space-y-1 group">
-              <label className="text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:text-[#C5A065] transition-colors">
+              <label className="text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:text-[#337957] transition-colors">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full py-3 bg-transparent border-b border-black/10 focus:border-[#C5A065] outline-none transition-all placeholder:text-black/10 text-sm"
+                className="w-full py-3 bg-transparent border-b border-black/10 focus:border-[#337957] outline-none transition-all placeholder:text-black/10 text-sm"
                 placeholder="VOTRE@EMAIL.COM"
                 required
               />
@@ -132,7 +132,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onSuccess, onError }) =
           </form>
 
           <div className="mt-8 text-center pt-6 border-t border-black/5">
-            <Link to="/se-connecter" className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-[#C5A065] transition-all">
+            <Link to="/se-connecter" className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-[#337957] transition-all">
               <ArrowLeft size={14} /> Retour à la connexion
             </Link>
           </div>

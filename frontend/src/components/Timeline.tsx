@@ -8,9 +8,9 @@ const styles = {
     position: 'relative' as const,
     overflow: 'hidden'
   },
-  title: { fontFamily: '"Great Vibes", cursive', color: '#C5A065' },
-  accent: { backgroundColor: '#C5A065' },
-  border: { borderColor: '#C5A065' } 
+  title: { fontFamily: '"Great Vibes", cursive', color: '#337957' },
+  accent: { backgroundColor: '#337957' },
+  border: { borderColor: '#337957' } 
 };
 
 interface TimelineStep {
@@ -66,7 +66,7 @@ const BakeryTimeline: React.FC = () => {
           {/* Ligne verticale centrale */}
           <div 
             className="absolute left-1/2 transform -translate-x-1/2 h-full w-px hidden md:block" 
-            style={{ backgroundColor: '#C5A065', opacity: 0.2 }}
+            style={{ backgroundColor: '#337957', opacity: 0.2 }}
           ></div>
 
           <div className="space-y-16 md:space-y-0">
@@ -76,7 +76,7 @@ const BakeryTimeline: React.FC = () => {
                 {/* Bloc de texte avec z-index forcé et fond opaque pour bien cacher le quadrillage dessous */}
                 <div className={`w-full md:w-[45%] z-10 ${index % 2 === 0 ? 'md:text-right' : 'md:order-last md:text-left'}`}>
                   <div className="bg-white/95 backdrop-blur-sm p-8 rounded-sm shadow-xl border-b-4" style={styles.border}>
-                    <span className="text-2xl font-black tracking-tighter" style={{ color: '#C5A065' }}>{step.year}</span>
+                    <span className="text-2xl font-black tracking-tighter" style={{ color: '#337957' }}>{step.year}</span>
                     <h3 className="text-2xl font-bold mt-2 uppercase">{step.location}</h3>
                     <p className="text-xs font-semibold text-stone-400 mb-6">{step.address}</p>
                     <p className="text-sm leading-relaxed italic text-stone-600 border-l-2 border-stone-100 pl-4 md:border-l-0 md:pl-0">
@@ -98,9 +98,9 @@ const BakeryTimeline: React.FC = () => {
 
         {/* Conclusion */}
         <div className="mt-20 max-w-2xl text-center relative z-10">
-          <div className="bg-white/80 backdrop-blur-sm p-8 rounded-lg border border-[#C5A065]/20">
+          <div className="bg-white/80 backdrop-blur-sm p-8 rounded-lg border border-[#337957]/20">
             <p className="text-lg leading-relaxed text-stone-800 font-light">
-              Dès son ouverture, <span className="font-bold text-[#C5A065]">Marius et Fanny</span> a su conquérir le cœur des Québécois grâce à ses créations originales inspirées des saveurs de notre Provence natale.
+              Dès son ouverture, <span className="font-bold text-[#337957]">Marius et Fanny</span> a su conquérir le cœur des Québécois grâce à ses créations originales inspirées des saveurs de notre Provence natale.
             </p>
           </div>
         </div>

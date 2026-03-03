@@ -23,12 +23,12 @@ const Contact: React.FC = () => {
     <div className="min-h-screen bg-linear-to-b from-[#F9F7F2] to-white relative overflow-hidden">
       <GoldenBackground />
 
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-[#C5A065]/20">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-[#337957]/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-16">
             <Link 
               to="/" 
-              className="flex items-center gap-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors"
+              className="flex items-center gap-2 text-[#2D2A26] hover:text-[#337957] transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="font-semibold uppercase tracking-widest text-xs">Retour à la boutique</span>
@@ -41,14 +41,14 @@ const Contact: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h1 
             className="text-5xl md:text-7xl font-bold mb-4" 
-            style={{ fontFamily: '"Great Vibes", cursive', color: '#C5A065' }}
+            style={{ fontFamily: '"Great Vibes", cursive', color: '#337957' }}
           >
             Contactez-nous
           </h1>
           <p className="text-lg text-[#2D2A26]/70 max-w-2xl mx-auto font-light italic">
             Une question pour un événement spécial ou une commande personnalisée ? Nous sommes à votre écoute.
           </p>
-          <div className="mt-8 h-1 w-24 bg-gradient-to-r from-transparent via-[#C5A065] to-transparent mx-auto"></div>
+          <div className="mt-8 h-1 w-24 bg-gradient-to-r from-transparent via-[#337957] to-transparent mx-auto"></div>
         </div>
       </header>
 
@@ -56,37 +56,37 @@ const Contact: React.FC = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl border border-[#C5A065]/20 shadow-sm">
-              <h3 className="text-xl font-bold mb-6 text-[#2D2A26] uppercase tracking-wider border-b border-[#C5A065]/20 pb-2">Coordonnées</h3>
+            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl border border-[#337957]/20 shadow-sm">
+              <h3 className="text-xl font-bold mb-6 text-[#2D2A26] uppercase tracking-wider border-b border-[#337957]/20 pb-2">Coordonnées</h3>
               
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#C5A065]/10 flex items-center justify-center shrink-0">
-                    <Phone className="w-5 h-5 text-[#C5A065]" />
+                  <div className="w-10 h-10 rounded-full bg-[#337957]/10 flex items-center justify-center shrink-0">
+                    <Phone className="w-5 h-5 text-[#337957]" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#C5A065] uppercase">Téléphone</p>
+                    <p className="text-xs font-bold text-[#337957] uppercase">Téléphone</p>
                     <p className="text-[#2D2A26] font-medium">Laval: 450-689-0655</p>
                     <p className="text-[#2D2A26] font-medium">Montréal: 514-379-1898</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#C5A065]/10 flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5 text-[#C5A065]" />
+                  <div className="w-10 h-10 rounded-full bg-[#337957]/10 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5 text-[#337957]" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#C5A065] uppercase">Email</p>
+                    <p className="text-xs font-bold text-[#337957] uppercase">Email</p>
                     <p className="text-[#2D2A26] font-medium">contact@mariusfanny.com</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#C5A065]/10 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5 text-[#C5A065]" />
+                  <div className="w-10 h-10 rounded-full bg-[#337957]/10 flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5 text-[#337957]" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#C5A065] uppercase">Boutiques</p>
+                    <p className="text-xs font-bold text-[#337957] uppercase">Boutiques</p>
                     <p className="text-[#2D2A26] font-medium">239-E Boulevard Samson, Laval</p>
                     <p className="text-[#2D2A26] font-medium">2006 rue St-Hubert, Montréal</p>
                   </div>
@@ -95,7 +95,7 @@ const Contact: React.FC = () => {
 
               <div className="mt-8 pt-8 border-t border-stone-100">
                 <p className="text-sm italic text-stone-500 mb-4">Suivez nos créations :</p>
-                <a href="https://www.instagram.com/patisseriemariusetfanny/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-4 py-2 bg-[#C5A065] text-white rounded-full hover:bg-[#B59055] transition-all">
+                <a href="https://www.instagram.com/patisseriemariusetfanny/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-4 py-2 bg-[#337957] text-white rounded-full hover:bg-[#B59055] transition-all">
                   <Instagram className="w-5 h-5" />
                   <span className="font-bold text-sm">@patisseriemariusetfanny</span>
                 </a>
@@ -105,7 +105,7 @@ const Contact: React.FC = () => {
 
           {/* Formulaire (Colonne Droite) */}
           <div className="lg:col-span-2">
-            <div className="bg-white p-8 md:p-12 rounded-2xl shadow-xl border border-[#C5A065]/10">
+            <div className="bg-white p-8 md:p-12 rounded-2xl shadow-xl border border-[#337957]/10">
               {submitted ? (
                 <div className="text-center py-12 animate-fade-in">
                   <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -121,7 +121,7 @@ const Contact: React.FC = () => {
                       <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Prénom</label>
                       <input 
                         type="text" required
-                        className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#C5A065] transition-colors"
+                        className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#337957] transition-colors"
                         placeholder="Jean"
                       />
                     </div>
@@ -129,7 +129,7 @@ const Contact: React.FC = () => {
                       <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Nom de famille</label>
                       <input 
                         type="text" required
-                        className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#C5A065] transition-colors"
+                        className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#337957] transition-colors"
                         placeholder="Dupont"
                       />
                     </div>
@@ -139,7 +139,7 @@ const Contact: React.FC = () => {
                     <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Email</label>
                     <input 
                       type="email" required
-                      className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#C5A065] transition-colors"
+                      className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#337957] transition-colors"
                       placeholder="jean.dupont@exemple.com"
                     />
                   </div>
@@ -149,7 +149,7 @@ const Contact: React.FC = () => {
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#C5A065] transition-colors"
+                      className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#337957] transition-colors"
                     >
                       <option>Renseignement général</option>
                       <option>Commande spéciale </option>
@@ -173,9 +173,9 @@ const Contact: React.FC = () => {
                         onChange={(e) => setCvFile(e.target.files?.[0] || null)}
                       />
                       {cvFile ? (
-                        <div className="flex items-center justify-between w-full bg-[#C5A065]/10 border border-[#C5A065]/40 px-4 py-3 rounded-lg">
+                        <div className="flex items-center justify-between w-full bg-[#337957]/10 border border-[#337957]/40 px-4 py-3 rounded-lg">
                           <div className="flex items-center gap-2 text-[#2D2A26]">
-                            <Paperclip className="w-4 h-4 text-[#C5A065]" />
+                            <Paperclip className="w-4 h-4 text-[#337957]" />
                             <span className="text-sm font-medium truncate max-w-xs">{cvFile.name}</span>
                           </div>
                           <button
@@ -190,7 +190,7 @@ const Contact: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="w-full flex items-center justify-center gap-3 bg-stone-50 border-2 border-dashed border-[#C5A065]/40 hover:border-[#C5A065] hover:bg-[#C5A065]/5 px-4 py-5 rounded-lg transition-all text-[#C5A065] font-semibold text-sm"
+                          className="w-full flex items-center justify-center gap-3 bg-stone-50 border-2 border-dashed border-[#337957]/40 hover:border-[#337957] hover:bg-[#337957]/5 px-4 py-5 rounded-lg transition-all text-[#337957] font-semibold text-sm"
                         >
                           <Paperclip className="w-5 h-5" />
                           Joindre mon CV
@@ -204,14 +204,14 @@ const Contact: React.FC = () => {
                     <label className="text-xs font-bold uppercase tracking-widest text-stone-500">Votre Message</label>
                     <textarea 
                       required rows={5}
-                      className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#C5A065] transition-colors resize-none"
+                      className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-lg focus:outline-none focus:border-[#337957] transition-colors resize-none"
                       placeholder={subject === "Carrière" ? "Parlez-nous de vous : poste souhaité, expériences, disponibilités…" : "Comment pouvons-nous vous aider ?"}
                     ></textarea>
                   </div>
 
                   <button 
                     type="submit"
-                    className="w-full bg-[#2D2A26] text-white py-4 rounded-full font-black uppercase tracking-widest text-sm hover:bg-[#C5A065] hover:scale-[1.02] transition-all shadow-lg flex items-center justify-center gap-3"
+                    className="w-full bg-[#2D2A26] text-white py-4 rounded-full font-black uppercase tracking-widest text-sm hover:bg-[#337957] hover:scale-[1.02] transition-all shadow-lg flex items-center justify-center gap-3"
                   >
                     Envoyer le message
                     <Send className="w-4 h-4" />
@@ -224,13 +224,13 @@ const Contact: React.FC = () => {
       </main>
 
       {/* Footer (Réutilisé de ton code) */}
-      <footer className="relative bg-[#F9F7F2] text-[#2D2A26] border-t border-[#C5A065]/20">
+      <footer className="relative bg-[#F9F7F2] text-[#2D2A26] border-t border-[#337957]/20">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <p className="text-sm text-[#2D2A26]/70">Copyright {currentYear} | Pâtisserie Provençale</p>
             <div className="flex gap-6 text-xs font-bold uppercase tracking-widest">
-              <Link to="/politique-retour" className="hover:text-[#C5A065]">Politique de retour</Link>
-              <span className="text-[#C5A065]/30">|</span>
+              <Link to="/politique-retour" className="hover:text-[#337957]">Politique de retour</Link>
+              <span className="text-[#337957]/30">|</span>
               <span className="text-[#2D2A26]/50">Confidentialité</span>
             </div>
           </div>

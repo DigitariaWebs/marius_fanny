@@ -48,12 +48,12 @@ const UserProfile: React.FC = () => {
       <GoldenBackground />
       
       {/* Navigation Simple */}
-      <nav className="relative z-20 bg-white/80 backdrop-blur-md border-b border-[#C5A065]/20 px-6 py-4">
+      <nav className="relative z-20 bg-white/80 backdrop-blur-md border-b border-[#337957]/20 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors font-bold uppercase text-xs tracking-widest">
+          <Link to="/" className="flex items-center gap-2 text-[#2D2A26] hover:text-[#337957] transition-colors font-bold uppercase text-xs tracking-widest">
             <ArrowLeft size={16} /> Retour boutique
           </Link>
-          <div className="font-serif text-2xl text-[#C5A065]">Mon Espace</div>
+          <div className="font-serif text-2xl text-[#337957]">Mon Espace</div>
         </div>
       </nav>
 
@@ -61,17 +61,17 @@ const UserProfile: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-[#C5A065]/10 sticky top-24">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-[#337957]/10 sticky top-24">
               
               {/* En-tête Profil */}
               <div className="bg-[#2D2A26] p-8 text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#C5A065] to-transparent"></div>
-                <div className="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-[#C5A065] relative z-10">
+                <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#337957] to-transparent"></div>
+                <div className="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-[#337957] relative z-10">
                   <User size={40} className="text-[#2D2A26]" />
                 </div>
                 <h2 className="text-white font-serif text-2xl">{MOCK_USER.fullName}</h2>
                 <p className="text-stone-400 text-sm">{MOCK_USER.email}</p>
-                <div className="mt-4 inline-block bg-[#C5A065]/20 text-[#C5A065] px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest">
+                <div className="mt-4 inline-block bg-[#337957]/20 text-[#337957] px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest">
                   Membre depuis {MOCK_USER.memberSince}
                 </div>
               </div>
@@ -80,7 +80,7 @@ const UserProfile: React.FC = () => {
               <div className="p-8 space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center shrink-0">
-                    <MapPin size={20} className="text-[#C5A065]" />
+                    <MapPin size={20} className="text-[#337957]" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Adresse de livraison</p>
@@ -104,7 +104,7 @@ const UserProfile: React.FC = () => {
 
           <div className="lg:col-span-2">
             <h3 className="text-3xl font-serif text-[#2D2A26] mb-8 flex items-center gap-3">
-              <Package className="text-[#C5A065]" />
+              <Package className="text-[#337957]" />
               Mes dernières commandes
             </h3>
 
@@ -130,7 +130,7 @@ const UserProfile: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-stone-400 uppercase font-bold">Total</p>
-                      <p className="text-xl font-serif text-[#C5A065]">{order.total.toFixed(2)} $</p>
+                      <p className="text-xl font-serif text-[#337957]">{order.total.toFixed(2)} $</p>
                     </div>
                   </div>
 
@@ -155,7 +155,7 @@ const UserProfile: React.FC = () => {
                     </div>
                     
                     <div className="mt-6 pt-4 border-t border-stone-100 text-center sm:text-right">
-                       <button className="text-[#C5A065] text-xs font-bold uppercase tracking-widest hover:underline">
+                       <button className="text-[#337957] text-xs font-bold uppercase tracking-widest hover:underline">
                          Voir la facture
                        </button>
                     </div>

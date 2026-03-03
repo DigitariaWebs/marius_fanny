@@ -355,14 +355,14 @@ const CartDrawer: React.FC<CartProps> = ({
                 {/* Option Se connecter */}
                 <button
                   onClick={() => handleLoginChoice(true)}
-                  className="w-full p-4 bg-[#C5A065]/10 hover:bg-[#C5A065]/20 border-2 border-[#C5A065] rounded-xl transition-all group"
+                  className="w-full p-4 bg-[#337957]/10 hover:bg-[#337957]/20 border-2 border-[#337957] rounded-xl transition-all group"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#C5A065] rounded-full flex items-center justify-center text-white">
+                    <div className="w-12 h-12 bg-[#337957] rounded-full flex items-center justify-center text-white">
                       <User size={24} />
                     </div>
                     <div className="text-left flex-1">
-                      <h4 className="font-bold text-[#2D2A26] group-hover:text-[#C5A065] transition-colors">
+                      <h4 className="font-bold text-[#2D2A26] group-hover:text-[#337957] transition-colors">
                         Se connecter / Créer un compte
                       </h4>
                       <p className="text-sm text-stone-500">
@@ -382,7 +382,7 @@ const CartDrawer: React.FC<CartProps> = ({
                       <ShoppingCart size={24} />
                     </div>
                     <div className="text-left flex-1">
-                      <h4 className="font-bold text-[#2D2A26] group-hover:text-[#C5A065] transition-colors">
+                      <h4 className="font-bold text-[#2D2A26] group-hover:text-[#337957] transition-colors">
                         Continuer sans compte
                       </h4>
                       <p className="text-sm text-stone-500">
@@ -417,11 +417,11 @@ const CartDrawer: React.FC<CartProps> = ({
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-stone-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ShoppingBag className="text-[#C5A065]" size={24} />
+              <ShoppingBag className="text-[#337957]" size={24} />
               <h2 className="text-xl font-serif text-[#2D2A26]">
                 Votre Sélection
               </h2>
-              <span className="bg-[#C5A065]/10 text-[#C5A065] text-xs font-bold px-2 py-1 rounded-full">
+              <span className="bg-[#337957]/10 text-[#337957] text-xs font-bold px-2 py-1 rounded-full">
                 {items.length}
               </span>
             </div>
@@ -444,7 +444,7 @@ const CartDrawer: React.FC<CartProps> = ({
                 </p>
                 <button
                   onClick={onClose}
-                  className="text-[#C5A065] font-bold uppercase text-xs tracking-widest underline"
+                  className="text-[#337957] font-bold uppercase text-xs tracking-widest underline"
                 >
                   Continuer mes achats
                 </button>
@@ -472,7 +472,7 @@ const CartDrawer: React.FC<CartProps> = ({
                         <X size={16} />
                       </button>
                     </div>
-                    <p className="text-[#C5A065] font-bold mb-3">
+                    <p className="text-[#337957] font-bold mb-3">
                       {item.price.toFixed(2)} $
                     </p>
 
@@ -495,7 +495,7 @@ const CartDrawer: React.FC<CartProps> = ({
                           <Plus size={14} />
                         </button>
                       </div>
-                      <span className="text-sm font-bold text-[#C5A065]">
+                      <span className="text-sm font-bold text-[#337957]">
                         {(item.price * item.quantity).toFixed(2)} $
                       </span>
                     </div>
@@ -508,7 +508,7 @@ const CartDrawer: React.FC<CartProps> = ({
             {items.length > 0 && (
               <div className="bg-white p-4 rounded-lg border border-stone-200">
                 <label className="flex items-center gap-2 text-sm font-medium text-[#2D2A26] mb-3">
-                  <ShoppingBag size={16} className="text-[#C5A065]" />
+                  <ShoppingBag size={16} className="text-[#337957]" />
                   Mode de récupération:
                 </label>
                 <div className="flex gap-3">
@@ -516,8 +516,8 @@ const CartDrawer: React.FC<CartProps> = ({
                     onClick={() => setDeliveryType("pickup")}
                     className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                       deliveryType === "pickup"
-                        ? "bg-[#C5A065] text-white border-[#C5A065]"
-                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#C5A065]"
+                        ? "bg-[#337957] text-white border-[#337957]"
+                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#337957]"
                     }`}
                   >
                     Ramassage
@@ -526,8 +526,8 @@ const CartDrawer: React.FC<CartProps> = ({
                     onClick={() => setDeliveryType("delivery")}
                     className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                       deliveryType === "delivery"
-                        ? "bg-[#C5A065] text-white border-[#C5A065]"
-                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#C5A065]"
+                        ? "bg-[#337957] text-white border-[#337957]"
+                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#337957]"
                     }`}
                   >
                     Livraison
@@ -540,7 +540,7 @@ const CartDrawer: React.FC<CartProps> = ({
             {items.length > 0 && deliveryType === "pickup" && (
               <div className="bg-white p-4 rounded-lg border border-stone-200">
                 <label className="flex items-center gap-2 text-sm font-medium text-[#2D2A26] mb-3">
-                  <MapPin size={16} className="text-[#C5A065]" />
+                  <MapPin size={16} className="text-[#337957]" />
                   Lieu de ramassage:
                 </label>
                 <div className="flex gap-3">
@@ -548,8 +548,8 @@ const CartDrawer: React.FC<CartProps> = ({
                     onClick={() => setPickupLocation("Laval")}
                     className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                       pickupLocation === "Laval"
-                        ? "bg-[#C5A065] text-white border-[#C5A065]"
-                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#C5A065]"
+                        ? "bg-[#337957] text-white border-[#337957]"
+                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#337957]"
                     }`}
                   >
                     Laval
@@ -558,8 +558,8 @@ const CartDrawer: React.FC<CartProps> = ({
                     onClick={() => setPickupLocation("Montreal")}
                     className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                       pickupLocation === "Montreal"
-                        ? "bg-[#C5A065] text-white border-[#C5A065]"
-                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#C5A065]"
+                        ? "bg-[#337957] text-white border-[#337957]"
+                        : "bg-white text-[#2D2A26] border-stone-300 hover:border-[#337957]"
                     }`}
                   >
                     Montréal
@@ -572,7 +572,7 @@ const CartDrawer: React.FC<CartProps> = ({
             {items.length > 0 && deliveryType === "delivery" && (
               <div className="bg-white p-4 rounded-lg border border-stone-200">
                 <label className="flex items-center gap-2 text-sm font-medium text-[#2D2A26] mb-2">
-                  <MapPin size={16} className="text-[#C5A065]" />
+                  <MapPin size={16} className="text-[#337957]" />
                   Code Postal pour Livraison:
                 </label>
                 <Select
@@ -659,13 +659,13 @@ const CartDrawer: React.FC<CartProps> = ({
                           onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
                           onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
                           placeholder="Code promo"
-                          className="w-full pl-8 pr-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-[#C5A065] focus:ring-1 focus:ring-[#C5A065]/30 bg-white"
+                          className="w-full pl-8 pr-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-[#337957] focus:ring-1 focus:ring-[#337957]/30 bg-white"
                         />
                       </div>
                       <button
                         onClick={handleApplyPromo}
                         disabled={!promoInput.trim()}
-                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#2D2A26] text-white hover:bg-[#C5A065] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#2D2A26] text-white hover:bg-[#337957] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Appliquer
                       </button>
@@ -714,7 +714,7 @@ const CartDrawer: React.FC<CartProps> = ({
                 </div>
                 <div className="flex justify-between text-xl font-serif text-[#2D2A26] pt-2">
                   <span>Total</span>
-                  <span className="text-[#C5A065]">{total.toFixed(2)} $</span>
+                  <span className="text-[#337957]">{total.toFixed(2)} $</span>
                 </div>
               </div>
             )}
@@ -736,7 +736,7 @@ const CartDrawer: React.FC<CartProps> = ({
                       (minimumOrderValidation !== null &&
                         !minimumOrderValidation.isValid))
                       ? "bg-stone-400 text-stone-600 cursor-not-allowed"
-                      : "bg-[#2D2A26] text-white hover:bg-[#C5A065]"
+                      : "bg-[#2D2A26] text-white hover:bg-[#337957]"
                   }`}
                   title={
                     deliveryType === "delivery" && !deliveryZoneInfo?.isValid

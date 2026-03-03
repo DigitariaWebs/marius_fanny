@@ -83,7 +83,7 @@ const WholesaleSection = () => {
   };
 
   return (
-    <section id="devenir-partenaire" className="relative min-h-screen bg-[#F9F7F2] text-[#2D2A26] overflow-hidden selection:bg-[#C5A065] selection:text-white">
+    <section id="devenir-partenaire" className="relative min-h-screen bg-[#F9F7F2] text-[#2D2A26] overflow-hidden selection:bg-[#337957] selection:text-white">
       
       {/* --- INTÉGRATION DU BACKGROUND --- */}
       {/* On place le composant ici. Il doit être en absolute inset-0 dans son propre code 
@@ -100,14 +100,14 @@ const WholesaleSection = () => {
 
         <div className="text-center mb-24 animate-fadeInUp">
           <div className="inline-block mb-6">
-            <span className="bg-[#C5A065] text-white font-black text-xs md:text-sm uppercase tracking-[0.3em] px-6 py-2 rounded-full shadow-lg">
+            <span className="bg-[#337957] text-white font-black text-xs md:text-sm uppercase tracking-[0.3em] px-6 py-2 rounded-full shadow-lg">
               Espace Professionnel
             </span>
           </div>
           
           <h1 
             className="text-3xl md:text-4xl lg:text-5xl mb-6"
-            style={{ fontFamily: '"Great Vibes", cursive', color: '#C5A065' }}
+            style={{ fontFamily: '"Great Vibes", cursive', color: '#337957' }}
           >
             L'excellence pour vos clients
           </h1>
@@ -119,7 +119,7 @@ const WholesaleSection = () => {
 
           <a 
             href="#inscription"
-            className="inline-flex items-center gap-2 bg-[#2D2A26] text-white px-10 py-5 rounded-full font-bold uppercase text-sm tracking-widest hover:bg-[#C5A065] transition-all duration-300 shadow-xl hover:scale-105"
+            className="inline-flex items-center gap-2 bg-[#2D2A26] text-white px-10 py-5 rounded-full font-bold uppercase text-sm tracking-widest hover:bg-[#337957] transition-all duration-300 shadow-xl hover:scale-105"
           >
             Demander l'accès
             <Send size={16} />
@@ -129,7 +129,7 @@ const WholesaleSection = () => {
         <div className="mb-32">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-4">
-              Pourquoi nous <span className="text-[#C5A065] underline decoration-4 decoration-[#C5A065]/30 underline-offset-4">rejoindre ?</span>
+              Pourquoi nous <span className="text-[#337957] underline decoration-4 decoration-[#337957]/30 underline-offset-4">rejoindre ?</span>
             </h2>
             <p className="text-[#2D2A26]/60">Un partenariat pensé pour votre réussite</p>
           </div>
@@ -138,9 +138,9 @@ const WholesaleSection = () => {
             {valueProps.map((prop, idx) => (
               <div 
                 key={idx} 
-                className="bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-[#C5A065]/20 hover:border-[#C5A065] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group"
+                className="bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-[#337957]/20 hover:border-[#337957] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group"
               >
-                <div className="w-16 h-16 bg-[#C5A065]/10 rounded-2xl flex items-center justify-center text-[#C5A065] mb-6 group-hover:bg-[#C5A065] group-hover:text-white transition-colors duration-300">
+                <div className="w-16 h-16 bg-[#337957]/10 rounded-2xl flex items-center justify-center text-[#337957] mb-6 group-hover:bg-[#337957] group-hover:text-white transition-colors duration-300">
                   {prop.icon}
                 </div>
                 <h3 className="font-bold text-lg uppercase mb-3 text-[#2D2A26] tracking-wide">
@@ -157,7 +157,7 @@ const WholesaleSection = () => {
         <div id="inscription" className="max-w-5xl mx-auto">
           <div className="bg-white/95 backdrop-blur-sm rounded-[2.5rem] p-8 md:p-16 shadow-2xl border border-gray-100 relative overflow-hidden">
             
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A065] opacity-5 rounded-bl-full pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#337957] opacity-5 rounded-bl-full pointer-events-none"></div>
 
             <div className="grid lg:grid-cols-5 gap-12">
               
@@ -165,7 +165,7 @@ const WholesaleSection = () => {
                 <div>
                   <h2 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-tight text-[#2D2A26]">
                     Ouvrir un <br/>
-                    <span className="text-[#C5A065]">Compte Pro</span>
+                    <span className="text-[#337957]">Compte Pro</span>
                   </h2>
                   <p className="text-[#2D2A26]/70 leading-relaxed">
                     Remplissez ce formulaire pour initier notre partenariat. Notre responsable commercial vous recontactera 
@@ -175,17 +175,17 @@ const WholesaleSection = () => {
                 <div className="space-y-6 pt-6 border-t border-gray-100">
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-[#F9F7F2] rounded-full">
-                      <Mail className="text-[#C5A065]" size={20} />
+                      <Mail className="text-[#337957]" size={20} />
                     </div>
                     <div>
                       <div className="text-xs text-[#2D2A26]/50 uppercase tracking-wider font-bold mb-1">Email Pro</div>
-                      <a href="mailto:fanny.chiecchio@gmail.com" className="font-bold text-[#2D2A26] hover:text-[#C5A065] transition-colors">fanny.chiecchio@gmail.com</a>
+                      <a href="mailto:fanny.chiecchio@gmail.com" className="font-bold text-[#2D2A26] hover:text-[#337957] transition-colors">fanny.chiecchio@gmail.com</a>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-[#F9F7F2] rounded-full">
-                      <Phone className="text-[#C5A065]" size={20} />
+                      <Phone className="text-[#337957]" size={20} />
                     </div>
                     <div>
                       <div className="text-xs text-[#2D2A26]/50 uppercase tracking-wider font-bold mb-1">Téléphone</div>
@@ -220,7 +220,7 @@ const WholesaleSection = () => {
                           value={formData.companyName}
                           onChange={handleInputChange}
                           required
-                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#C5A065] focus:outline-none focus:ring-4 focus:ring-[#C5A065]/10 transition-all font-medium"
+                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#337957] focus:outline-none focus:ring-4 focus:ring-[#337957]/10 transition-all font-medium"
                           placeholder="Nom de votre société"
                         />
                       </div>
@@ -235,7 +235,7 @@ const WholesaleSection = () => {
                           value={formData.contactName}
                           onChange={handleInputChange}
                           required
-                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#C5A065] focus:outline-none focus:ring-4 focus:ring-[#C5A065]/10 transition-all font-medium"
+                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#337957] focus:outline-none focus:ring-4 focus:ring-[#337957]/10 transition-all font-medium"
                           placeholder="Votre nom complet"
                         />
                       </div>
@@ -252,7 +252,7 @@ const WholesaleSection = () => {
                           value={formData.email}
                           onChange={handleInputChange}
                           required
-                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#C5A065] focus:outline-none focus:ring-4 focus:ring-[#C5A065]/10 transition-all font-medium"
+                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#337957] focus:outline-none focus:ring-4 focus:ring-[#337957]/10 transition-all font-medium"
                           placeholder="contact@societe.com"
                         />
                       </div>
@@ -267,7 +267,7 @@ const WholesaleSection = () => {
                           value={formData.phone}
                           onChange={handleInputChange}
                           required
-                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#C5A065] focus:outline-none focus:ring-4 focus:ring-[#C5A065]/10 transition-all font-medium"
+                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#337957] focus:outline-none focus:ring-4 focus:ring-[#337957]/10 transition-all font-medium"
                           placeholder="+1 XXX XXX XXXX"
                         />
                       </div>
@@ -283,7 +283,7 @@ const WholesaleSection = () => {
                           value={formData.businessType}
                           onChange={handleInputChange}
                           required
-                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] appearance-none focus:border-[#C5A065] focus:outline-none focus:ring-4 focus:ring-[#C5A065]/10 transition-all font-medium cursor-pointer"
+                          className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] appearance-none focus:border-[#337957] focus:outline-none focus:ring-4 focus:ring-[#337957]/10 transition-all font-medium cursor-pointer"
                         >
                           <option value="">Sélectionnez votre activité...</option>
                           {businessTypes.map((type) => (
@@ -307,14 +307,14 @@ const WholesaleSection = () => {
                         value={formData.message}
                         onChange={handleInputChange}
                         rows={4}
-                        className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#C5A065] focus:outline-none focus:ring-4 focus:ring-[#C5A065]/10 transition-all font-medium resize-none"
+                        className="w-full bg-[#F9F7F2] border border-gray-200 rounded-xl px-5 py-4 text-[#2D2A26] placeholder-gray-400 focus:border-[#337957] focus:outline-none focus:ring-4 focus:ring-[#337957]/10 transition-all font-medium resize-none"
                         placeholder="Dites-nous en plus sur vos besoins (volumes estimés, fréquence de livraison...)"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-[#C5A065] text-white py-5 rounded-xl font-black uppercase text-sm tracking-widest hover:bg-[#2D2A26] transition-all duration-300 shadow-lg hover:shadow-xl mt-4"
+                      className="w-full bg-[#337957] text-white py-5 rounded-xl font-black uppercase text-sm tracking-widest hover:bg-[#2D2A26] transition-all duration-300 shadow-lg hover:shadow-xl mt-4"
                     >
                       Demander l'accès
                     </button>

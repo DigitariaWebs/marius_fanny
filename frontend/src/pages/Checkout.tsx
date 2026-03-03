@@ -545,7 +545,7 @@ const Checkout: React.FC = () => {
           <div className="mb-8">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-stone-600 hover:text-[#C5A065] transition-colors mb-4"
+              className="flex items-center gap-2 text-stone-600 hover:text-[#337957] transition-colors mb-4"
             >
               <ArrowLeft size={20} />
               Retour
@@ -554,7 +554,7 @@ const Checkout: React.FC = () => {
               className="text-4xl md:text-5xl mb-2"
               style={{
                 fontFamily: "'Great Vibes', cursive",
-                color: "#C5A065",
+                color: "#337957",
               }}
             >
               {currentStep === "contact" && "Informations client"}
@@ -578,7 +578,7 @@ const Checkout: React.FC = () => {
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-[#C5A065] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      <div className="w-8 h-8 bg-[#337957] text-white rounded-full flex items-center justify-center text-sm font-bold">
                         1
                       </div>
                       <h2 className="text-xl font-serif text-[#2D2A26]">
@@ -587,7 +587,7 @@ const Checkout: React.FC = () => {
                     </div>
                     <div className="w-full bg-stone-200 rounded-full h-2">
                       <div
-                        className="bg-[#C5A065] h-2 rounded-full"
+                        className="bg-[#337957] h-2 rounded-full"
                         style={{ width: "33%" }}
                       ></div>
                     </div>
@@ -610,7 +610,7 @@ const Checkout: React.FC = () => {
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
                         placeholder="Jean Dupont"
-                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065]"
+                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957]"
                         required
                       />
                     </div>
@@ -623,7 +623,7 @@ const Checkout: React.FC = () => {
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
                         placeholder="jean.dupont@example.com"
-                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065]"
+                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957]"
                         required
                       />
                     </div>
@@ -638,14 +638,14 @@ const Checkout: React.FC = () => {
                         placeholder="(514) 123-4567"
                         pattern="[0-9\s\-\(\)\.\+]{7,}"
                         title="Numéro de téléphone (au moins 7 chiffres)"
-                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065]"
+                        className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957]"
                         required
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-[#2D2A26] text-white py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:bg-[#C5A065] transition-all shadow-lg"
+                      className="w-full bg-[#2D2A26] text-white py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:bg-[#337957] transition-all shadow-lg"
                     >
                       Suivant: {state.deliveryType === "delivery" ? "Créneau de livraison" : "Date de ramassage"}
                       <ArrowLeft size={18} className="rotate-180" />
@@ -659,7 +659,7 @@ const Checkout: React.FC = () => {
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-[#C5A065] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      <div className="w-8 h-8 bg-[#337957] text-white rounded-full flex items-center justify-center text-sm font-bold">
                         2
                       </div>
                       <h2 className="text-xl font-serif text-[#2D2A26]">
@@ -668,7 +668,7 @@ const Checkout: React.FC = () => {
                     </div>
                     <div className="w-full bg-stone-200 rounded-full h-2">
                       <div
-                        className="bg-[#C5A065] h-2 rounded-full"
+                        className="bg-[#337957] h-2 rounded-full"
                         style={{ width: "66%" }}
                       ></div>
                     </div>
@@ -730,7 +730,7 @@ const Checkout: React.FC = () => {
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
                           dateValidationError
                             ? "border-red-500 focus:ring-red-500"
-                            : "border-stone-300 focus:ring-[#C5A065]"
+                            : "border-stone-300 focus:ring-[#337957]"
                         }`}
                         required
                       />
@@ -757,7 +757,7 @@ const Checkout: React.FC = () => {
                         <select
                           value={deliveryTime}
                           onChange={handleTimeSlotChange}
-                          className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065] bg-white"
+                          className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957] bg-white"
                           required
                           disabled={!deliveryDate || !!dateValidationError}
                         >
@@ -786,7 +786,7 @@ const Checkout: React.FC = () => {
                         <select
                           value={deliveryTime}
                           onChange={handleTimeSlotChange}
-                          className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065] bg-white"
+                          className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957] bg-white"
                           disabled={!deliveryDate || !!dateValidationError}
                           required
                         >
@@ -824,7 +824,7 @@ const Checkout: React.FC = () => {
                         className={`flex-1 py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-lg ${
                           (!!dateValidationError || !deliveryTime)
                             ? "bg-stone-400 text-stone-600 cursor-not-allowed"
-                            : "bg-[#2D2A26] text-white hover:bg-[#C5A065]"
+                            : "bg-[#2D2A26] text-white hover:bg-[#337957]"
                         }`}
                       >
                         Paiement
@@ -840,7 +840,7 @@ const Checkout: React.FC = () => {
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-[#C5A065] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      <div className="w-8 h-8 bg-[#337957] text-white rounded-full flex items-center justify-center text-sm font-bold">
                         3
                       </div>
                       <h2 className="text-xl font-serif text-[#2D2A26]">
@@ -849,7 +849,7 @@ const Checkout: React.FC = () => {
                     </div>
                     <div className="w-full bg-stone-200 rounded-full h-2">
                       <div
-                        className="bg-[#C5A065] h-2 rounded-full"
+                        className="bg-[#337957] h-2 rounded-full"
                         style={{ width: "100%" }}
                       ></div>
                     </div>
@@ -897,7 +897,7 @@ const Checkout: React.FC = () => {
               {/* Delivery Info */}
               <div className="bg-white rounded-2xl p-6 shadow-lg">
                 <div className="flex items-center gap-2 mb-4">
-                  <MapPin size={20} className="text-[#C5A065]" />
+                  <MapPin size={20} className="text-[#337957]" />
                   <h2 className="text-xl font-serif text-[#2D2A26]">
                     {state.deliveryType === "delivery" ? "Livraison" : "Ramassage"}
                   </h2>
@@ -923,7 +923,7 @@ const Checkout: React.FC = () => {
               {/* Order Summary */}
               <div className="bg-white rounded-2xl p-6 shadow-lg">
                 <div className="flex items-center gap-2 mb-4">
-                  <ShoppingBag size={20} className="text-[#C5A065]" />
+                  <ShoppingBag size={20} className="text-[#337957]" />
                   <h2 className="text-xl font-serif text-[#2D2A26]">
                     Votre commande
                   </h2>
@@ -990,7 +990,7 @@ const Checkout: React.FC = () => {
                   )}
                   <div className="flex justify-between text-xl font-serif text-[#2D2A26] pt-2 border-t border-stone-200">
                     <span>Total</span>
-                    <span className="text-[#C5A065]">
+                    <span className="text-[#337957]">
                       {state.total.toFixed(2)} $
                     </span>
                   </div>

@@ -657,7 +657,7 @@ export function OrderManagement() {
           <title>Liste des commandes</title>
         </head>
         <body style="font-family: Arial, sans-serif; padding: 24px; color: #1f2937;">
-          <h1 style="margin: 0 0 8px; color: #C5A065;">Liste des commandes</h1>
+          <h1 style="margin: 0 0 8px; color: #337957;">Liste des commandes</h1>
           <p style="margin: 0 0 16px;">
             Nombre de commandes: ${filteredOrders.length}<br />
             Filtre date: ${selectedDate || "Aucun"}
@@ -699,7 +699,7 @@ export function OrderManagement() {
             e.stopPropagation();
             handleViewProducts(order);
           }}
-          className="text-left w-full hover:text-[#C5A065] transition-colors font-medium"
+          className="text-left w-full hover:text-[#337957] transition-colors font-medium"
         >
           {getOrderDisplayNumber(order)}
         </button>
@@ -821,7 +821,7 @@ export function OrderManagement() {
           <div>
             <h2
               className="text-4xl md:text-5xl mb-2"
-              style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+              style={{ fontFamily: '"Great Vibes", cursive', color: "#337957" }}
             >
               Gestion des Commandes
             </h2>
@@ -831,7 +831,7 @@ export function OrderManagement() {
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-[#C5A065] hover:bg-[#2D2A26] text-white font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:shadow-lg text-sm md:text-base whitespace-nowrap"
+            className="flex items-center gap-2 bg-[#337957] hover:bg-[#2D2A26] text-white font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:shadow-lg text-sm md:text-base whitespace-nowrap"
           >
             <Plus size={20} />
             <span>Nouvelle Commande</span>
@@ -858,7 +858,7 @@ export function OrderManagement() {
               onClick={() => setSelectedDate("")}
               variant="ghost"
               size="sm"
-              className="text-[#C5A065] hover:text-[#B38F55]"
+              className="text-[#337957] hover:text-[#B38F55]"
             >
               Effacer
             </Button>
@@ -894,7 +894,7 @@ export function OrderManagement() {
         type="details"
         title={`Produits de la commande ${selectedOrderForProducts ? formatOrderNumber(selectedOrderForProducts.orderNumber) : ""}`}
         description={`Client: ${selectedOrderForProducts?.client.firstName} ${selectedOrderForProducts?.client.lastName}`}
-        icon={<Package className="h-6 w-6 text-[#C5A065]" />}
+        icon={<Package className="h-6 w-6 text-[#337957]" />}
         size="lg"
         actions={{
           secondary: {
@@ -1024,7 +1024,7 @@ export function OrderManagement() {
                       {selectedOrder.items.length}
                     </p>
                   </div>
-                  <Package className="w-8 h-8 text-[#C5A065]" />
+                  <Package className="w-8 h-8 text-[#337957]" />
                 </div>
               </div>
               <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -1035,7 +1035,7 @@ export function OrderManagement() {
                       {formatCurrency(selectedOrder.total)}
                     </p>
                   </div>
-                  <DollarSign className="w-8 h-8 text-[#C5A065]" />
+                  <DollarSign className="w-8 h-8 text-[#337957]" />
                 </div>
               </div>
               <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -1046,7 +1046,7 @@ export function OrderManagement() {
                       {getStatusBadge(selectedOrder.status)}
                     </p>
                   </div>
-                  <CheckCircle className="w-8 h-8 text-[#C5A065]" />
+                  <CheckCircle className="w-8 h-8 text-[#337957]" />
                 </div>
               </div>
             </div>
@@ -1513,7 +1513,7 @@ export function OrderManagement() {
         type="form"
         title="Nouvelle Commande"
         description="Creer une nouvelle commande"
-        icon={<Plus className="h-6 w-6 text-[#C5A065]" />}
+        icon={<Plus className="h-6 w-6 text-[#337957]" />}
         size="xl"
         actions={{
           primary: {

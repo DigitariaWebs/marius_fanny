@@ -291,7 +291,7 @@ const Dashboard: React.FC = () => {
           <GoldenBackground />
         </div>
         <div className="relative z-10 text-center">
-          <div className="w-12 h-12 border-4 border-[#C5A065]/30 border-t-[#C5A065] rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-[#337957]/30 border-t-[#337957] rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-stone-500 font-light">
             Chargement de vos commandes...
           </p>
@@ -311,7 +311,7 @@ const Dashboard: React.FC = () => {
         <div className="text-center mb-10">
           <h1
             className="text-4xl md:text-5xl mb-2 font-light"
-            style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+            style={{ fontFamily: '"Great Vibes", cursive', color: "#337957" }}
           >
             Mon Espace Personnel
           </h1>
@@ -325,7 +325,7 @@ const Dashboard: React.FC = () => {
           {/* Mon Profil */}
           <div className="bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-white shadow-lg hover:shadow-xl transition-all duration-300 lg:col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-[#C5A065]/10 rounded-lg text-[#C5A065]">
+              <div className="p-2.5 bg-[#337957]/10 rounded-lg text-[#337957]">
                 <User size={20} />
               </div>
               <h3 className="font-bold uppercase tracking-widest text-xs">
@@ -344,10 +344,10 @@ const Dashboard: React.FC = () => {
 
           {/* Statistiques Client */}
           <StatCard
-            icon={<Package size={20} className="text-[#C5A065]" />}
+            icon={<Package size={20} className="text-[#337957]" />}
             label="Total Commandes"
             value={stats.totalCommands}
-            color="bg-[#C5A065]/10"
+            color="bg-[#337957]/10"
           />
           <StatCard
             icon={<Clock size={20} className="text-blue-600" />}
@@ -381,7 +381,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-2xl font-bold text-stone-800">Mes Commandes</h2>
             {orders.length > 0 && (
               <p className="text-sm text-stone-500">
-                <span className="font-bold text-[#C5A065]">
+                <span className="font-bold text-[#337957]">
                   {filteredOrders.length}
                 </span>{" "}
                 commande(s)
@@ -416,7 +416,7 @@ const Dashboard: React.FC = () => {
                     placeholder="Rechercher par ID, nom, email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065] focus:border-transparent transition-all text-sm"
+                    className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957] focus:border-transparent transition-all text-sm"
                   />
                 </div>
 
@@ -424,7 +424,7 @@ const Dashboard: React.FC = () => {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065] text-sm cursor-pointer"
+                  className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957] text-sm cursor-pointer"
                 >
                   <option value="all">Tous les statuts</option>
                   <option value="pending">En attente</option>
@@ -439,7 +439,7 @@ const Dashboard: React.FC = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C5A065] text-sm cursor-pointer"
+                  className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957] text-sm cursor-pointer"
                 >
                   <option value="date">Tri : Récent</option>
                   <option value="amount">Tri : Montant ↓</option>
@@ -478,7 +478,7 @@ const Dashboard: React.FC = () => {
                         className="hover:bg-stone-50/50 transition-colors duration-200"
                       >
                         <td className="py-3 px-4">
-                          <span className="font-mono font-bold text-[#C5A065]">
+                          <span className="font-mono font-bold text-[#337957]">
                             {order._id.slice(-6).toUpperCase()}
                           </span>
                         </td>
@@ -500,7 +500,7 @@ const Dashboard: React.FC = () => {
                               setSelectedOrder(order);
                               setShowDetails(true);
                             }}
-                            className="p-2 hover:bg-[#C5A065]/10 rounded-lg transition-colors duration-200 text-[#C5A065]"
+                            className="p-2 hover:bg-[#337957]/10 rounded-lg transition-colors duration-200 text-[#337957]"
                             title="Voir détails"
                           >
                             <Eye size={16} />
@@ -531,7 +531,7 @@ const Dashboard: React.FC = () => {
                           onClick={() => setCurrentPage(page)}
                           className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
                             currentPage === page
-                              ? "bg-[#C5A065] text-white"
+                              ? "bg-[#337957] text-white"
                               : "border border-stone-200 hover:bg-stone-50"
                           }`}
                         >
@@ -587,7 +587,7 @@ const Dashboard: React.FC = () => {
                       <p className="text-xs font-bold opacity-50 uppercase tracking-widest mb-1">
                         ID Commande
                       </p>
-                      <p className="font-mono font-bold text-[#C5A065]">
+                      <p className="font-mono font-bold text-[#337957]">
                         {selectedOrder._id}
                       </p>
                     </div>
@@ -660,7 +660,7 @@ const Dashboard: React.FC = () => {
                   )}
                   <div className="border-t border-stone-200 pt-2 flex justify-between">
                     <span className="font-bold text-stone-800">Total</span>
-                    <span className="text-lg font-bold text-[#C5A065]">
+                    <span className="text-lg font-bold text-[#337957]">
                       {formatAmount(selectedOrder.total)}
                     </span>
                   </div>
@@ -686,7 +686,7 @@ const Dashboard: React.FC = () => {
                 {/* Bouton Fermeture */}
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="w-full bg-[#2D2A26] text-white py-3 rounded-lg font-bold uppercase tracking-widest text-sm hover:bg-[#C5A065] transition-colors"
+                  className="w-full bg-[#2D2A26] text-white py-3 rounded-lg font-bold uppercase tracking-widest text-sm hover:bg-[#337957] transition-colors"
                 >
                   Fermer
                 </button>
@@ -699,7 +699,7 @@ const Dashboard: React.FC = () => {
         <div className="mt-10 flex gap-13 justify-center">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#2D2A26] hover:text-[#C5A065] transition-all"
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#2D2A26] hover:text-[#337957] transition-all"
           >
             <ArrowLeft size={14} /> Retour à l'accueil
           </button>

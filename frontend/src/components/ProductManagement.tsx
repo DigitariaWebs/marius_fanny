@@ -531,7 +531,7 @@ export function ProductManagement() {
           <div>
             <h2
               className="text-4xl md:text-5xl mb-2"
-              style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+              style={{ fontFamily: '"Great Vibes", cursive', color: "#337957" }}
             >
               Gestion des Produits
             </h2>
@@ -541,7 +541,7 @@ export function ProductManagement() {
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-[#C5A065] hover:bg-[#2D2A26] text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2"
+            className="bg-[#337957] hover:bg-[#2D2A26] text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2"
           >
             <Plus size={20} />
             Ajouter un produit
@@ -552,7 +552,7 @@ export function ProductManagement() {
       <div className="p-4 md:p-8">
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C5A065]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#337957]"></div>
             <span className="ml-2 text-gray-600">Chargement des produits...</span>
           </div>
         )}
@@ -625,7 +625,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, name: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="Ex: Croissant Pur Beurre"
               />
             </div>
@@ -646,7 +646,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, category: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
               >
                 {flattenCategoriesWithIndentation(categories).map((cat) => (
                   <option key={cat.id} value={cat.name}>
@@ -667,7 +667,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, price: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="0.00"
               />
             </div>
@@ -685,7 +685,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, discountPercentage: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="0"
               />
               <p className="text-xs text-gray-500">
@@ -705,8 +705,8 @@ export function ProductManagement() {
                       key={`create-day-${day.value}`}
                       className={`px-3 py-1 rounded-full text-xs border cursor-pointer transition-colors ${
                         checked
-                          ? "bg-[#C5A065] text-white border-[#C5A065]"
-                          : "bg-white text-stone-600 border-stone-300 hover:border-[#C5A065]"
+                          ? "bg-[#337957] text-white border-[#337957]"
+                          : "bg-white text-stone-600 border-stone-300 hover:border-[#337957]"
                       }`}
                     >
                       <input
@@ -740,7 +740,7 @@ export function ProductManagement() {
                     preparationTimeHours: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
               >
                 <option value="">Immédiat (pas de préparation)</option>
                 <option value="24">24 heures (1 jour)</option>
@@ -765,7 +765,7 @@ export function ProductManagement() {
                     minOrderQuantity: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="1"
                 min="1"
               />
@@ -784,7 +784,7 @@ export function ProductManagement() {
                     maxOrderQuantity: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="10"
                 min="1"
               />
@@ -802,7 +802,7 @@ export function ProductManagement() {
                     description: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="Description du produit..."
                 rows={3}
               />
@@ -819,7 +819,7 @@ export function ProductManagement() {
                       available: e.target.checked,
                     })
                   }
-                  className="w-5 h-5 text-[#C5A065] border-gray-300 rounded focus:ring-[#C5A065]"
+                  className="w-5 h-5 text-[#337957] border-gray-300 rounded focus:ring-[#337957]"
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Produit disponible à la commande
@@ -841,7 +841,7 @@ export function ProductManagement() {
                       hasTaxes: e.target.checked,
                     })
                   }
-                  className="w-5 h-5 text-[#C5A065] border-gray-300 rounded focus:ring-[#C5A065]"
+                  className="w-5 h-5 text-[#337957] border-gray-300 rounded focus:ring-[#337957]"
                 />
                 <label htmlFor="create-has-taxes" className="text-sm font-medium text-gray-700 cursor-pointer">
                   Appliquer les taxes
@@ -858,7 +858,7 @@ export function ProductManagement() {
                   onChange={(e) =>
                     setProductForm({ ...productForm, allergens: e.target.value })
                   }
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                   placeholder="Ex: Gluten, Lactose, Noix"
                 />
               </div>
@@ -872,7 +872,7 @@ export function ProductManagement() {
                   onChange={(e) =>
                     setProductForm({ ...productForm, productionType: e.target.value as "patisserie" | "cuisinier" | "four" })
                   }
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 >
                   <option value="patisserie">Pâtisserie</option>
                   <option value="cuisinier">Cuisinier</option>
@@ -889,7 +889,7 @@ export function ProductManagement() {
                   onChange={(e) =>
                     setProductForm({ ...productForm, targetAudience: e.target.value as "clients" | "pro" })
                   }
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 >
                   <option value="clients">Clients uniquement</option>
                   <option value="pro">Professionnels uniquement</option>
@@ -910,7 +910,7 @@ export function ProductManagement() {
                       ];
                       setProductForm({ ...productForm, customOptions: newOpts });
                     }}
-                    className="text-sm text-[#C5A065] hover:underline flex items-center gap-1"
+                    className="text-sm text-[#337957] hover:underline flex items-center gap-1"
                   >
                     <Plus size={14} /> Ajouter une option
                   </button>
@@ -996,7 +996,7 @@ export function ProductManagement() {
                           newOpts[idx] = { ...newOpts[idx], choices: newChoices };
                           setProductForm({ ...productForm, customOptions: newOpts });
                         }}
-                        className="text-xs text-[#C5A065] hover:underline"
+                        className="text-xs text-[#337957] hover:underline"
                       >
                         + Ajouter un choix
                       </button>
@@ -1055,7 +1055,7 @@ export function ProductManagement() {
                     }
                     e.target.value = ""; // Reset select
                   }}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 >
                   <option value="">+ Ajouter un produit recommandé</option>
                   {products
@@ -1125,7 +1125,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, name: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="Ex: Croissant Pur Beurre"
               />
             </div>
@@ -1146,7 +1146,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, category: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
               >
                 {flattenCategoriesWithIndentation(categories).map((cat) => (
                   <option key={cat.id} value={cat.name}>
@@ -1167,7 +1167,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, price: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="0.00"
               />
             </div>
@@ -1185,7 +1185,7 @@ export function ProductManagement() {
                 onChange={(e) =>
                   setProductForm({ ...productForm, discountPercentage: e.target.value })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="0"
               />
               <p className="text-xs text-gray-500">
@@ -1205,8 +1205,8 @@ export function ProductManagement() {
                       key={`edit-day-${day.value}`}
                       className={`px-3 py-1 rounded-full text-xs border cursor-pointer transition-colors ${
                         checked
-                          ? "bg-[#C5A065] text-white border-[#C5A065]"
-                          : "bg-white text-stone-600 border-stone-300 hover:border-[#C5A065]"
+                          ? "bg-[#337957] text-white border-[#337957]"
+                          : "bg-white text-stone-600 border-stone-300 hover:border-[#337957]"
                       }`}
                     >
                       <input
@@ -1239,7 +1239,7 @@ export function ProductManagement() {
                     preparationTimeHours: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
               >
                 <option value="">Immédiat (pas de préparation)</option>
                 <option value="24">24 heures (1 jour)</option>
@@ -1264,7 +1264,7 @@ export function ProductManagement() {
                     minOrderQuantity: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="1"
                 min="1"
               />
@@ -1283,7 +1283,7 @@ export function ProductManagement() {
                     maxOrderQuantity: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="10"
                 min="1"
               />
@@ -1301,7 +1301,7 @@ export function ProductManagement() {
                     description: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="Description du produit..."
                 rows={3}
               />
@@ -1318,7 +1318,7 @@ export function ProductManagement() {
                       available: e.target.checked,
                     })
                   }
-                  className="w-5 h-5 text-[#C5A065] border-gray-300 rounded focus:ring-[#C5A065]"
+                  className="w-5 h-5 text-[#337957] border-gray-300 rounded focus:ring-[#337957]"
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Produit disponible à la commande
@@ -1340,7 +1340,7 @@ export function ProductManagement() {
                       hasTaxes: e.target.checked,
                     })
                   }
-                  className="w-5 h-5 text-[#C5A065] border-gray-300 rounded focus:ring-[#C5A065]"
+                  className="w-5 h-5 text-[#337957] border-gray-300 rounded focus:ring-[#337957]"
                 />
                 <label htmlFor="edit-has-taxes" className="text-sm font-medium text-gray-700 cursor-pointer">
                   Appliquer les taxes
@@ -1357,7 +1357,7 @@ export function ProductManagement() {
                   onChange={(e) =>
                     setProductForm({ ...productForm, allergens: e.target.value })
                   }
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                   placeholder="Ex: Gluten, Lactose, Noix"
                 />
               </div>
@@ -1371,7 +1371,7 @@ export function ProductManagement() {
                   onChange={(e) =>
                     setProductForm({ ...productForm, productionType: e.target.value as "patisserie" | "cuisinier" | "four" })
                   }
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 >
                   <option value="patisserie">Pâtisserie</option>
                   <option value="cuisinier">Cuisinier</option>
@@ -1388,7 +1388,7 @@ export function ProductManagement() {
                   onChange={(e) =>
                     setProductForm({ ...productForm, targetAudience: e.target.value as "clients" | "pro" })
                   }
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 >
                   <option value="clients">Clients uniquement</option>
                   <option value="pro">Professionnels uniquement</option>
@@ -1409,7 +1409,7 @@ export function ProductManagement() {
                       ];
                       setProductForm({ ...productForm, customOptions: newOpts });
                     }}
-                    className="text-sm text-[#C5A065] hover:underline flex items-center gap-1"
+                    className="text-sm text-[#337957] hover:underline flex items-center gap-1"
                   >
                     <Plus size={14} /> Ajouter une option
                   </button>
@@ -1495,7 +1495,7 @@ export function ProductManagement() {
                           newOpts[idx] = { ...newOpts[idx], choices: newChoices };
                           setProductForm({ ...productForm, customOptions: newOpts });
                         }}
-                        className="text-xs text-[#C5A065] hover:underline"
+                        className="text-xs text-[#337957] hover:underline"
                       >
                         + Ajouter un choix
                       </button>
@@ -1554,7 +1554,7 @@ export function ProductManagement() {
                     }
                     e.target.value = ""; // Reset select
                   }}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 >
                   <option value="">+ Ajouter un produit recommandé</option>
                   {products

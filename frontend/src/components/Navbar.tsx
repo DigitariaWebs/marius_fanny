@@ -7,7 +7,7 @@ import { authClient } from "../lib/AuthClient";
 
 const styles = {
   cream: "#F9F7F2",
-  gold: "#C5A065",
+  gold: "#337957",
   text: "#2D2A26",
   fontScript: '"Great Vibes", cursive',
   fontSans: '"Inter", sans-serif',
@@ -209,10 +209,10 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
 
           {/* CART + PROFILE/LOGIN DESKTOP */}
           <div className="hidden md:flex items-center gap-3 shrink-0 pr-4">
-            <button onClick={onCartClick} className="relative p-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors focus:outline-none">
+            <button onClick={onCartClick} className="relative p-2 text-[#2D2A26] hover:text-[#337957] transition-colors focus:outline-none">
               <FiShoppingBag size={22} />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#C5A065] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+                <span className="absolute -top-1 -right-1 bg-[#337957] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
                   {cartCount}
                 </span>
               )}
@@ -223,7 +223,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
               <div className="relative" ref={profileMenuRef}>
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="p-2 text-[#2D2A26] hover:text-[#C5A065] transition-colors focus:outline-none"
+                  className="p-2 text-[#2D2A26] hover:text-[#337957] transition-colors focus:outline-none"
                 >
                   <User size={22} />
                 </button>
@@ -237,7 +237,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                             handleAnchorClick("dashboard");
                             setShowProfileMenu(false);
                           }}
-                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#C5A065]/10 transition-colors text-center"
+                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#337957]/10 transition-colors text-center"
                         >
                           Dashboard
                         </button>
@@ -248,7 +248,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                             navigate("/pro");
                             setShowProfileMenu(false);
                           }}
-                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#C5A065]/10 transition-colors text-center"
+                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#337957]/10 transition-colors text-center"
                         >
                           Espace Pro
                         </button>
@@ -259,7 +259,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
                             navigate("/mon-compte");
                             setShowProfileMenu(false);
                           }}
-                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#C5A065]/10 transition-colors text-center"
+                          className="w-full px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#2D2A26] hover:bg-[#337957]/10 transition-colors text-center"
                         >
                           Mon Compte
                         </button>
@@ -301,7 +301,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
             <button onClick={onCartClick} className="relative p-2 text-[#2D2A26] focus:outline-none">
               <FiShoppingBag size={24} />
               {cartCount > 0 && (
-                <span className="absolute top-0 right-0 bg-[#C5A065] text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                <span className="absolute top-0 right-0 bg-[#337957] text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
                   {cartCount}
                 </span>
               )}
@@ -325,12 +325,12 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
 
         <div ref={linksRef} className="flex flex-col p-4 gap-4">
           {mainLinks.map((link) => (
-            <button key={link.id} onClick={() => handleAnchorClick(link.id)} className="text-left focus:outline-none text-[11px] font-black uppercase tracking-[0.15em] py-1.5 border-b border-[#E5E0D8] hover:text-[#C5A065] transition-colors" style={{ color: styles.text, fontFamily: styles.fontSans }}>
+            <button key={link.id} onClick={() => handleAnchorClick(link.id)} className="text-left focus:outline-none text-[11px] font-black uppercase tracking-[0.15em] py-1.5 border-b border-[#E5E0D8] hover:text-[#337957] transition-colors" style={{ color: styles.text, fontFamily: styles.fontSans }}>
               {link.name}
             </button>
           ))}
 
-          <div className="h-px bg-[#C5A065] my-3" />
+          <div className="h-px bg-[#337957] my-3" />
 
           {!isPending ? (
             isLoggedIn ? (

@@ -9,7 +9,7 @@ export default {
       colors: {
         'bakery-cream': '#F9F7F2',
         'bakery-text': '#2D2A26',
-        'bakery-gold': '#C5A065',
+        'bakery-gold': '#337957',
         'bakery-accent': '#E8DCCA',
       },
       fontFamily: {

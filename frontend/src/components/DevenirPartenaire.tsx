@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 const styles = {
-  gold: "#C5A065",
+  gold: "#337957",
   text: "#2D2A26",
   cream: "#F9F7F2",
   fontScript: '"Great Vibes", cursive',
@@ -191,8 +191,8 @@ const DevenirPartenaire: React.FC<DevenirPartenaireProps> = ({
           <div className="relative z-10 flex items-center justify-center min-h-[80vh] px-4">
             <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl border border-white p-8 md:p-12 w-full max-w-md">
               <div className="text-center mb-8">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#C5A065]/10 flex items-center justify-center">
-                  <Mail size={32} className="text-[#C5A065]" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#337957]/10 flex items-center justify-center">
+                  <Mail size={32} className="text-[#337957]" />
                 </div>
                 <h2
                   className="text-3xl mb-2"
@@ -221,7 +221,7 @@ const DevenirPartenaire: React.FC<DevenirPartenaireProps> = ({
                       setVerificationCode(e.target.value.replace(/\D/g, ""))
                     }
                     placeholder="000000"
-                    className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 outline-none text-center text-2xl tracking-[0.5em] font-mono"
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#337957] focus:ring-2 focus:ring-[#337957]/20 outline-none text-center text-2xl tracking-[0.5em] font-mono"
                   />
                 </div>
 
@@ -263,8 +263,8 @@ const DevenirPartenaire: React.FC<DevenirPartenaireProps> = ({
           </div>
           <div className="relative z-10 flex items-center justify-center min-h-[80vh] px-4">
             <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl border border-white p-8 md:p-12 w-full max-w-md text-center">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#C5A065]/10 flex items-center justify-center">
-                <CheckCircle2 size={40} className="text-[#C5A065]" />
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#337957]/10 flex items-center justify-center">
+                <CheckCircle2 size={40} className="text-[#337957]" />
               </div>
               <h2
                 className="text-4xl mb-3"
@@ -348,7 +348,7 @@ const DevenirPartenaire: React.FC<DevenirPartenaireProps> = ({
                           onChange={handleChange}
                           required
                           placeholder="contact@entreprise.com"
-                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 outline-none text-sm"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-[#337957] focus:ring-2 focus:ring-[#337957]/20 outline-none text-sm"
                         />
                       </div>
                     </div>
@@ -371,7 +371,7 @@ const DevenirPartenaire: React.FC<DevenirPartenaireProps> = ({
                           required
                           minLength={6}
                           placeholder="Minimum 6 caractères"
-                          className="w-full pl-10 pr-12 py-3 rounded-xl border border-stone-200 focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 outline-none text-sm"
+                          className="w-full pl-10 pr-12 py-3 rounded-xl border border-stone-200 focus:border-[#337957] focus:ring-2 focus:ring-[#337957]/20 outline-none text-sm"
                         />
                         <button
                           type="button"
@@ -405,7 +405,7 @@ const DevenirPartenaire: React.FC<DevenirPartenaireProps> = ({
                           required
                           minLength={6}
                           placeholder="Retapez le mot de passe"
-                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 outline-none text-sm"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-[#337957] focus:ring-2 focus:ring-[#337957]/20 outline-none text-sm"
                         />
                       </div>
                     </div>
@@ -432,7 +432,7 @@ const DevenirPartenaire: React.FC<DevenirPartenaireProps> = ({
                       <button
                         type="button"
                         onClick={() => navigate("/se-connecter")}
-                        className="text-[#C5A065] font-bold hover:underline"
+                        className="text-[#337957] font-bold hover:underline"
                       >
                         Se connecter
                       </button>

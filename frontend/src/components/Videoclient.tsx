@@ -11,7 +11,7 @@ const ClientVideo: React.FC = () => {
           {/* COLONNE GAUCHE : LA VIDÉO (Format Smartphone Moderne) */}
           <div className="relative flex justify-center order-2 lg:order-1">
             {/* Décoration derrière la vidéo */}
-            <div className="absolute -inset-4 border border-[#C5A065]/30 rounded-[3rem] -rotate-3" />
+            <div className="absolute -inset-4 border border-[#337957]/30 rounded-[3rem] -rotate-3" />
             
             <div className="relative w-full max-w-[320px] aspect-9/16 rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-[#2D2A26]">
               <video 
@@ -28,7 +28,7 @@ const ClientVideo: React.FC = () => {
 
             {/* Petit badge flottant */}
             <div className="absolute top-10 -right-8 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce">
-              <div className="w-10 h-10 bg-[#C5A065] rounded-full flex items-center justify-center text-white">
+              <div className="w-10 h-10 bg-[#337957] rounded-full flex items-center justify-center text-white">
                 <Instagram size={20} />
               </div>
               <span className="font-bold text-xs uppercase tracking-tighter">
@@ -38,7 +38,7 @@ const ClientVideo: React.FC = () => {
           </div>
 
           <div className="space-y-8 order-1 lg:order-2">
-            <h2 className="text-5xl md:text-6xl font-serif italic text-[#C5A065]">
+            <h2 className="text-5xl md:text-6xl font-serif italic text-[#337957]">
               Le bonheur se partage
             </h2>
             
@@ -51,7 +51,7 @@ const ClientVideo: React.FC = () => {
               </p>
             </div>
 
-            <div className="h-px w-24 bg-[#C5A065]" />
+            <div className="h-px w-24 bg-[#337957]" />
             
             <div className="space-y-4">
               <p className="text-sm font-black uppercase tracking-widest opacity-40">
@@ -62,7 +62,7 @@ const ClientVideo: React.FC = () => {
                   href="https://www.instagram.com/patisseriemariusetfanny/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 bg-[#C5A065]/10 text-[#C5A065] rounded-full hover:bg-[#C5A065] hover:text-white transition-all duration-300 hover:scale-110"
+                  className="p-3 bg-[#337957]/10 text-[#337957] rounded-full hover:bg-[#337957] hover:text-white transition-all duration-300 hover:scale-110"
                   title="Suivez-nous sur Instagram"
                 >
                   <Instagram size={24} />
@@ -71,7 +71,7 @@ const ClientVideo: React.FC = () => {
                   href="https://www.facebook.com/mariusetfanny/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 bg-[#C5A065]/10 text-[#C5A065] rounded-full hover:bg-[#C5A065] hover:text-white transition-all duration-300 hover:scale-110"
+                  className="p-3 bg-[#337957]/10 text-[#337957] rounded-full hover:bg-[#337957] hover:text-white transition-all duration-300 hover:scale-110"
                   title="Suivez-nous sur Facebook"
                 >
                   <Facebook size={24} />

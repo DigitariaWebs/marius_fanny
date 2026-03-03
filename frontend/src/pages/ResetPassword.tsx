@@ -49,13 +49,13 @@ const ResetPassword = () => {
       <div className="relative z-999 flex items-center justify-center min-h-screen px-4">
         <div className="bg-white/95 p-8 rounded-2xl shadow-2xl w-full max-w-md backdrop-blur-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-serif text-[#C5A065]">Nouveau départ</h1>
+            <h1 className="text-3xl font-serif text-[#337957]">Nouveau départ</h1>
             <p className="text-gray-500 mt-2">Choisissez votre nouveau mot de passe sécurisé</p>
           </div>
 
           {status?.type === 'success' ? (
             <div className="flex flex-col items-center animate-bounce py-10">
-              <CheckCircle2 size={60} color="#C5A065" />
+              <CheckCircle2 size={60} color="#337957" />
               <p className="mt-4 font-medium text-lg text-green-600 text-center">{status.msg}</p>
             </div>
           ) : (
@@ -65,7 +65,7 @@ const ResetPassword = () => {
                 <input
                   type="password"
                   placeholder="Nouveau mot de passe"
-                  className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-[#C5A065] outline-none transition-colors bg-transparent"
+                  className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-[#337957] outline-none transition-colors bg-transparent"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -77,7 +77,7 @@ const ResetPassword = () => {
                 <input
                   type="password"
                   placeholder="Confirmez le mot de passe"
-                  className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-[#C5A065] outline-none transition-colors bg-transparent"
+                  className="w-full pl-10 pr-4 py-3 border-b-2 border-gray-200 focus:border-[#337957] outline-none transition-colors bg-transparent"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -93,7 +93,7 @@ const ResetPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#C5A065] text-white py-4 rounded-full font-bold shadow-lg hover:bg-[#b38f54] transform transition active:scale-95 flex items-center justify-center gap-2"
+                className="w-full bg-[#337957] text-white py-4 rounded-full font-bold shadow-lg hover:bg-[#b38f54] transform transition active:scale-95 flex items-center justify-center gap-2"
               >
                 {loading ? "Chargement..." : "VALIDER"}
                 <ArrowRight size={20} />

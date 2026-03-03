@@ -7,7 +7,7 @@ import { getRedirectPath } from "../utils/loginMultipleusers";
 import { UserWithRole } from "../types";
 
 const styles = {
-  gold: "#C5A065",
+  gold: "#337957",
   text: "#2D2A26",
   fontScript: '"Great Vibes", cursive',
   fontSans: '"Inter", sans-serif',
@@ -256,14 +256,14 @@ const AuthPage: React.FC = () => {
         </div>
         <button
           onClick={() => navigate("/")}
-          className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-2 rounded-full bg-white/95 border border-[#C5A065]/40 shadow-md text-xs font-bold uppercase tracking-widest text-[#2D2A26] hover:text-[#C5A065] transition-colors"
+          className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-2 rounded-full bg-white/95 border border-[#337957]/40 shadow-md text-xs font-bold uppercase tracking-widest text-[#2D2A26] hover:text-[#337957] transition-colors"
         >
-          <ArrowLeft size={18} className="text-[#C5A065]" /> Retour au site
+          <ArrowLeft size={18} className="text-[#337957]" /> Retour au site
         </button>
         <div className="relative z-10 w-full max-w-md px-6 text-center">
           <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
-            <div className="w-20 h-20 bg-[#C5A065]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Mail className="text-[#C5A065]" size={40} />
+            <div className="w-20 h-20 bg-[#337957]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Mail className="text-[#337957]" size={40} />
             </div>
             <h2 className="text-4xl mb-4" style={{ fontFamily: styles.fontScript, color: styles.gold }}>
               Vérifiez votre email
@@ -283,7 +283,7 @@ const AuthPage: React.FC = () => {
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="Entrez le code"
-                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5A065] focus:border-transparent"
+                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#337957] focus:border-transparent"
                   maxLength={6}
                   required
                 />
@@ -304,7 +304,7 @@ const AuthPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading || verificationCode.length !== 6}
-                className="w-full px-6 py-3 text-sm font-bold text-white bg-[#C5A065] rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-6 py-3 text-sm font-bold text-white bg-[#337957] rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Vérification..." : "Vérifier le code"}
               </button>
@@ -313,7 +313,7 @@ const AuthPage: React.FC = () => {
                 type="button"
                 onClick={handleResendCode}
                 disabled={loading}
-                className="w-full px-6 py-3 text-sm font-bold text-[#C5A065] bg-white border border-[#C5A065] rounded-xl hover:bg-[#C5A065]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-6 py-3 text-sm font-bold text-[#337957] bg-white border border-[#337957] rounded-xl hover:bg-[#337957]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Renvoyer le code
               </button>
@@ -325,7 +325,7 @@ const AuthPage: React.FC = () => {
                 setPendingSignIn(null);
                 switchView("login");
               }}
-              className="flex items-center justify-center gap-2 mx-auto text-[10px] font-black uppercase tracking-widest text-[#2D2A26] hover:text-[#C5A065] transition-all mt-6"
+              className="flex items-center justify-center gap-2 mx-auto text-[10px] font-black uppercase tracking-widest text-[#2D2A26] hover:text-[#337957] transition-all mt-6"
             >
               <ArrowLeft size={14} /> Retour à la connexion
             </button>
@@ -342,9 +342,9 @@ const AuthPage: React.FC = () => {
       </div>
       <button
         onClick={() => navigate("/")}
-        className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-2 rounded-full bg-white/95 border border-[#C5A065]/40 shadow-md text-xs font-bold uppercase tracking-widest text-[#2D2A26] hover:text-[#C5A065] transition-colors"
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-2 rounded-full bg-white/95 border border-[#337957]/40 shadow-md text-xs font-bold uppercase tracking-widest text-[#2D2A26] hover:text-[#337957] transition-colors"
       >
-        <ArrowLeft size={18} className="text-[#C5A065]" /> Retour au site
+        <ArrowLeft size={18} className="text-[#337957]" /> Retour au site
       </button>
       <div className="relative z-10 w-full max-w-md px-6">
         <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
@@ -381,14 +381,14 @@ const AuthPage: React.FC = () => {
 
             {view === "signup" && (
               <div className="space-y-1 group">
-                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:opacity-100 group-focus-within:text-[#C5A065] transition-all">
+                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:opacity-100 group-focus-within:text-[#337957] transition-all">
                   <User size={12} /> Nom Complet
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-0 py-3 bg-transparent border-b border-black/10 focus:border-[#C5A065] outline-none transition-all placeholder:text-black/10 text-sm"
+                  className="w-full px-0 py-3 bg-transparent border-b border-black/10 focus:border-[#337957] outline-none transition-all placeholder:text-black/10 text-sm"
                   placeholder="JEAN DUPONT"
                   required
                 />
@@ -396,14 +396,14 @@ const AuthPage: React.FC = () => {
             )}
 
             <div className="space-y-1 group">
-              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:opacity-100 group-focus-within:text-[#C5A065] transition-all">
+              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:opacity-100 group-focus-within:text-[#337957] transition-all">
                 <Mail size={12} /> Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-0 py-3 bg-transparent border-b border-black/10 focus:border-[#C5A065] outline-none transition-all placeholder:text-black/10 text-sm"
+                className="w-full px-0 py-3 bg-transparent border-b border-black/10 focus:border-[#337957] outline-none transition-all placeholder:text-black/10 text-sm"
                 placeholder="VOTRE@EMAIL.COM"
                 required
               />
@@ -411,7 +411,7 @@ const AuthPage: React.FC = () => {
 
             {view !== "forgot-password" && (
               <div className="space-y-1 group">
-                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:opacity-100 group-focus-within:text-[#C5A065] transition-all">
+                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-50 group-focus-within:opacity-100 group-focus-within:text-[#337957] transition-all">
                   <Lock size={12} /> Mot de passe
                 </label>
                 <div className="relative">
@@ -419,14 +419,14 @@ const AuthPage: React.FC = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-0 py-3 pr-9 bg-transparent border-b border-black/10 focus:border-[#C5A065] outline-none transition-all placeholder:text-black/10 text-sm"
+                    className="w-full px-0 py-3 pr-9 bg-transparent border-b border-black/10 focus:border-[#337957] outline-none transition-all placeholder:text-black/10 text-sm"
                     placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 text-stone-500 hover:text-[#C5A065] transition-colors"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-stone-500 hover:text-[#337957] transition-colors"
                     aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -438,7 +438,7 @@ const AuthPage: React.FC = () => {
             {view === "login" && (
               <div className="flex items-center justify-between pt-2">
                 <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${rememberMe ? "border-[#C5A065] bg-[#C5A065]" : "border-black/20 group-hover:border-[#C5A065]"}`}>
+                  <div className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${rememberMe ? "border-[#337957] bg-[#337957]" : "border-black/20 group-hover:border-[#337957]"}`}>
                     {rememberMe && <Check size={10} className="text-white" />}
                   </div>
                   <input type="checkbox" className="hidden" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
@@ -450,7 +450,7 @@ const AuthPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => switchView("forgot-password")}
-                  className="text-[10px] font-bold uppercase tracking-wider text-[#2D2A26]/60 hover:text-[#C5A065] transition-colors"
+                  className="text-[10px] font-bold uppercase tracking-wider text-[#2D2A26]/60 hover:text-[#337957] transition-colors"
                 >
                   Mot de passe oublié ?
                 </button>
@@ -478,7 +478,7 @@ const AuthPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => switchView("login")}
-                className="text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-[#C5A065] transition-all"
+                className="text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-[#337957] transition-all"
                 style={{ color: styles.text }}
               >
                 Déjà un compte ? Se connecter
@@ -489,7 +489,7 @@ const AuthPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => switchView("signup")}
-                className="text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-[#C5A065] transition-all"
+                className="text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-[#337957] transition-all"
                 style={{ color: styles.text }}
               >
                 Nouveau ici ? S'inscrire
