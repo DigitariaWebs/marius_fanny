@@ -31,8 +31,9 @@ const initializeApp = async () => {
     mongoose.set("strictQuery", true);
     const mongooseOptions = {
       family: 4,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 45000,
+      connectTimeoutMS: 15000,
     };
 
     // Await MongoDB connection (required for serverless cold starts)
