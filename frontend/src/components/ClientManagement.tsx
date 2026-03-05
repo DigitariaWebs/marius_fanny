@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Eye,
@@ -29,9 +29,33 @@ import {
 } from "./ui/dropdown-menu";
 import type { Client, ClientFormData, Order } from "../types";
 import { MOCK_CLIENTS } from "../data";
+import { clientAPI, type Client as ClientType } from "../lib/ClientAPI";
 
 function ClientManagement() {
-  const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchClients = async () => {
+    try {
+      setLoading(true);
+      const data = await clientAPI.getClients(1, 100);
+      console.log("Clients fetched successfully:", data);
+      setClients(data.clients || []);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch clients - full error:", err);
+      setError("Erreur lors du chargement des clients");
+      // Fallback to mock data if API fails
+      setClients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -96,21 +120,24 @@ function ClientManagement() {
     }
 
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      const newClient: Client = {
-        id: Math.max(...clients.map((c) => c.id)) + 1,
-        ...formData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        addresses: [],
-        orders: [],
-      };
-      setClients([...clients, newClient]);
+    try {
+      await clientAPI.createClient({
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        status: formData.status,
+      });
       setIsCreateModalOpen(false);
       resetForm();
+      await fetchClients();
+    } catch (err) {
+      console.error("Failed to create client:", err);
+      setErrorMessage("Erreur lors de la création du client");
+      setIsErrorModalOpen(true);
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
   };
 
   const handleEditClick = (client: Client) => {
@@ -286,7 +313,7 @@ function ClientManagement() {
         <div className="flex items-center gap-2">
           <Package size={14} className="text-[#C5A065]" />
           <span className="font-medium text-[#2D2A26]">
-            {client.orders.length}
+            {(client.orders || []).length}
           </span>
         </div>
       ),
@@ -700,7 +727,7 @@ function ClientManagement() {
                   Téléphone: {deletingClient.phone}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Commandes: {deletingClient.orders.length}
+                  Commandes: {deletingClient.orders?.length || 0}
                 </p>
               </div>
             </div>
@@ -740,7 +767,7 @@ function ClientManagement() {
                   <div>
                     <p className="text-sm text-gray-500">Commandes</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {viewingClient.orders.length}
+                      {viewingClient.orders?.length || 0}
                     </p>
                   </div>
                   <Package className="w-8 h-8 text-[#C5A065]" />
@@ -751,8 +778,8 @@ function ClientManagement() {
                   <div>
                     <p className="text-sm text-gray-500">Total dépensé</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {viewingClient.orders
-                        .reduce((sum, order) => sum + order.total, 0)
+                      {(viewingClient.orders || [])
+                        .reduce((sum, order) => sum + (order.total || 0), 0)
                         .toFixed(2)}{" "}
                       $
                     </p>
@@ -765,7 +792,7 @@ function ClientManagement() {
                   <div>
                     <p className="text-sm text-gray-500">Adresses</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {viewingClient.addresses.length}
+                      {viewingClient.addresses?.length || 0}
                     </p>
                   </div>
                   <MapPin className="w-8 h-8 text-[#C5A065]" />
@@ -778,10 +805,10 @@ function ClientManagement() {
               <TabsList className="w-full grid grid-cols-3">
                 <TabsTrigger value="profile">Profil</TabsTrigger>
                 <TabsTrigger value="orders">
-                  Commandes ({viewingClient.orders.length})
+                  Commandes ({viewingClient.orders?.length || 0})
                 </TabsTrigger>
                 <TabsTrigger value="addresses">
-                  Adresses ({viewingClient.addresses.length})
+                  Adresses ({viewingClient.addresses?.length || 0})
                 </TabsTrigger>
               </TabsList>
 
@@ -851,8 +878,8 @@ function ClientManagement() {
               </TabsContent>
 
               <TabsContent value="orders" className="space-y-3">
-                {viewingClient.orders.length > 0 ? (
-                  viewingClient.orders.map((order) => (
+                {viewingClient.orders?.length > 0 ? (
+                  viewingClient.orders?.map((order) => (
                     <div
                       key={order.id}
                       className="p-4 bg-white rounded-lg border border-(--bakery-border) hover:shadow-md transition-shadow"
@@ -908,8 +935,8 @@ function ClientManagement() {
               </TabsContent>
 
               <TabsContent value="addresses" className="space-y-3">
-                {viewingClient.addresses.length > 0 ? (
-                  viewingClient.addresses.map((address) => (
+                {viewingClient.addresses?.length > 0 ? (
+                  viewingClient.addresses?.map((address) => (
                     <div
                       key={address.id}
                       className="p-4 bg-white rounded-lg border border-(--bakery-border)"

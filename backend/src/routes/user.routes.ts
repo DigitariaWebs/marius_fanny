@@ -17,6 +17,7 @@ import {
   updateUserSchema,
   searchUsersSchema,
   userIdParamSchema,
+  createClientSchema,
 } from "../schemas/user.schema.js";
 import {
   paginationQuerySchema,
@@ -66,6 +67,43 @@ router.get(
   requireAdmin,
   validateQuery(paginationQuerySchema),
   asyncHandler(userController.getAllUsers),
+);
+
+/**
+ * @route   POST /api/users/clients
+ * @desc    Create a new client
+ * @access  Private (Admin/Staff)
+ */
+router.post(
+  "/clients",
+  requireAuth,
+  requireStaff,
+  validateBody(createClientSchema),
+  asyncHandler(userController.createClient),
+);
+
+/**
+ * @route   GET /api/users/clients
+ * @desc    Get all clients (paginated)
+ * @access  Private (Admin/Staff)
+ */
+router.get(
+  "/clients",
+  requireAuth,
+  requireStaff,
+  asyncHandler(userController.getAllClients),
+);
+
+/**
+ * @route   GET /api/users/clients/search
+ * @desc    Search clients by email or name
+ * @access  Private (Admin/Staff)
+ */
+router.get(
+  "/clients/search",
+  requireAuth,
+  requireStaff,
+  asyncHandler(userController.searchClients),
 );
 
 /**

@@ -1,0 +1,99 @@
+import { API_URL } from "../utils/api";
+
+console.log("ClientAPI using base URL:", API_URL);
+
+export interface Client {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  status: "active" | "inactive" | "placeholder";
+  createdAt: string;
+  updatedAt: string;
+  addresses: Array<{
+    id: number;
+    type: "billing" | "shipping";
+    street: string;
+    city: string;
+    province: string;
+    postalCode: string;
+    isDefault: boolean;
+  }>;
+  orders: any[];
+}
+
+export interface CreateClientData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  status?: "active" | "inactive" | "placeholder";
+}
+
+class ClientAPI {
+  private baseUrl = `${API_URL}/api/users`;
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Request failed" }));
+      throw new Error(error.error || error.message || "Request failed");
+    }
+
+    return response.json();
+  }
+
+  async getClients(page = 1, limit = 50, search = ""): Promise<{ clients: Client[]; pagination: any }> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    if (search) {
+      params.set("search", search);
+    }
+    const result = await this.request<any>(`/clients?${params}`);
+    return {
+      clients: result.data.clients,
+      pagination: result.data.pagination,
+    };
+  }
+
+  async searchClients(q: string): Promise<Client[]> {
+    if (!q || q.length < 2) return [];
+    const result = await this.request<any>(`/clients/search?q=${encodeURIComponent(q)}`);
+    return result.data;
+  }
+
+  async createClient(data: CreateClientData): Promise<Client> {
+    const result = await this.request<any>("/clients", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return result.data;
+  }
+
+  async updateClient(id: number, data: Partial<CreateClientData>): Promise<Client> {
+    const result = await this.request<any>(`/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return result.data;
+  }
+
+  async deleteClient(id: number): Promise<void> {
+    await this.request(`/${id}`, {
+      method: "DELETE",
+    });
+  }
+}
+
+export const clientAPI = new ClientAPI();

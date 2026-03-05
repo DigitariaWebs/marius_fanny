@@ -36,6 +36,7 @@ interface CartItem {
   quantity: number;
   hasTaxes?: boolean;
   category?: string;
+  productionType?: string;
 }
 
 interface CartProps {
@@ -134,12 +135,34 @@ const CartDrawer: React.FC<CartProps> = ({
     return category.includes("viennoiser") ? sum + item.quantity : sum;
   }, 0);
 
+  // Count pâtisseries via productionType (reliable) OR category fallback
+  const patisseriesCount = items.reduce((sum, item) => {
+    const isPatisserie =
+      item.productionType === "patisserie" ||
+      (item.category || "").toLowerCase().includes("patisser");
+    return isPatisserie ? sum + item.quantity : sum;
+  }, 0);
+
+  // Combined count: 6+ viennoiseries/pâtisseries (any mix) → all are tax-exempt
+  const viennoiseriesAndPatisseriesCount = viennoiseriesCount + patisseriesCount;
+  const bakedGoodsExempt = viennoiseriesAndPatisseriesCount >= 6;
+
   const taxes = items.reduce((sum, item) => {
     const category = (item.category || "").toLowerCase();
     const isViennoiserie = category.includes("viennoiser");
-    const itemIsTaxable = isViennoiserie
-      ? viennoiseriesCount < 6
-      : !!item.hasTaxes;
+    const isPatisserie =
+      item.productionType === "patisserie" ||
+      category.includes("patisser");
+    const isBakedGood = isViennoiserie || isPatisserie;
+
+    let itemIsTaxable: boolean;
+    if (isBakedGood) {
+      // Baked goods: taxable only if hasTaxes=true AND exemption threshold not reached
+      itemIsTaxable = !!item.hasTaxes && !bakedGoodsExempt;
+    } else {
+      // Other products: taxable based solely on hasTaxes flag
+      itemIsTaxable = !!item.hasTaxes;
+    }
 
     if (itemIsTaxable) {
       return sum + item.price * item.quantity * TAX_RATE;

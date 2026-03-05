@@ -35,6 +35,7 @@ import { Button } from "./ui/button";
 import OrderForm from "./OrderForm";
 import OrderChangeHistory from "./OrderChangeHistory";
 import { orderAPI } from "../lib/OrderAPI";
+import { clientAPI } from "../lib/ClientAPI";
 import type { Order } from "../types";
 
 interface OrderItemWithPacking {
@@ -370,12 +371,36 @@ export function OrderManagement() {
     fetchOrders();
   }, []);
 
-  const clients = orders
+  // Charger les clients depuis l'API
+  const [clientsList, setClientsList] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const data = await clientAPI.getClients(1, 100);
+        setClientsList(data.clients);
+      } catch (err) {
+        console.error("Failed to fetch clients:", err);
+      }
+    };
+    fetchClients();
+  }, []);
+
+  // Combiner les clients des commandes avec les clients de l'API
+  const orderClients = orders
     .map((order) => order.client)
     .filter(
       (client, index, self) =>
-        index === self.findIndex((c) => c.id === client.id),
+        index === self.findIndex((c) => c.id === client.id) && client.id !== 0,
     );
+  
+  // Fusionner les clients de l'API avec ceux des commandes
+  const allClients = [...clientsList, ...orderClients];
+  const uniqueClients = allClients.filter(
+    (client, index, self) =>
+      index === self.findIndex((c) => c.id === client.id),
+  );
+  
+  const clients = uniqueClients;
   const getOrderColor = (order: OrderWithPacking) => {
     if (order.pickupLocation === "Montreal" && order.deliveryType === "pickup") {
       return "!bg-blue-50 border-l-4 !border-l-blue-500 hover:!bg-blue-100 cursor-pointer";
@@ -949,7 +974,7 @@ export function OrderManagement() {
                             <Button
                               onClick={() => handlePackItem(selectedOrderForProducts.id, item.id)}
                               size="sm"
-                              className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+                              className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
                             >
                               Emballer
                             </Button>

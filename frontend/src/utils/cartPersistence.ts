@@ -10,6 +10,9 @@ export interface CartItem {
   image: string;
   quantity: number;
   preparationTimeHours?: number;
+  hasTaxes?: boolean;
+  category?: string;
+  productionType?: string;
 }
 
 const CART_STORAGE_KEY = 'marius_fanny_cart';

@@ -39,6 +39,17 @@ export const createUserProfileSchema = z.object({
 });
 
 /**
+ * Create client schema (for admin to create clients directly)
+ */
+export const createClientSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  phone: z.string().min(1).max(20),
+  status: z.enum(["active", "inactive", "placeholder"]).optional().default("active"),
+});
+
+/**
  * Search users query schema
  */
 export const searchUsersSchema = z.object({

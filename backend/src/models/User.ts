@@ -4,6 +4,7 @@ export interface IUser extends Document {
   email: string;
   name: string;
   role: "user" | "pro" | "staff" | "customerService" | "admin" | "deliveryDriver" | "cuisinier" | "patissier" | "four";
+  status?: "active" | "inactive" | "placeholder";
   password?: string;
   emailVerified: boolean;
   emailVerificationCode?: string;
@@ -37,6 +38,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ["user", "pro", "staff", "customerService", "admin", "deliveryDriver", "cuisinier", "patissier", "four"],
       default: "user",
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "placeholder"],
+      default: "active",
     },
     emailVerified: {
       type: Boolean,

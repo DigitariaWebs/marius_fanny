@@ -677,6 +677,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   </div>
                 )}
 
+                {/* JOURS DE DISPONIBILITÉ */}
+                {selectedProduct.availableDays && selectedProduct.availableDays.length > 0 && (
+                  <div className="mb-6 p-4 rounded-lg border border-blue-200 bg-blue-50">
+                    <span className="text-xs font-bold uppercase tracking-widest text-blue-700 block mb-2">
+                      Disponible uniquement
+                    </span>
+                    <p className="text-sm font-medium text-blue-800">
+                      {selectedProduct.availableDays
+                        .slice()
+                        .sort((a, b) => a - b)
+                        .map((d) => ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"][d])
+                        .join(", ")}
+                    </p>
+                  </div>
+                )}
+
                 {/* OPTIONS BOÎTE À LUNCH (Legacy support) */}
                 {isLunchCategory(selectedProduct?.category || "") && !selectedProduct.customOptions?.length && (
                   <>
