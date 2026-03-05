@@ -148,7 +148,13 @@ export function ProductManagement() {
       const data = await res.json();
       if (res.ok && data.url) {
         setProductForm(f => ({ ...f, images: [...f.images, getImageUrl(data.url)] }));
+      } else {
+        console.error('Upload failed:', data.error || 'Unknown error');
+        alert(`Erreur lors de l'upload: ${data.error || 'Erreur inconnue'}`);
       }
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Erreur lors de l\'upload de l\'image');
     } finally {
       setUploadingExtra(false);
       if (extraImageInputRef.current) extraImageInputRef.current.value = '';
