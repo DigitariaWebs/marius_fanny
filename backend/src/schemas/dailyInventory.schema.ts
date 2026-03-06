@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const dailyInventoryQuerySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}(__\w+)?$/, "Date must be YYYY-MM-DD or YYYY-MM-DD__section"),
 });
 
 const entrySchema = z.object({
@@ -15,7 +15,7 @@ const entrySchema = z.object({
 });
 
 export const saveDailyInventorySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}(__\w+)?$/, "Date must be YYYY-MM-DD or YYYY-MM-DD__section"),
   entries: z.array(entrySchema).min(1, "At least one product entry is required"),
 });
 

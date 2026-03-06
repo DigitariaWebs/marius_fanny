@@ -7,7 +7,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import { sendPartnerRequestEmail, sendPartnerApprovedEmail, sendPartnerInquiryEmail, sendPartnerInvitationEmail } from "../utils/mail.js";
 import { connectMongoDB } from "../config/db.js";
 
-const ADMIN_EMAIL = "dibwissem7@gmail.com";
+const ADMIN_EMAIL = "fanny.chiecchio@gmail.com";
 
 /**
  * POST /api/partner-request

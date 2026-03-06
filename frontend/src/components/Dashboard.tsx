@@ -33,6 +33,7 @@ import InventaireJournalier from "./InventaireJournalier";
 import { authClient } from "../lib/AuthClient";
 import GoldenBackground from "./GoldenBackground";
 import type { Product } from "../types";
+import InventaireFour from "./InventaireFour";
 
 interface Statistics {
   totalProducts: number;
@@ -60,7 +61,8 @@ type ViewMode =
   | "delivery"
   | "settings"
   | "production"
-  | "inventaire";
+  | "inventaire"
+  | "inventaire-four";
 
 const CATEGORIES = [
   "Gâteaux",
@@ -229,6 +231,15 @@ export default function AdminDashboard() {
                 active={viewMode === "inventaire"}
                 onClick={() => {
                   setViewMode("inventaire");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+              <NavItem
+                icon={<ClipboardList size={20} />}
+                label="Inventaire Four"
+                active={viewMode === "inventaire-four"}
+                onClick={() => {
+                  setViewMode("inventaire-four");
                   setIsMobileMenuOpen(false);
                 }}
               />
@@ -494,7 +505,7 @@ export default function AdminDashboard() {
 
         {/* INVENTAIRE JOURNALIER */}
         {viewMode === "inventaire" && <InventaireJournalier />}
-
+        {viewMode === "inventaire-four" && <InventaireFour />} 
         {/* GESTION DU PERSONNEL */}
         {viewMode === "staff" && <StaffManagement />}
 

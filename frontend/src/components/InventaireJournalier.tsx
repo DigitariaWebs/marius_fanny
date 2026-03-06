@@ -10,13 +10,29 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Trash2,
+  Plus
 } from "lucide-react";
-import { productAPI } from "../lib/ProductAPI";
 import {
   dailyInventoryAPI,
   type DailyInventoryEntry,
 } from "../lib/DailyInventoryAPI";
-import type { Product } from "../types";
+
+// ─── LISTE DES PRODUITS PAR DÉFAUT ──────────────────────────────────────────
+
+const PRODUITS_PAR_DEFAUT = [
+  "Croissant", "Chocolatine", "Danoise framboise", "Brioche raisin",
+  "Chausson pomme", "Abricotine", "Palmier", "Bande frangipane",
+  "Croissant amandes", "Choco amandes", "Crois Pistache", "Brioche sucre",
+  "Brioche cannelle", "Biscuit choco", "Crois fromage", "Suisse",
+  "Qui. jambon petit", "Qui. jambon grand", "Qui. épinard petit",
+  "Qui. épinard grand", "Qui. poireaux petit", "Qui. poireaux grand",
+  "Tropezienne", "Tropezienne fraise", "Tourte provençal", "Tourte gibier",
+  "Pizza", "Quiche saumon gr", "Quiche saum petit", "Pâté poulet petit",
+  "Pâté poulet grand", "Pâté saumon petit", "Pâté saumon grand",
+  "Tourtière petit", "Tourtière grand", "Croque monsieur", "Croque végé",
+  "Plat cuisiné", "Soupe 1Litre", "Soupe", "SUPPLÉMENT :"
+];
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -42,10 +58,22 @@ interface RowState {
 type Col = "stdo" | "berri" | "comm_berri" | "client";
 
 const COLUMNS: { key: Col; label: string; sublabel: string }[] = [
-  { key: "stdo",      label: "Comm. St-do",  sublabel: "St-Dominique" },
-  { key: "berri",     label: "BERRI",         sublabel: "Marché Berri"  },
-  { key: "comm_berri",label: "Comm Berri",    sublabel: "Comm. Berri"   },
-  { key: "client",    label: "Comm CLIENT",   sublabel: "Clients direct" },
+  {
+    key: "stdo", label: "Comm. St-do",
+    sublabel: ""
+  },
+  {
+    key: "berri", label: "BERRI",
+    sublabel: ""
+  },
+  {
+    key: "comm_berri", label: "Comm Berri",
+    sublabel: ""
+  },
+  {
+    key: "client", label: "Comm CLIENT",
+    sublabel: ""
+  },
 ];
 
 // ─── component ──────────────────────────────────────────────────────────────
@@ -56,7 +84,13 @@ export default function InventaireJournalier() {
   // ── state ──
   const [date, setDate] = useState<string>(todayISO());
   const [rows, setRows] = useState<RowState[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  
+  // Gestion de la liste personnalisée de produits
+  const [customProducts, setCustomProducts] = useState<string[]>(() => {
+    const saved = localStorage.getItem("inventaire_produits_personnalises");
+    return saved ? JSON.parse(saved) : PRODUITS_PAR_DEFAUT;
+  });
+  const [newProductName, setNewProductName] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -73,17 +107,36 @@ export default function InventaireJournalier() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // ── load products once ──
-  useEffect(() => {
-    productAPI
-      .getAllProducts(1, 1000)
-      .then((res) => setProducts(res.data.products))
-      .catch(() => setToast({ type: "error", msg: "Impossible de charger les produits." }));
-  }, []);
+  // ── Ajouter ou supprimer un produit de la liste ──
+  const handleAddProduct = () => {
+    const name = newProductName.trim();
+    if (!name) return;
+    if (customProducts.includes(name)) {
+      setToast({ type: "error", msg: "Ce produit existe déjà dans la liste." });
+      return;
+    }
+    const updatedList = [...customProducts, name];
+    setCustomProducts(updatedList);
+    localStorage.setItem("inventaire_produits_personnalises", JSON.stringify(updatedList));
+    setNewProductName("");
+    setToast({ type: "success", msg: `Produit "${name}" ajouté.` });
+  };
+
+  const handleRemoveProduct = (name: string) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir retirer "${name}" de la liste ? (Les données déjà sauvegardées ne seront pas perdues sur le serveur, mais la ligne disparaîtra)`)) {
+      const updatedList = customProducts.filter((p) => p !== name);
+      setCustomProducts(updatedList);
+      localStorage.setItem("inventaire_produits_personnalises", JSON.stringify(updatedList));
+      setToast({ type: "success", msg: `Produit "${name}" retiré.` });
+    }
+  };
 
   // ── build / reload rows whenever date or products change ──
   const loadInventory = useCallback(async () => {
-    if (!products.length) return;
+    if (!customProducts.length) {
+      setRows([]);
+      return;
+    }
     setLoading(true);
     try {
       const res = await dailyInventoryAPI.getByDate(date);
@@ -91,15 +144,16 @@ export default function InventaireJournalier() {
         res.data.entries.map((e) => [e.productId, e]),
       );
 
-      const built: RowState[] = products.map((p) => {
-        const saved = existingMap.get(String(p.id));
+      const built: RowState[] = customProducts.map((name) => {
+        // On utilise le nom comme ID unique
+        const saved = existingMap.get(name);
         return {
-          productId: String(p.id),
-          productName: p.name,
-          stdo:       saved?.stdo       ?? 0,
-          berri:      saved?.berri      ?? 0,
+          productId: name,
+          productName: name,
+          stdo:       saved?.stdo      ?? 0,
+          berri:      saved?.berri     ?? 0,
           comm_berri: saved?.comm_berri ?? 0,
-          client:     saved?.client     ?? 0,
+          client:     saved?.client    ?? 0,
         };
       });
 
@@ -111,7 +165,7 @@ export default function InventaireJournalier() {
     } finally {
       setLoading(false);
     }
-  }, [date, products, sortAsc]);
+  }, [date, customProducts, sortAsc]);
 
   useEffect(() => {
     loadInventory();
@@ -150,7 +204,7 @@ export default function InventaireJournalier() {
     }
   };
 
-  // ── column totals (for the footer summary bar) ──
+  // ── column totals ──
   const colTotals = COLUMNS.reduce<Record<Col, number>>(
     (acc, c) => {
       acc[c.key] = rows.reduce((s, r) => s + (r[c.key] ?? 0), 0);
@@ -160,12 +214,8 @@ export default function InventaireJournalier() {
   );
   const grandTotal = COLUMNS.reduce((s, c) => s + colTotals[c.key], 0);
 
-  // ── date format for display ──
   const displayDate = new Date(date + "T00:00:00").toLocaleDateString("fr-CA", {
-    weekday: "long",
-    year:    "numeric",
-    month:   "long",
-    day:     "numeric",
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
   // ─── render ───────────────────────────────────────────────────────────────
@@ -186,8 +236,7 @@ export default function InventaireJournalier() {
 
       {/* ── Control bar ── */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        {/* Date picker */}
-        <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-stone-200 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-stone-200 rounded-2xl px-4 py-3 shadow-sm">
           <CalendarDays size={20} style={{ color: gold }} />
           <div>
             <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 block">Date</label>
@@ -200,34 +249,26 @@ export default function InventaireJournalier() {
           </div>
         </div>
 
-        {/* Refresh button */}
         <button
           onClick={loadInventory}
           disabled={loading}
-          title="Recharger"
-          className="flex items-center gap-2 px-4 py-3 bg-white/80 backdrop-blur-md border border-stone-200 rounded-2xl text-stone-600 hover:text-[#C5A065] hover:border-[#C5A065] shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-3 bg-white/80 backdrop-blur-md border border-stone-200 rounded-2xl text-stone-600 hover:text-[#C5A065] hover:border-[#C5A065] shadow-sm transition-all disabled:opacity-50"
         >
           <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           <span className="text-sm font-medium hidden sm:inline">Recharger</span>
         </button>
 
-        {/* Save button */}
         <button
           onClick={handleSave}
           disabled={saving || loading || !rows.length}
-          className="ml-auto flex items-center gap-2 px-6 py-3 rounded-2xl text-white font-semibold shadow-lg shadow-[#C5A065]/25 hover:shadow-xl hover:shadow-[#C5A065]/40 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+          className="ml-auto flex items-center gap-2 px-6 py-3 rounded-2xl text-white font-semibold shadow-lg hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           style={{ background: `linear-gradient(135deg, ${gold}, #b8935a)` }}
         >
-          {saving ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <Save size={18} />
-          )}
-          <span>{saving ? "Sauvegarde…" : "Sauvegarder l'inventaire"}</span>
+          {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          <span>{saving ? "Sauvegarde…" : "Sauvegarder"}</span>
         </button>
       </div>
 
-      {/* ── Date display + last-save info ── */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <p className="text-sm font-semibold text-stone-600 capitalize">{displayDate}</p>
         {lastSaved && (
@@ -241,19 +282,12 @@ export default function InventaireJournalier() {
         )}
       </div>
 
-      {/* ── Toast notification ── */}
       {toast && (
         <div
           className={`flex items-center gap-3 px-5 py-3 mb-5 rounded-2xl text-sm font-medium shadow-lg animate-fade-in
-            ${toast.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"}`}
+            ${toast.type === "success" ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-red-50 text-red-800 border-red-200"}`}
         >
-          {toast.type === "success" ? (
-            <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-          ) : (
-            <XCircle size={18} className="text-red-500 shrink-0" />
-          )}
+          {toast.type === "success" ? <CheckCircle2 size={18} className="text-emerald-600 shrink-0" /> : <XCircle size={18} className="text-red-500 shrink-0" />}
           {toast.msg}
         </div>
       )}
@@ -261,39 +295,48 @@ export default function InventaireJournalier() {
       {/* ── Summary cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         {COLUMNS.map((col) => (
-          <SummaryCard
-            key={col.key}
-            label={col.label}
-            sub={col.sublabel}
-            value={colTotals[col.key]}
-            gold={gold}
-          />
+          <SummaryCard key={col.key} label={col.label} sub={col.sublabel} value={colTotals[col.key]} gold={gold} />
         ))}
-        <SummaryCard
-          label="TOTAL GÉNÉRAL"
-          sub="tous canaux"
-          value={grandTotal}
-          gold={gold}
-          highlight
-        />
+        <SummaryCard label="TOTAL GÉNÉRAL" sub="tous canaux" value={grandTotal} gold={gold} highlight />
       </div>
 
       {/* ── Table ── */}
       <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-white overflow-hidden">
-        {/* Table header-bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+        
+        {/* Table header & Add Product */}
+        <div className="flex flex-col md:flex-row items-center justify-between px-6 py-4 border-b border-stone-100 gap-4">
           <div className="flex items-center gap-2">
             <ClipboardList size={18} style={{ color: gold }} />
             <span className="font-bold text-stone-800 text-sm">
-              {rows.length} produit{rows.length !== 1 ? "s" : ""}
+              {rows.length} produit{rows.length !== 1 ? "s" : ""} dans la liste
             </span>
           </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <input
+              type="text"
+              placeholder="Nouveau produit..."
+              value={newProductName}
+              onChange={(e) => setNewProductName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddProduct()}
+              className="px-3 py-1.5 text-sm rounded-xl border border-stone-200 focus:outline-none focus:border-[#C5A065] w-full md:w-48"
+            />
+            <button
+              onClick={handleAddProduct}
+              className="p-1.5 rounded-xl text-white hover:opacity-90 transition-opacity flex-shrink-0"
+              style={{ background: gold }}
+              title="Ajouter à la liste"
+            >
+              <Plus size={18} />
+            </button>
+          </div>
+
           <button
             onClick={() => setSortAsc((v) => !v)}
             className="flex items-center gap-1 text-xs text-stone-400 hover:text-[#C5A065] transition-colors"
           >
-            {sortAsc ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            {sortAsc ? "A → Z" : "Z → A"}
+            {sortAsc ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            {sortAsc ? "Ordre normal" : "Ordre inversé"}
           </button>
         </div>
 
@@ -301,29 +344,24 @@ export default function InventaireJournalier() {
           {loading ? (
             <div className="flex items-center justify-center py-20 gap-3 text-stone-400">
               <Loader2 size={22} className="animate-spin" style={{ color: gold }} />
-              <span className="text-sm">Chargement de l'inventaire…</span>
+              <span className="text-sm">Chargement...</span>
             </div>
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-stone-400">
               <ClipboardList size={40} className="opacity-30" />
-              <p className="text-sm">Aucun produit disponible.</p>
+              <p className="text-sm">Aucun produit dans la liste.</p>
             </div>
           ) : (
             <table className="w-full min-w-[700px] text-sm">
               <thead>
                 <tr className="bg-stone-50 border-b border-stone-100">
-                  <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-stone-400 w-56">
+                  <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-stone-400 w-64">
                     Produit
                   </th>
                   {COLUMNS.map((col) => (
-                    <th
-                      key={col.key}
-                      className="px-3 py-3 text-center text-[10px] font-black uppercase tracking-widest text-stone-400"
-                    >
+                    <th key={col.key} className="px-3 py-3 text-center text-[10px] font-black uppercase tracking-widest text-stone-400">
                       <div>{col.label}</div>
-                      <div className="text-[8px] font-normal text-stone-300 mt-0.5 normal-case tracking-normal">
-                        {col.sublabel}
-                      </div>
+                      <div className="text-[8px] font-normal text-stone-300 mt-0.5 normal-case tracking-normal">{col.sublabel}</div>
                     </th>
                   ))}
                   <th className="px-3 py-3 text-center text-[10px] font-black uppercase tracking-widest text-stone-400 min-w-[80px]">
@@ -336,26 +374,25 @@ export default function InventaireJournalier() {
                 {rows.map((row, idx) => {
                   const total = calcTotal(row);
                   return (
-                    <tr
-                      key={row.productId}
-                      className={`group transition-colors hover:bg-amber-50/30 ${
-                        idx % 2 === 0 ? "bg-white" : "bg-stone-50/40"
-                      }`}
-                    >
-                      {/* Product name */}
-                      <td className="px-5 py-2.5 font-medium text-stone-800 max-w-[220px]">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                            style={{ background: gold }}
+                    <tr key={row.productId} className={`group transition-colors hover:bg-amber-50/30 ${idx % 2 === 0 ? "bg-white" : "bg-stone-50/40"}`}>
+                      <td className="px-5 py-2.5 font-medium text-stone-800">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ background: gold }}>
+                              {idx + 1}
+                            </span>
+                            <span className="truncate">{row.productName}</span>
+                          </div>
+                          <button 
+                            onClick={() => handleRemoveProduct(row.productId)}
+                            className="text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Retirer de la liste"
                           >
-                            {idx + 1}
-                          </span>
-                          <span className="truncate">{row.productName}</span>
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </td>
 
-                      {/* Editable columns */}
                       {COLUMNS.map((col) => (
                         <td key={col.key} className="px-2 py-2">
                           <input
@@ -363,28 +400,15 @@ export default function InventaireJournalier() {
                             min={0}
                             value={row[col.key] === 0 ? "" : row[col.key]}
                             placeholder="0"
-                            onChange={(e) =>
-                              handleCellChange(row.productId, col.key, e.target.value)
-                            }
+                            onChange={(e) => handleCellChange(row.productId, col.key, e.target.value)}
                             onFocus={(e) => e.target.select()}
-                            className="w-full text-center px-2 py-1.5 rounded-xl border border-stone-200 bg-white text-stone-800 font-semibold
-                              focus:outline-none focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20
-                              hover:border-stone-300 transition-colors text-sm
-                              [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-full text-center px-2 py-1.5 rounded-xl border border-stone-200 bg-white text-stone-800 font-semibold focus:outline-none focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 hover:border-stone-300 transition-colors text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </td>
                       ))}
 
-                      {/* Total (read-only) */}
                       <td className="px-3 py-2 text-center">
-                        <span
-                          className={`inline-block min-w-[52px] px-3 py-1.5 rounded-xl font-bold text-sm
-                            ${total > 0
-                              ? "text-white shadow-sm"
-                              : "text-stone-300 bg-stone-100"
-                            }`}
-                          style={total > 0 ? { background: gold } : undefined}
-                        >
+                        <span className={`inline-block min-w-[52px] px-3 py-1.5 rounded-xl font-bold text-sm ${total > 0 ? "text-white shadow-sm" : "text-stone-300 bg-stone-100"}`} style={total > 0 ? { background: gold } : undefined}>
                           {total}
                         </span>
                       </td>
@@ -393,22 +417,16 @@ export default function InventaireJournalier() {
                 })}
               </tbody>
 
-              {/* Footer totals row */}
               <tfoot>
                 <tr className="border-t-2 border-stone-200 bg-stone-50">
-                  <td className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                    Totaux
-                  </td>
+                  <td className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-stone-500">Totaux</td>
                   {COLUMNS.map((col) => (
                     <td key={col.key} className="px-2 py-3 text-center">
                       <span className="font-bold text-stone-700">{colTotals[col.key]}</span>
                     </td>
                   ))}
                   <td className="px-3 py-3 text-center">
-                    <span
-                      className="inline-block min-w-[52px] px-3 py-1.5 rounded-xl font-black text-sm text-white shadow"
-                      style={{ background: gold }}
-                    >
+                    <span className="inline-block min-w-[52px] px-3 py-1.5 rounded-xl font-black text-sm text-white shadow" style={{ background: gold }}>
                       {grandTotal}
                     </span>
                   </td>
@@ -419,7 +437,6 @@ export default function InventaireJournalier() {
         </div>
       </div>
 
-      {/* ── Bottom save button (convenience) ── */}
       {rows.length > 6 && (
         <div className="flex justify-end mt-6">
           <button
@@ -429,7 +446,7 @@ export default function InventaireJournalier() {
             style={{ background: `linear-gradient(135deg, ${gold}, #b8935a)` }}
           >
             {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-            <span>{saving ? "Sauvegarde…" : "Sauvegarder l'inventaire"}</span>
+            <span>{saving ? "Sauvegarde…" : "Sauvegarder"}</span>
           </button>
         </div>
       )}
@@ -437,39 +454,13 @@ export default function InventaireJournalier() {
   );
 }
 
-// ─── SummaryCard sub-component ───────────────────────────────────────────────
-
-interface SummaryCardProps {
-  label: string;
-  sub: string;
-  value: number;
-  gold: string;
-  highlight?: boolean;
-}
-
+interface SummaryCardProps { label: string; sub: string; value: number; gold: string; highlight?: boolean; }
 function SummaryCard({ label, sub, value, gold, highlight = false }: SummaryCardProps) {
   return (
-    <div
-      className={`rounded-2xl p-4 border shadow-sm transition-all hover:shadow-md
-        ${highlight
-          ? "text-white border-transparent shadow-lg"
-          : "bg-white/70 backdrop-blur-md border-white text-stone-800"
-        }`}
-      style={highlight ? { background: `linear-gradient(135deg, ${gold}, #b8935a)` } : undefined}
-    >
-      <p
-        className={`text-[9px] font-black uppercase tracking-widest mb-1 ${
-          highlight ? "text-white/70" : "text-stone-400"
-        }`}
-      >
-        {label}
-      </p>
-      <p className={`text-2xl font-bold ${highlight ? "text-white" : "text-stone-800"}`}>
-        {value}
-      </p>
-      <p className={`text-[10px] mt-1 ${highlight ? "text-white/60" : "text-stone-400"}`}>
-        {sub}
-      </p>
+    <div className={`rounded-2xl p-4 border shadow-sm transition-all hover:shadow-md ${highlight ? "text-white border-transparent shadow-lg" : "bg-white/70 backdrop-blur-md border-white text-stone-800"}`} style={highlight ? { background: `linear-gradient(135deg, ${gold}, #b8935a)` } : undefined}>
+      <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${highlight ? "text-white/70" : "text-stone-400"}`}>{label}</p>
+      <p className={`text-2xl font-bold ${highlight ? "text-white" : "text-stone-800"}`}>{value}</p>
+      <p className={`text-[10px] mt-1 ${highlight ? "text-white/60" : "text-stone-400"}`}>{sub}</p>
     </div>
   );
 }

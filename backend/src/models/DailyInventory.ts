@@ -36,7 +36,7 @@ const DailyInventorySchema = new Schema<IDailyInventory>(
     date: {
       type: String,
       required: true,
-      match: /^\d{4}-\d{2}-\d{2}$/,
+      match: /^\d{4}-\d{2}-\d{2}(__\w+)?$/,
       index: true,
       unique: true,
     },
