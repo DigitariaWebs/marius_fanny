@@ -4,12 +4,17 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Resend client — used for transactional emails (better deliverability)
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+// Resend client — only used when RESEND_FROM_EMAIL is also set (Resend requires a verified domain)
+const resend =
+  process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
 
-const FROM_EMAIL = process.env.EMAIL_USER || "noreply@marius-fanny.com";
+// When using Resend, FROM must come from a verified domain (set RESEND_FROM_EMAIL).
+// When using Nodemailer (Gmail SMTP), FROM is EMAIL_USER.
+const FROM_EMAIL = resend
+  ? (process.env.RESEND_FROM_EMAIL as string)
+  : (process.env.EMAIL_USER || "noreply@marius-fanny.com");
 
 /**
  * Send an email via Resend if API key is set, else fall back to Nodemailer.

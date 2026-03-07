@@ -4,6 +4,7 @@ import {
   approvePartnerRequest,
   submitPartnerInquiry,
   invitePartner,
+  activatePartner,
 } from "../controllers/partner.controller.js";
 
 const router = Router();
@@ -13,6 +14,9 @@ router.post("/", submitPartnerRequest);
 
 // POST /api/partner-request/inquiry — homepage inquiry form (contact only, no account)
 router.post("/inquiry", submitPartnerInquiry);
+
+// POST /api/partner-request/activate — partner sets password and creates their pro account
+router.post("/activate", activatePartner);
 
 // GET /api/partner-request/invite/:encodedEmail — admin sends invitation to prospect
 router.get("/invite/:encodedEmail", invitePartner);

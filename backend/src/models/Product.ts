@@ -27,6 +27,7 @@ export interface IProduct {
     choices: string[];
   }>;
   recommendations?: number[]; // IDs des produits recommandés
+  displayOrder?: number;
 }
 
 const productSchema = new Schema<IProduct>({
@@ -55,7 +56,8 @@ const productSchema = new Schema<IProduct>({
     name: { type: String, required: true },
     choices: [{ type: String, required: true }]
   }],
-  recommendations: [{ type: Number }]
+  recommendations: [{ type: Number }],
+  displayOrder: { type: Number, default: 0 }
 });
 
 export const Product = model<IProduct>('Product', productSchema);

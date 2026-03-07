@@ -69,9 +69,15 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     return result;
   };
 
+  // Fetch data ONCE on mount — switching categories only re-filters locally (instant)
   useEffect(() => {
     fetchData();
-  }, [categoryId]);
+  }, []);
+
+  // Reset subcategory when parent category changes
+  useEffect(() => {
+    setSubCategory(null);
+  }, [categoryId, categoryTitle]);
 
   useEffect(() => {
     if (selectedProduct) setModalMainImage(selectedProduct.image || '');
@@ -242,7 +248,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
       {/* NOTIFICATION RECOMMANDATIONS */}
       {showRecommendationNotif && recommendationNotif.length > 0 && (
-        <div className="fixed top-6 left-6 z-[99999] w-80 bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden animate-in slide-in-from-top-4 fade-in duration-300">
+        <div className="fixed inset-0 z-99999 flex items-start justify-center pt-8 pointer-events-none">
+        <div className="pointer-events-auto w-80 bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="bg-[#2D2A26] px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-lg">✨</span>
@@ -283,6 +290,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
               );
             })}
           </div>
+        </div>
         </div>
       )}
       <div className="max-w-7xl mx-auto">
@@ -343,10 +351,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
               >
                 <img
                   src={getImageUrl(product.image)}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-105 contrast-[1.03]"
                   alt={product.name}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
                   {hasDiscount && (
                     <span className="text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full shadow tracking-wide">
@@ -510,6 +518,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* JOURS DE DISPONIBILITÉ — affiché en premier pour bien le voir */}
+                {selectedProduct.availableDays && selectedProduct.availableDays.length > 0 && (
+                  <div className="mb-4 p-4 rounded-lg border border-blue-200 bg-blue-50">
+                    <span className="text-xs font-bold uppercase tracking-widest text-blue-700 block mb-2">
+                      Disponible uniquement
+                    </span>
+                    <p className="text-sm font-medium text-blue-800">
+                      {selectedProduct.availableDays
+                        .slice()
+                        .sort((a, b) => a - b)
+                        .map((d) => ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"][d])
+                        .join(", ")}
+                    </p>
+                  </div>
+                )}
 
                 {/* ALLERGÈNES (SI SPÉCIFIÉ DANS LE PRODUIT) */}
                 {selectedProduct.allergens && (
@@ -677,21 +701,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   </div>
                 )}
 
-                {/* JOURS DE DISPONIBILITÉ */}
-                {selectedProduct.availableDays && selectedProduct.availableDays.length > 0 && (
-                  <div className="mb-6 p-4 rounded-lg border border-blue-200 bg-blue-50">
-                    <span className="text-xs font-bold uppercase tracking-widest text-blue-700 block mb-2">
-                      Disponible uniquement
-                    </span>
-                    <p className="text-sm font-medium text-blue-800">
-                      {selectedProduct.availableDays
-                        .slice()
-                        .sort((a, b) => a - b)
-                        .map((d) => ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"][d])
-                        .join(", ")}
-                    </p>
-                  </div>
-                )}
+                {/* JOURS DE DISPONIBILITÉ déplacé en haut (déjà affiché avant allergènes) */}
 
                 {/* OPTIONS BOÎTE À LUNCH (Legacy support) */}
                 {isLunchCategory(selectedProduct?.category || "") && !selectedProduct.customOptions?.length && (

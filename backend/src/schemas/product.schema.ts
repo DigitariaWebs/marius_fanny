@@ -82,6 +82,17 @@ export const updateProductSchema = z.object({
     choices: z.array(z.string().min(1)),
   })).optional(),
   recommendations: z.array(z.number().int().positive()).optional(),
+  displayOrder: z.number().int().nonnegative().optional(),
+});
+
+/**
+ * Reorder products schema
+ */
+export const reorderProductsSchema = z.object({
+  orders: z.array(z.object({
+    id: z.number().int().positive(),
+    displayOrder: z.number().int().nonnegative(),
+  })).min(1),
 });
 
 /**

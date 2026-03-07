@@ -8,6 +8,9 @@ export interface IPartnerInquiry extends Document {
   businessType: string;
   message: string;
   inviteSentAt?: Date;
+  activationToken?: string | null;
+  activationTokenExpires?: Date | null;
+  activated: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +24,9 @@ const PartnerInquirySchema = new Schema<IPartnerInquiry>(
     businessType: { type: String, required: true, trim: true },
     message: { type: String, default: "", trim: true },
     inviteSentAt: { type: Date, default: null },
+    activationToken: { type: String, default: null, select: false },
+    activationTokenExpires: { type: Date, default: null },
+    activated: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

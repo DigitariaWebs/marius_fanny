@@ -7,7 +7,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import { sendPartnerRequestEmail, sendPartnerApprovedEmail, sendPartnerInquiryEmail, sendPartnerInvitationEmail } from "../utils/mail.js";
 import { connectMongoDB } from "../config/db.js";
 
-const ADMIN_EMAIL = "fanny.chiecchio@gmail.com";
+const ADMIN_EMAIL = "dibwissem7@gmail.com";
 
 /**
  * POST /api/partner-request
@@ -278,12 +278,11 @@ export async function invitePartner(
     }
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const registrationUrl = `${frontendUrl}/devenir-partenaire`;
 
     // Look up name/company from stored inquiry or full partner request
     let contactName = "";
     let companyName = "";
-    const inquiry = await PartnerInquiry.findOne({ email: email.toLowerCase() });
+    const inquiry = await PartnerInquiry.findOne({ email: email.toLowerCase() }).select("+activationToken");
     if (inquiry) {
       contactName = inquiry.contactName;
       companyName = inquiry.companyName;
@@ -295,6 +294,19 @@ export async function invitePartner(
       }
     }
 
+    // Generate an activation token so the partner can create their account
+    const activationToken = crypto.randomBytes(32).toString("hex");
+    const activationTokenExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+
+    if (inquiry) {
+      inquiry.activationToken = activationToken;
+      inquiry.activationTokenExpires = activationTokenExpires;
+      inquiry.inviteSentAt = new Date();
+      await inquiry.save();
+    }
+
+    const registrationUrl = `${frontendUrl}/devenir-partenaire?token=${activationToken}`;
+
     console.log(`📧 [INVITE] Sending invitation to: ${email} (${contactName || "nom inconnu"} / ${companyName || "entreprise inconnue"})`);
 
     await sendPartnerInvitationEmail(
@@ -303,12 +315,6 @@ export async function invitePartner(
       companyName || "votre entreprise",
       registrationUrl,
     );
-
-    // Mark invite as sent
-    if (inquiry) {
-      inquiry.inviteSentAt = new Date();
-      await inquiry.save();
-    }
 
     console.log(`✅ [INVITE] Invitation successfully sent to ${email}`);
 
@@ -338,6 +344,95 @@ export async function invitePartner(
       </body>
       </html>
     `);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/partner-request/activate
+ * Partner clicks the link from the invitation email, sets their password, and creates their pro account.
+ */
+export async function activatePartner(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return next(new AppError("Token et mot de passe requis.", 400));
+    }
+    if (password.length < 6) {
+      return next(new AppError("Le mot de passe doit contenir au moins 6 caractères.", 400));
+    }
+
+    // Find the inquiry using the activation token
+    const inquiry = await PartnerInquiry.findOne({
+      activationToken: token,
+    }).select("+activationToken");
+
+    if (!inquiry) {
+      return next(new AppError("Lien d'activation invalide ou expiré.", 404));
+    }
+
+    if (inquiry.activated) {
+      return next(new AppError("Ce compte a déjà été activé. Veuillez vous connecter.", 409));
+    }
+
+    if (!inquiry.activationTokenExpires || inquiry.activationTokenExpires < new Date()) {
+      return next(new AppError("Ce lien d'activation a expiré. Contactez l'administrateur.", 410));
+    }
+
+    // Create the user in better-auth's MongoDB collections
+    const { db } = await connectMongoDB();
+
+    const existingUser = await db.collection("user").findOne({ email: inquiry.email });
+    if (existingUser) {
+      return next(new AppError("Un compte existe déjà avec cette adresse email.", 409));
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const userId = crypto.randomUUID();
+    const now = new Date();
+
+    await db.collection("user").insertOne({
+      id: userId,
+      name: inquiry.contactName,
+      email: inquiry.email,
+      emailVerified: true,
+      image: null,
+      role: "pro",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await db.collection("account").insertOne({
+      id: crypto.randomUUID(),
+      userId,
+      accountId: inquiry.email,
+      providerId: "credential",
+      password: hashedPassword,
+      accessToken: null,
+      refreshToken: null,
+      idToken: null,
+      expiresAt: null,
+      scope: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Mark inquiry as activated and clear the token
+    inquiry.activated = true;
+    inquiry.activationToken = null;
+    inquiry.activationTokenExpires = null;
+    await inquiry.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Votre compte Pro a été créé avec succès ! Vous pouvez maintenant vous connecter.",
+    });
   } catch (error) {
     next(error);
   }

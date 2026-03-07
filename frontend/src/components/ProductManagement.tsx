@@ -135,6 +135,13 @@ export function ProductManagement() {
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const extraImageInputRef = useRef<HTMLInputElement>(null);
 
+  // Reorder mode
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderList, setReorderList] = useState<Product[]>([]);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const dragIndexRef = useRef<number | null>(null);
+  const dragOverIndexRef = useRef<number | null>(null);
+
   const handleExtraImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -411,6 +418,41 @@ export function ProductManagement() {
     }
   };
 
+  const enterReorderMode = () => {
+    const sorted = [...products].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    setReorderList(sorted);
+    setReorderMode(true);
+  };
+
+  const handleDragStart = (index: number) => {
+    dragIndexRef.current = index;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIndexRef.current === null || dragIndexRef.current === index) return;
+    dragOverIndexRef.current = index;
+    const newList = [...reorderList];
+    const [moved] = newList.splice(dragIndexRef.current, 1);
+    newList.splice(index, 0, moved);
+    dragIndexRef.current = index;
+    setReorderList(newList);
+  };
+
+  const saveReorder = async () => {
+    setIsSavingOrder(true);
+    try {
+      const orders = reorderList.map((p, i) => ({ id: p.id, displayOrder: i }));
+      await productAPI.reorderProducts(orders);
+      setProducts(reorderList.map((p, i) => ({ ...p, displayOrder: i })));
+      setReorderMode(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde de l\'ordre');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
   const toggleAvailability = async (product: Product) => {
     try {
       const response = await productAPI.toggleProductAvailability(product.id);
@@ -568,13 +610,42 @@ export function ProductManagement() {
               Gérer votre catalogue de produits
             </p>
           </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-[#337957] hover:bg-[#2D2A26] text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2"
-          >
-            <Plus size={20} />
-            Ajouter un produit
-          </button>
+          <div className="flex gap-2">
+            {reorderMode ? (
+              <>
+                <button
+                  onClick={() => setReorderMode(false)}
+                  className="bg-stone-200 text-stone-700 font-bold px-5 py-3 rounded-xl transition-all hover:bg-stone-300 flex items-center gap-2"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={saveReorder}
+                  disabled={isSavingOrder}
+                  className="bg-[#337957] hover:bg-[#2D2A26] text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2 disabled:opacity-60"
+                >
+                  {isSavingOrder ? 'Sauvegarde...' : '✓ Sauvegarder l\'ordre'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={enterReorderMode}
+                  className="bg-stone-100 border border-stone-300 text-stone-700 font-bold px-5 py-3 rounded-xl transition-all hover:bg-stone-200 flex items-center gap-2"
+                >
+                  <span className="text-lg leading-none">⠿</span>
+                  Réordonner
+                </button>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="bg-[#337957] hover:bg-[#2D2A26] text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2"
+                >
+                  <Plus size={20} />
+                  Ajouter un produit
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -601,9 +672,9 @@ export function ProductManagement() {
           </div>
         )}
 
-        {!loading && !error && (
+        {!loading && !error && !reorderMode && (
           <DataTable
-            data={products}
+            data={[...products].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))}
             columns={columns}
             filters={filters}
             searchPlaceholder="Rechercher un produit..."
@@ -611,6 +682,68 @@ export function ProductManagement() {
             itemsPerPage={10}
           />
         )}
+
+        {!loading && !error && reorderMode && (() => {
+          // Group products by category while preserving displayOrder within each group
+          const categoryNames = Array.from(new Set(reorderList.map(p => p.category)));
+          return (
+            <div className="space-y-4">
+              <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+                <span className="text-amber-700 text-sm font-medium">⠿ Glissez-déposez les produits pour les réordonner au sein de chaque catégorie. L'ordre sera respecté sur la boutique.</span>
+              </div>
+              {categoryNames.map((catName) => {
+                const catProducts = reorderList.filter(p => p.category === catName);
+                return (
+                  <div key={catName} className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                    <div className="px-6 py-3 bg-stone-50 border-b border-stone-200 flex items-center gap-2">
+                      <Tag size={14} className="text-[#337957]" />
+                      <span className="font-semibold text-[#2D2A26] text-sm">{catName}</span>
+                      <span className="ml-auto text-xs text-stone-400">{catProducts.length} produit{catProducts.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <ul className="divide-y divide-stone-100">
+                      {catProducts.map((product) => {
+                        const globalIndex = reorderList.indexOf(product);
+                        const catIndex = catProducts.indexOf(product);
+                        return (
+                          <li
+                            key={product.id}
+                            draggable
+                            onDragStart={() => handleDragStart(globalIndex)}
+                            onDragOver={(e) => handleDragOver(e, globalIndex)}
+                            onDragEnd={() => { dragIndexRef.current = null; }}
+                            className="flex items-center gap-4 px-6 py-3 cursor-grab active:cursor-grabbing hover:bg-stone-50 transition-colors select-none"
+                          >
+                            <span className="text-stone-400 text-xl shrink-0">⠿</span>
+                            <span className="w-7 h-7 rounded-full bg-stone-100 text-stone-500 text-xs font-bold flex items-center justify-center shrink-0">
+                              {catIndex + 1}
+                            </span>
+                            {product.image ? (
+                              <img
+                                src={getImageUrl(product.image)}
+                                alt={product.name}
+                                className="w-10 h-10 rounded-lg object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
+                                <Package size={16} className="text-stone-400" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-[#2D2A26] truncate">{product.name}</p>
+                            </div>
+                            <span className="text-sm font-medium text-stone-600 shrink-0">
+                              {product.price.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Create Product Modal */}

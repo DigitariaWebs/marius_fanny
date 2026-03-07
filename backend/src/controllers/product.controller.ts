@@ -19,7 +19,7 @@ export async function getAllProducts(req: AuthRequest, res: Response) {
     }
 
     const [products, total] = await Promise.all([
-      Product.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      Product.find(filter).skip(skip).limit(limit).sort({ displayOrder: 1, createdAt: -1 }),
       Product.countDocuments(filter),
     ]);
 
@@ -212,5 +212,28 @@ export async function toggleProductAvailability(req: AuthRequest, res: Response)
   } catch (error) {
     if (error instanceof AppError) throw error;
     throw new AppError("Failed to toggle product availability", 500);
+  }
+}
+
+/**
+ * Reorder products (bulk update displayOrder)
+ */
+export async function reorderProducts(req: AuthRequest, res: Response) {
+  try {
+    const { orders } = req.body as { orders: { id: number; displayOrder: number }[] };
+
+    await Promise.all(
+      orders.map(({ id, displayOrder }) =>
+        Product.findOneAndUpdate({ id }, { displayOrder, updatedAt: new Date() })
+      )
+    );
+
+    res.json({
+      success: true,
+      message: "Products reordered successfully",
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError("Failed to reorder products", 500);
   }
 }

@@ -42,6 +42,12 @@ const Checkout: React.FC = () => {
   const [customerPhone, setCustomerPhone] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
+
+  // Champs adresse de livraison
+  const [deliveryStreet, setDeliveryStreet] = useState("");
+  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryContactPhone, setDeliveryContactPhone] = useState("");
+  const [deliveryDetails, setDeliveryDetails] = useState("");
   const [dateValidationError, setDateValidationError] = useState("");
   const [timeSlotError, setTimeSlotError] = useState("");
   const [currentStep, setCurrentStep] = useState<
@@ -77,7 +83,7 @@ const Checkout: React.FC = () => {
 
     // Pour le ramassage, proposer des heures fixes
     if (state?.deliveryType === "pickup") {
-      return [
+      const slots = [
         "07:00",
         "08:00",
         "09:00",
@@ -89,8 +95,12 @@ const Checkout: React.FC = () => {
         "15:00",
         "16:00",
         "17:00",
-        "18:00",
       ];
+      // Montréal: heure max 17h — Laval: jusqu'à 18h
+      if (state.pickupLocation !== "Montreal") {
+        slots.push("18:00");
+      }
+      return slots;
     }
 
     const date = new Date(selectedDate + "T00:00:00");
@@ -331,6 +341,22 @@ const Checkout: React.FC = () => {
       return;
     }
 
+    // Validation adresse de livraison
+    if (state.deliveryType === "delivery") {
+      if (!deliveryStreet.trim()) {
+        alert("Veuillez entrer l'adresse complète (numéro et rue).");
+        return;
+      }
+      if (!deliveryCity.trim()) {
+        alert("Veuillez entrer la ville.");
+        return;
+      }
+      if (!deliveryContactPhone.trim()) {
+        alert("Veuillez entrer le numéro de téléphone de la personne à joindre sur place.");
+        return;
+      }
+    }
+
     // Validate that the selected date is not before the minimum date
     if (!validateDeliveryDate(deliveryDate)) {
       // Error message already set by validateDeliveryDate
@@ -377,10 +403,12 @@ const Checkout: React.FC = () => {
         deliveryAddress:
           state.deliveryType === "delivery" && state.postalCode
             ? {
-                street: "À déterminer", // Temporary placeholder
-                city: "À déterminer", // Temporary placeholder
+                street: deliveryStreet || "À déterminer",
+                city: deliveryCity || "À déterminer",
                 province: "QC",
                 postalCode: state.postalCode,
+                contactPhone: deliveryContactPhone || undefined,
+                details: deliveryDetails || undefined,
               }
             : undefined,
         pickupLocation:
@@ -777,6 +805,83 @@ const Checkout: React.FC = () => {
                             ✅ Créneau sélectionné: {deliveryTime}
                           </p>
                         )}
+                      </div>
+                    )}
+
+                    {/* Adresse de livraison — affiché uniquement pour la livraison */}
+                    {state.deliveryType === "delivery" && (
+                      <div className="space-y-3 mt-2">
+                        <h3 className="text-sm font-semibold text-[#2D2A26] flex items-center gap-2">
+                          <MapPin size={15} className="text-[#337957]" />
+                          Adresse de livraison
+                        </h3>
+
+                        {/* Encadré rouge — hôpitaux et écoles */}
+                        <div className="border-2 border-red-500 rounded-xl p-4 bg-red-50">
+                          <p className="text-sm font-bold text-red-700 mb-1">
+                            ⚠️ Hôpitaux &amp; Écoles
+                          </p>
+                          <p className="text-xs text-red-600 leading-relaxed">
+                            Pour les livraisons en <strong>hôpital</strong> ou en <strong>école</strong>,
+                            la livraison s'effectue <strong>à l'accueil uniquement</strong>.
+                            Assurez-vous que quelqu'un sera présent à l'accueil pour réceptionner la commande.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-stone-600 mb-1">
+                            Adresse complète (numéro et rue) *
+                          </label>
+                          <input
+                            type="text"
+                            value={deliveryStreet}
+                            onChange={(e) => setDeliveryStreet(e.target.value)}
+                            placeholder="1234 Rue Exemple"
+                            className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957]"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-stone-600 mb-1">
+                            Ville *
+                          </label>
+                          <input
+                            type="text"
+                            value={deliveryCity}
+                            onChange={(e) => setDeliveryCity(e.target.value)}
+                            placeholder="Montréal"
+                            className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957]"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-stone-600 mb-1">
+                            Téléphone de la personne à joindre sur place *
+                          </label>
+                          <input
+                            type="tel"
+                            value={deliveryContactPhone}
+                            onChange={(e) => setDeliveryContactPhone(e.target.value)}
+                            placeholder="(514) 123-4567"
+                            className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957]"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-stone-600 mb-1">
+                            Détails (numéro de porte, étage, appartement…)
+                          </label>
+                          <input
+                            type="text"
+                            value={deliveryDetails}
+                            onChange={(e) => setDeliveryDetails(e.target.value)}
+                            placeholder="Ex : App. 302, 3e étage, sonner 2 fois"
+                            className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#337957]"
+                          />
+                        </div>
                       </div>
                     )}
 

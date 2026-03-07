@@ -102,7 +102,6 @@ const App: React.FC = () => {
     console.log("🚀 [APP] Initializing cart from localStorage:", persistedCart);
     return persistedCart;
   });
-
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     console.log("💾 [APP] Saving cart to localStorage:", cartItems);
@@ -142,7 +141,6 @@ const App: React.FC = () => {
       console.log("🆕 [APP] Added new item, new cart:", newCart);
       return newCart;
     });
-    setIsCartOpen(true);
   };
 
   const updateQuantity = (id: number, delta: number) => {

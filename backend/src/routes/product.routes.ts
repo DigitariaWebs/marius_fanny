@@ -14,6 +14,7 @@ import {
   createProductSchema,
   updateProductSchema,
   productIdParamSchema,
+  reorderProductsSchema,
 } from "../schemas/product.schema.js";
 import {
   paginationQuerySchema,
@@ -81,6 +82,19 @@ router.delete(
   requireAdmin,
   validateParams(productIdParamSchema),
   asyncHandler(productController.deleteProduct),
+);
+
+/**
+ * @route   PATCH /api/products/reorder
+ * @desc    Reorder products (bulk update displayOrder)
+ * @access  Private (Admin only)
+ */
+router.patch(
+  "/reorder",
+  requireAuth,
+  requireAdmin,
+  validateBody(reorderProductsSchema),
+  asyncHandler(productController.reorderProducts),
 );
 
 /**

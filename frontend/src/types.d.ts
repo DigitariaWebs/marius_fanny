@@ -45,6 +45,7 @@ export interface Product {
     choices: string[];
   }>;
   recommendations?: number[]; // IDs des produits recommandés
+  displayOrder?: number;
 }
 
 // Category Management Types

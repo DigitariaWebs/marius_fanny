@@ -480,7 +480,7 @@ const CartDrawer: React.FC<CartProps> = ({
                     <img
                       src={getImageUrl(item.image)}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover brightness-105 contrast-[1.03]"
                     />
                   </div>
 

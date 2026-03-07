@@ -137,6 +137,13 @@ class ProductAPI {
       method: 'PATCH',
     });
   }
+
+  async reorderProducts(orders: { id: number; displayOrder: number }[]): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>('/reorder', {
+      method: 'PATCH',
+      body: JSON.stringify({ orders }),
+    });
+  }
 }
 
 export const productAPI = new ProductAPI();
