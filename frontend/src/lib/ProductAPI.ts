@@ -24,6 +24,7 @@ export interface CreateProductData {
   targetAudience: "clients" | "pro";
   customOptions?: Array<{
     name: string;
+    type?: "choice" | "text";
     choices: string[];
   }>;
   recommendations?: number[];
@@ -48,6 +49,7 @@ export interface UpdateProductData {
   targetAudience?: "clients" | "pro";
   customOptions?: Array<{
     name: string;
+    type?: "choice" | "text";
     choices: string[];
   }>;
   recommendations?: number[];

@@ -40,6 +40,7 @@ type CustomOptionChoice = {
 
 type CustomOptionField = {
   name: string;
+  type: "choice" | "text";
   choices: CustomOptionChoice[];
 };
 
@@ -68,13 +69,18 @@ const buildPayloadOptions = (options: CustomOptionField[]) =>
   options
     .map((opt) => ({
       name: opt.name.trim(),
+      type: opt.type,
       choices: opt.choices
         .map((choice) =>
           formatChoiceForSaving(choice.label, choice.price || undefined),
         )
         .filter((choice) => choice.length > 0),
     }))
-    .filter((opt) => opt.name && opt.choices.length > 0);
+    .filter(
+      (opt) =>
+        opt.name &&
+        (opt.type === "text" || opt.choices.length > 0),
+    );
 
 const createDefaultProductForm = (category = ""): ProductFormState => ({
   name: "",
@@ -110,6 +116,7 @@ const DAY_OPTIONS = [
 const mapStoredOptionsToForm = (options?: Product["customOptions"]): CustomOptionField[] =>
   options?.map((opt) => ({
     name: opt.name,
+    type: opt.type || "choice",
     choices: opt.choices.map((choice) => {
       const parsed = parseChoiceInput(choice);
       return {
@@ -1082,19 +1089,38 @@ export function ProductManagement() {
                   <label className="text-sm font-medium text-gray-700">
                     Options personnalisables (ex: Taille, Tranchage)
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newOpts = [
-                        ...productForm.customOptions,
-                        { name: "", choices: [{ label: "", price: "" }] },
-                      ];
-                      setProductForm({ ...productForm, customOptions: newOpts });
-                    }}
-                    className="text-sm text-[#337957] hover:underline flex items-center gap-1"
-                  >
-                    <Plus size={14} /> Ajouter une option
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = [
+                          ...productForm.customOptions,
+                          {
+                            name: "",
+                            type: "choice" as const,
+                            choices: [{ label: "", price: "" }],
+                          },
+                        ];
+                        setProductForm({ ...productForm, customOptions: newOpts });
+                      }}
+                      className="text-sm text-[#337957] hover:underline flex items-center gap-1"
+                    >
+                      <Plus size={14} /> Ajouter une option
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = [
+                          ...productForm.customOptions,
+                          { name: "", type: "text" as const, choices: [] },
+                        ];
+                        setProductForm({ ...productForm, customOptions: newOpts });
+                      }}
+                      className="text-sm text-[#2D2A26] hover:underline"
+                    >
+                      + Ajouter écriture
+                    </button>
+                  </div>
                 </div>
 
                 {productForm.customOptions.map((opt, idx) => (
@@ -1123,8 +1149,14 @@ export function ProductManagement() {
                       </button>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-500 uppercase">Choix possibles</p>
-                      {opt.choices.map((choice, cidx) => (
+                      {opt.type === "text" ? (
+                        <p className="text-xs text-gray-500 bg-blue-50 border border-blue-200 rounded p-2">
+                          Champ libre: le client verra une ligne d'écriture pour saisir (ex: prénom, nom, message).
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-xs font-medium text-gray-500 uppercase">Choix possibles</p>
+                          {opt.choices.map((choice, cidx) => (
                         <div key={cidx} className="flex flex-wrap gap-2 items-center">
                           <input
                             type="text"
@@ -1165,22 +1197,24 @@ export function ProductManagement() {
                             <X size={14} />
                           </button>
                         </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newOpts = [...productForm.customOptions];
-                          const newChoices = [
-                            ...newOpts[idx].choices,
-                            { label: "", price: "" },
-                          ];
-                          newOpts[idx] = { ...newOpts[idx], choices: newChoices };
-                          setProductForm({ ...productForm, customOptions: newOpts });
-                        }}
-                        className="text-xs text-[#337957] hover:underline"
-                      >
-                        + Ajouter un choix
-                      </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newOpts = [...productForm.customOptions];
+                              const newChoices = [
+                                ...newOpts[idx].choices,
+                                { label: "", price: "" },
+                              ];
+                              newOpts[idx] = { ...newOpts[idx], choices: newChoices };
+                              setProductForm({ ...productForm, customOptions: newOpts });
+                            }}
+                            className="text-xs text-[#337957] hover:underline"
+                          >
+                            + Ajouter un choix
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1600,19 +1634,38 @@ export function ProductManagement() {
                   <label className="text-sm font-medium text-gray-700">
                     Options personnalisables (ex: Taille, Tranchage)
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newOpts = [
-                        ...productForm.customOptions,
-                        { name: "", choices: [{ label: "", price: "" }] },
-                      ];
-                      setProductForm({ ...productForm, customOptions: newOpts });
-                    }}
-                    className="text-sm text-[#337957] hover:underline flex items-center gap-1"
-                  >
-                    <Plus size={14} /> Ajouter une option
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = [
+                          ...productForm.customOptions,
+                          {
+                            name: "",
+                            type: "choice" as const,
+                            choices: [{ label: "", price: "" }],
+                          },
+                        ];
+                        setProductForm({ ...productForm, customOptions: newOpts });
+                      }}
+                      className="text-sm text-[#337957] hover:underline flex items-center gap-1"
+                    >
+                      <Plus size={14} /> Ajouter une option
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = [
+                          ...productForm.customOptions,
+                          { name: "", type: "text" as const, choices: [] },
+                        ];
+                        setProductForm({ ...productForm, customOptions: newOpts });
+                      }}
+                      className="text-sm text-[#2D2A26] hover:underline"
+                    >
+                      + Ajouter écriture
+                    </button>
+                  </div>
                 </div>
 
                 {productForm.customOptions.map((opt, idx) => (
@@ -1641,8 +1694,14 @@ export function ProductManagement() {
                       </button>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-500 uppercase">Choix possibles</p>
-                      {opt.choices.map((choice, cidx) => (
+                      {opt.type === "text" ? (
+                        <p className="text-xs text-gray-500 bg-blue-50 border border-blue-200 rounded p-2">
+                          Champ libre: le client verra une ligne d'écriture pour saisir (ex: prénom, nom, message).
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-xs font-medium text-gray-500 uppercase">Choix possibles</p>
+                          {opt.choices.map((choice, cidx) => (
                         <div key={cidx} className="flex flex-wrap gap-2 items-center">
                           <input
                             type="text"
@@ -1683,22 +1742,24 @@ export function ProductManagement() {
                             <X size={14} />
                           </button>
                         </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newOpts = [...productForm.customOptions];
-                          const newChoices = [
-                            ...newOpts[idx].choices,
-                            { label: "", price: "" },
-                          ];
-                          newOpts[idx] = { ...newOpts[idx], choices: newChoices };
-                          setProductForm({ ...productForm, customOptions: newOpts });
-                        }}
-                        className="text-xs text-[#337957] hover:underline"
-                      >
-                        + Ajouter un choix
-                      </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newOpts = [...productForm.customOptions];
+                              const newChoices = [
+                                ...newOpts[idx].choices,
+                                { label: "", price: "" },
+                              ];
+                              newOpts[idx] = { ...newOpts[idx], choices: newChoices };
+                              setProductForm({ ...productForm, customOptions: newOpts });
+                            }}
+                            className="text-xs text-[#337957] hover:underline"
+                          >
+                            + Ajouter un choix
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

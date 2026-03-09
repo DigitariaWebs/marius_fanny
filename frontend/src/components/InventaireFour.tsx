@@ -54,8 +54,10 @@ export default function InventaireFour() {
         return {
           id: name,
           name: name,
+          stock_stdo: s?.stock_stdo ?? 0,
           stdo: s?.stdo ?? 0,
-          comm: s?.berri ?? 0, // Utilise les colonnes existantes de ton API
+          berri: s?.berri ?? 0,
+          comm_berri: s?.comm_berri ?? 0,
           client: s?.client ?? 0
         };
       });
@@ -73,11 +75,12 @@ export default function InventaireFour() {
       const entries = rows.map(r => ({
         productId: r.id,
         productName: r.name,
+        stock_stdo: r.stock_stdo,
         stdo: r.stdo,
-        berri: r.comm,
-        comm_berri: 0,
+        berri: r.berri,
+        comm_berri: r.comm_berri,
         client: r.client,
-        total: r.stdo + r.comm + r.client
+        total: r.stdo + r.comm_berri + r.client // Comm. St-do + Comm Berri + Comm CLIENT
       }));
       await dailyInventoryAPI.save({ date: `${date}__four`, entries });
       setToast({ type: "success", msg: "Production four enregistrée !" });
@@ -90,7 +93,7 @@ export default function InventaireFour() {
     <div className="p-4 md:p-8">
       <header className="mb-6">
         <h2 className="text-4xl md:text-5xl mb-1" style={{ fontFamily: '"Great Vibes", cursive', color: gold }}>
-          Inventaire Four & Pâtisserie
+          Inventaire Frais
         </h2>
         <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">Registre de production quotidienne</p>
       </header>
@@ -134,9 +137,11 @@ export default function InventaireFour() {
           <thead className="bg-stone-50 border-b">
             <tr className="text-[10px] uppercase tracking-widest text-stone-400">
               <th className="px-6 py-4">Pâtisserie</th>
-              <th className="text-center">ST-DO</th>
-              <th className="text-center">Comm. ST</th>
-              <th className="text-center">Boites Lunch</th>
+              <th className="text-center">ST-do</th>
+              <th className="text-center">Comm. St-do</th>
+              <th className="text-center">BERRI</th>
+              <th className="text-center">Comm Berri</th>
+              <th className="text-center">Comm CLIENT</th>
               <th className="text-center">Total</th>
               <th className="w-10"></th>
             </tr>
@@ -145,6 +150,17 @@ export default function InventaireFour() {
             {rows.map((row, idx) => (
               <tr key={row.id} className="hover:bg-amber-50/20 transition-colors">
                 <td className="px-6 py-3 font-medium text-stone-800">{row.name}</td>
+                <td className="px-2 py-2 text-center">
+                  <input 
+                    type="number" 
+                    value={row.stock_stdo || ""} 
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 0;
+                      setRows(rows.map(r => r.id === row.id ? {...r, stock_stdo: val} : r));
+                    }}
+                    className="w-16 text-center bg-stone-50 rounded-lg py-1 border focus:border-[#C5A065] outline-none"
+                  />
+                </td>
                 <td className="px-2 py-2 text-center">
                   <input 
                     type="number" 
@@ -159,10 +175,21 @@ export default function InventaireFour() {
                 <td className="px-2 py-2 text-center">
                   <input 
                     type="number" 
-                    value={row.comm || ""} 
+                    value={row.berri || ""} 
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 0;
-                      setRows(rows.map(r => r.id === row.id ? {...r, comm: val} : r));
+                      setRows(rows.map(r => r.id === row.id ? {...r, berri: val} : r));
+                    }}
+                    className="w-16 text-center bg-stone-50 rounded-lg py-1 border focus:border-[#C5A065] outline-none"
+                  />
+                </td>
+                <td className="px-2 py-2 text-center">
+                  <input 
+                    type="number" 
+                    value={row.comm_berri || ""} 
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 0;
+                      setRows(rows.map(r => r.id === row.id ? {...r, comm_berri: val} : r));
                     }}
                     className="w-16 text-center bg-stone-50 rounded-lg py-1 border focus:border-[#C5A065] outline-none"
                   />
@@ -179,7 +206,7 @@ export default function InventaireFour() {
                   />
                 </td>
                 <td className="text-center font-bold text-stone-800">
-                  {row.stdo + row.comm + row.client}
+                  {row.stdo + row.comm_berri + row.client}
                 </td>
                 <td className="pr-4">
                   <button onClick={() => {

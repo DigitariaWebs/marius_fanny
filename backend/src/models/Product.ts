@@ -24,6 +24,7 @@ export interface IProduct {
   targetAudience: "clients" | "pro";
   customOptions?: Array<{
     name: string;
+    type?: "choice" | "text";
     choices: string[];
   }>;
   recommendations?: number[]; // IDs des produits recommandés
@@ -54,6 +55,7 @@ const productSchema = new Schema<IProduct>({
   targetAudience: { type: String, enum: ['clients', 'pro'], required: true },
   customOptions: [{
     name: { type: String, required: true },
+    type: { type: String, enum: ["choice", "text"], default: "choice" },
     choices: [{ type: String, required: true }]
   }],
   recommendations: [{ type: Number }],

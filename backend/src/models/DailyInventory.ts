@@ -3,11 +3,12 @@ import { Schema, model } from "mongoose";
 export interface IDailyInventoryEntry {
   productId: string;
   productName: string;
+  stock_stdo: number; // ST-do (stock)
   stdo: number;       // Comm. St-do
   berri: number;      // BERRI
   comm_berri: number; // Comm Berri
   client: number;     // Comm CLIENT
-  total: number;      // auto-calculated: stdo + berri + comm_berri + client
+  total: number;      // auto-calculated: stdo + client only
 }
 
 export interface IDailyInventory {
@@ -22,6 +23,7 @@ const DailyInventoryEntrySchema = new Schema<IDailyInventoryEntry>(
   {
     productId: { type: String, required: true },
     productName: { type: String, required: true, trim: true },
+    stock_stdo: { type: Number, required: true, min: 0, default: 0 },
     stdo: { type: Number, required: true, min: 0, default: 0 },
     berri: { type: Number, required: true, min: 0, default: 0 },
     comm_berri: { type: Number, required: true, min: 0, default: 0 },

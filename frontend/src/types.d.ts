@@ -42,6 +42,7 @@ export interface Product {
   targetAudience: "clients" | "pro";
   customOptions?: Array<{
     name: string;
+    type?: "choice" | "text";
     choices: string[];
   }>;
   recommendations?: number[]; // IDs des produits recommandés
@@ -57,6 +58,8 @@ export interface Category {
   parentId?: number;
   displayOrder: number;
   active: boolean;
+  isBanner?: boolean;
+  bannerColor?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +70,8 @@ export interface CreateCategoryData {
   image?: string;
   parentId?: number;
   displayOrder?: number;
+  isBanner?: boolean;
+  bannerColor?: string;
 }
 
 export interface UpdateCategoryData {
@@ -76,6 +81,8 @@ export interface UpdateCategoryData {
   parentId?: number;
   displayOrder?: number;
   active?: boolean;
+  isBanner?: boolean;
+  bannerColor?: string;
 }
 
 // Statistics Types

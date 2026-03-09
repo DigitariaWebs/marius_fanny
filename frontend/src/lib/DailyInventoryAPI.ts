@@ -6,6 +6,7 @@ const normalizedApiUrl = API_URL.startsWith("http")
 export interface DailyInventoryEntry {
   productId: string;
   productName: string;
+  stock_stdo: number;
   stdo: number;
   berri: number;
   comm_berri: number;

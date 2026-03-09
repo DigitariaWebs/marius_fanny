@@ -6,6 +6,7 @@ import SquarePaymentForm from "../components/SquarePaymentForm";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { authClient, normalizedApiUrl } from "../lib/AuthClient";
+import { productAPI } from "../lib/ProductAPI";
 import { clearCart } from "../utils/cartPersistence";
 
 interface CartItem {
@@ -14,7 +15,10 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  cartItemKey?: string;
+  selectedOptions?: Record<string, string>;
   preparationTimeHours?: number;
+  availableDays?: number[];
 }
 
 interface CheckoutState {
@@ -326,7 +330,7 @@ const Checkout: React.FC = () => {
     setCurrentStep("delivery");
   };
 
-  const handleDeliveryFormSubmit = (e: React.FormEvent) => {
+  const handleDeliveryFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!deliveryDate) {
@@ -360,6 +364,56 @@ const Checkout: React.FC = () => {
     // Validate that the selected date is not before the minimum date
     if (!validateDeliveryDate(deliveryDate)) {
       // Error message already set by validateDeliveryDate
+      return;
+    }
+
+    // Validate product availability for the selected day of week.
+    // We fetch product details from API to avoid relying only on cart payload.
+    const DAYS_FR = [
+      "Dimanche",
+      "Lundi",
+      "Mardi",
+      "Mercredi",
+      "Jeudi",
+      "Vendredi",
+      "Samedi",
+    ];
+    const selectedDayOfWeek = new Date(deliveryDate + "T12:00:00").getDay();
+
+    const availabilityByProductId = new Map<number, number[] | undefined>();
+    await Promise.all(
+      state.items.map(async (item) => {
+        try {
+          const resp = await productAPI.getProductById(item.id);
+          const days = resp?.data?.availableDays;
+          availabilityByProductId.set(
+            item.id,
+            Array.isArray(days) ? days.map((d) => Number(d)) : item.availableDays,
+          );
+        } catch {
+          // Fallback to cart value when API lookup fails
+          availabilityByProductId.set(item.id, item.availableDays);
+        }
+      }),
+    );
+
+    const unavailableItems = state.items.filter((item) => {
+      const days = availabilityByProductId.get(item.id);
+      return !!days && days.length > 0 && !days.includes(selectedDayOfWeek);
+    });
+
+    if (unavailableItems.length > 0) {
+      const details = unavailableItems
+        .map((item) => {
+          const days = availabilityByProductId.get(item.id) || [];
+          return `• ${item.name} — disponible uniquement le : ${days
+            .map((d) => DAYS_FR[d])
+            .join(", ")}`;
+        })
+        .join("\n");
+      alert(
+        `Certains produits ne sont pas disponibles le ${DAYS_FR[selectedDayOfWeek]} :\n${details}\n\nVeuillez choisir une autre date ou retirer ces produits du panier.`,
+      );
       return;
     }
 
@@ -421,6 +475,13 @@ const Checkout: React.FC = () => {
           quantity: item.quantity,
           unitPrice: item.price,
           amount: item.price * item.quantity,
+          notes:
+            item.selectedOptions && Object.keys(item.selectedOptions).length > 0
+              ? Object.entries(item.selectedOptions)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([label, value]) => `${label}: ${value}`)
+                  .join(" | ")
+              : undefined,
         })),
         paymentType: "full",
         depositPaid: true, // Payment was made

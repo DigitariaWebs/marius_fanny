@@ -19,6 +19,8 @@ function buildCategoryHierarchy(categories: ICategory[]): any[] {
       parentId: cat.parentId,
       displayOrder: cat.displayOrder,
       active: cat.active,
+      isBanner: cat.isBanner,
+      bannerColor: cat.bannerColor,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
       children: [] as any[],

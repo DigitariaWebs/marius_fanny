@@ -34,17 +34,20 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  cartItemKey?: string;
+  selectedOptions?: Record<string, string>;
   hasTaxes?: boolean;
   category?: string;
   productionType?: string;
+  availableDays?: number[];
 }
 
 interface CartProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onUpdateQuantity: (id: number, delta: number) => void;
-  onRemove: (id: number) => void;
+  onUpdateQuantity: (cartItemKey: string, delta: number) => void;
+  onRemove: (cartItemKey: string) => void;
 }
 
 const CartDrawer: React.FC<CartProps> = ({
@@ -245,6 +248,17 @@ const CartDrawer: React.FC<CartProps> = ({
     setOrderData(newOrderData);
     setShowLoginChoiceModal(true);
   };
+
+  const buildOptionsSignature = (options?: Record<string, string>) => {
+    if (!options || Object.keys(options).length === 0) return "";
+    return Object.entries(options)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}:${value}`)
+      .join("|");
+  };
+
+  const getCartItemKey = (item: CartItem) =>
+    item.cartItemKey || `${item.id}::${buildOptionsSignature(item.selectedOptions)}`;
 
   const handleInStorePayment = () => {
     if (!items.length) return;
@@ -474,7 +488,7 @@ const CartDrawer: React.FC<CartProps> = ({
               </div>
             ) : (
               items.map((item) => (
-                <div key={item.id} className="flex gap-4 group">
+                <div key={getCartItemKey(item)} className="flex gap-4 group">
                   {/* Image Produit */}
                   <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 bg-stone-100 border border-stone-100">
                     <img
@@ -489,12 +503,24 @@ const CartDrawer: React.FC<CartProps> = ({
                     <div className="flex justify-between mb-1">
                       <h3 className="font-serif text-[#2D2A26]">{item.name}</h3>
                       <button
-                        onClick={() => onRemove(item.id)}
+                        onClick={() => onRemove(getCartItemKey(item))}
                         className="text-stone-300 hover:text-red-400 transition-colors"
                       >
                         <X size={16} />
                       </button>
                     </div>
+                    {item.selectedOptions &&
+                      Object.keys(item.selectedOptions).length > 0 && (
+                        <div className="mb-2 space-y-1">
+                          {Object.entries(item.selectedOptions)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([label, value]) => (
+                              <p key={`${item.id}-${label}`} className="text-[11px] text-stone-500 leading-tight">
+                                {label}: <span className="font-medium text-stone-700">{value}</span>
+                              </p>
+                            ))}
+                        </div>
+                      )}
                     <p className="text-[#337957] font-bold mb-3">
                       {item.price.toFixed(2)} $
                     </p>
@@ -503,7 +529,7 @@ const CartDrawer: React.FC<CartProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center border border-stone-200 rounded-lg">
                         <button
-                          onClick={() => onUpdateQuantity(item.id, -1)}
+                          onClick={() => onUpdateQuantity(getCartItemKey(item), -1)}
                           className="p-1 px-2 hover:bg-stone-50"
                         >
                           <Minus size={14} />
@@ -512,7 +538,7 @@ const CartDrawer: React.FC<CartProps> = ({
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => onUpdateQuantity(item.id, 1)}
+                          onClick={() => onUpdateQuantity(getCartItemKey(item), 1)}
                           className="p-1 px-2 hover:bg-stone-50"
                         >
                           <Plus size={14} />
@@ -748,16 +774,16 @@ const CartDrawer: React.FC<CartProps> = ({
                 <button
                   onClick={handleProceedToPayment}
                   disabled={
-                    deliveryType === "delivery" &&
-                    (!deliveryZoneInfo?.isValid ||
-                      (minimumOrderValidation !== null &&
-                        !minimumOrderValidation.isValid))
+                    (deliveryType === "delivery" &&
+                      (!deliveryZoneInfo?.isValid ||
+                        (minimumOrderValidation !== null &&
+                          !minimumOrderValidation.isValid)))
                   }
                   className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-lg mt-4 group ${
-                    deliveryType === "delivery" &&
-                    (!deliveryZoneInfo?.isValid ||
-                      (minimumOrderValidation !== null &&
-                        !minimumOrderValidation.isValid))
+                    (deliveryType === "delivery" &&
+                      (!deliveryZoneInfo?.isValid ||
+                        (minimumOrderValidation !== null &&
+                          !minimumOrderValidation.isValid)))
                       ? "bg-stone-400 text-stone-600 cursor-not-allowed"
                       : "bg-[#2D2A26] text-white hover:bg-[#337957]"
                   }`}

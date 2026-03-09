@@ -7,6 +7,7 @@ export const dailyInventoryQuerySchema = z.object({
 const entrySchema = z.object({
   productId: z.string().min(1),
   productName: z.string().min(1),
+  stock_stdo: z.number().min(0).default(0),
   stdo: z.number().min(0).default(0),
   berri: z.number().min(0).default(0),
   comm_berri: z.number().min(0).default(0),

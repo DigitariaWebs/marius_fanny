@@ -41,7 +41,9 @@ function todayISO(): string {
 }
 
 function calcTotal(e: RowState): number {
-  return (e.stdo ?? 0) + (e.berri ?? 0) + (e.comm_berri ?? 0) + (e.client ?? 0);
+  // Total = stdo + client only (addition entre Comm. St-do et Comm CLIENT)
+  // Les autres colonnes (stock_stdo, berri, comm_berri) sont stockées mais pas incluses dans le total
+  return (e.stdo ?? 0) + (e.client ?? 0);
 }
 
 // ─── types ──────────────────────────────────────────────────────────────────
@@ -49,15 +51,20 @@ function calcTotal(e: RowState): number {
 interface RowState {
   productId: string;
   productName: string;
+  stock_stdo: number; // <-- Nouvelle colonne ST-do ajoutée
   stdo: number;
   berri: number;
   comm_berri: number;
   client: number;
 }
 
-type Col = "stdo" | "berri" | "comm_berri" | "client";
+type Col = "stock_stdo" | "stdo" | "berri" | "comm_berri" | "client";
 
 const COLUMNS: { key: Col; label: string; sublabel: string }[] = [
+  {
+    key: "stock_stdo", label: "ST-do",
+    sublabel: ""
+  },
   {
     key: "stdo", label: "Comm. St-do",
     sublabel: ""
@@ -150,10 +157,11 @@ export default function InventaireJournalier() {
         return {
           productId: name,
           productName: name,
-          stdo:       saved?.stdo      ?? 0,
-          berri:      saved?.berri     ?? 0,
+          stock_stdo: saved?.stock_stdo ?? 0, // <-- Intégration de la nouvelle valeur
+          stdo:       saved?.stdo       ?? 0,
+          berri:      saved?.berri      ?? 0,
           comm_berri: saved?.comm_berri ?? 0,
-          client:     saved?.client    ?? 0,
+          client:     saved?.client     ?? 0,
         };
       });
 
@@ -186,6 +194,7 @@ export default function InventaireJournalier() {
       const entries: DailyInventoryEntry[] = rows.map((r) => ({
         productId:   r.productId,
         productName: r.productName,
+        stock_stdo:  r.stock_stdo, // <-- Sauvegarde de la nouvelle colonne
         stdo:        r.stdo,
         berri:       r.berri,
         comm_berri:  r.comm_berri,
@@ -210,7 +219,7 @@ export default function InventaireJournalier() {
       acc[c.key] = rows.reduce((s, r) => s + (r[c.key] ?? 0), 0);
       return acc;
     },
-    { stdo: 0, berri: 0, comm_berri: 0, client: 0 },
+    { stock_stdo: 0, stdo: 0, berri: 0, comm_berri: 0, client: 0 },
   );
   const grandTotal = COLUMNS.reduce((s, c) => s + colTotals[c.key], 0);
 
@@ -293,7 +302,8 @@ export default function InventaireJournalier() {
       )}
 
       {/* ── Summary cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+      {/* Changement de grid-cols-5 à grid-cols-6 pour accueillir la nouvelle colonne proprement */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
         {COLUMNS.map((col) => (
           <SummaryCard key={col.key} label={col.label} sub={col.sublabel} value={colTotals[col.key]} gold={gold} />
         ))}

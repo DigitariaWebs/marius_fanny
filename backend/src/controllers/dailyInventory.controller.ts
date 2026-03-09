@@ -37,14 +37,21 @@ export const saveDailyInventory = async (
 ) => {
   const { date, entries } = req.body;
 
-  // Recalculate totals server-side
+  // Recalculate totals server-side based on inventory type
+  // - Daily inventory (journalier): total = stdo + client
+  // - Four inventory (date contains "__four"): total = stdo + comm_berri + client
+  const isFourInventory = date.includes("__four");
+  
   const sanitizedEntries = entries.map((entry) => ({
     ...entry,
+    stock_stdo: Math.max(0, entry.stock_stdo ?? 0),
     stdo: Math.max(0, entry.stdo),
     berri: Math.max(0, entry.berri),
     comm_berri: Math.max(0, entry.comm_berri),
     client: Math.max(0, entry.client),
-    total: Math.max(0, entry.stdo) + Math.max(0, entry.berri) + Math.max(0, entry.comm_berri) + Math.max(0, entry.client),
+    total: isFourInventory 
+      ? Math.max(0, entry.stdo) + Math.max(0, entry.comm_berri) + Math.max(0, entry.client) // Four: stdo + comm_berri + client
+      : Math.max(0, entry.stdo) + Math.max(0, entry.client), // Journalier: stdo + client
   }));
 
   // @ts-ignore – user injected by requireAuth middleware

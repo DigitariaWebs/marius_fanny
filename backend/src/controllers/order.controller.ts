@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Order from "../models/Order.js";
 import { Product } from "../models/Product.js";
 import { ProductionItemStatus } from "../models/ProductionItemStatus.js";
+import { DailyInventory } from "../models/DailyInventory.js";
 import type { ApiResponse, PaginatedResponse } from "../types.js";
 import type {
   CreateOrderInput,
@@ -108,7 +109,106 @@ export const createOrder = async (
       notes: orderData.notes,
     });
 
-    await order.save();
+    try {
+      await order.save();
+      console.log("✅ Order saved successfully:", order.orderNumber);
+    } catch (saveError: any) {
+      console.error("❌ Error saving order:", saveError.message, saveError.stack);
+      return res.status(500).json({
+        success: false,
+        error: "Erreur lors de la sauvegarde de la commande",
+        message: saveError.message,
+      });
+    }
+
+    // Update daily inventory - add order quantities to Comm CLIENT column
+    // Auto-create entry if product doesn't exist but is in known inventory list
+    try {
+      const inventoryDate = orderData.pickupDate 
+        ? new Date(orderData.pickupDate).toISOString().split('T')[0]
+        : orderData.deliveryDate 
+          ? new Date(orderData.deliveryDate).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0];
+
+      console.log(`📦 [INVENTORY] Processing order for inventory date: ${inventoryDate}`);
+      console.log(`📦 [INVENTORY] Order items:`, orderData.items.map(i => `${i.productName}: ${i.quantity}`).join(', '));
+
+      // Known products list (should match frontend InventaireJournalier PRODUITS_PAR_DEFAUT)
+      const KNOWN_INVENTORY_PRODUCTS = [
+        "Croissant", "Chocolatine", "Danoise framboise", "Brioche raisin",
+        "Chausson pomme", "Abricotine", "Palmier", "Bande frangipane",
+        "Croissant amandes", "Choco amandes", "Crois Pistache", "Brioche sucre",
+        "Brioche cannelle", "Biscuit choco", "Crois fromage", "Suisse",
+        "Qui. jambon petit", "Qui. jambon grand", "Qui. épinard petit",
+        "Qui. épinard grand", "Qui. poireaux petit", "Qui. poireaux grand",
+        "Tropezienne", "Tropezienne fraise", "Tourte provençal", "Tourte gibier",
+        "Pizza", "Quiche saumon gr", "Quiche saum petit", "Pâté poulet petit",
+        "Pâté poulet grand", "Pâté saumon petit", "Pâté saumon grand",
+        "Tourtière petit", "Tourtière grand", "Croque monsieur", "Croque végé",
+        "Plat cuisiné", "Soupe 1Litre", "Soupe", "SUPPLÉMENT :"
+      ];
+
+      // Aggregate quantities by product name from order items
+      const productQuantities: Record<string, number> = {};
+      for (const item of orderData.items) {
+        const productName = item.productName;
+        if (productName) {
+          productQuantities[productName] = (productQuantities[productName] || 0) + (item.quantity || 0);
+        }
+      }
+
+      console.log(`📦 [INVENTORY] Aggregated quantities:`, productQuantities);
+
+      // Get the inventory document
+      let inventory = await DailyInventory.findOne({ date: inventoryDate });
+      
+      console.log(`📦 [INVENTORY] Existing inventory entries:`, inventory?.entries?.length || 0);
+
+      if (!inventory) {
+        // Create new inventory if it doesn't exist
+        inventory = new DailyInventory({ date: inventoryDate, entries: [] });
+      }
+
+      // Update client quantities and recalculate totals
+      let updatedCount = 0;
+      let createdCount = 0;
+      for (const [productName, quantity] of Object.entries(productQuantities)) {
+        const entryIndex = inventory.entries.findIndex(e => e.productName === productName);
+        
+        console.log(`📦 [INVENTORY] Looking for "${productName}" - found at index: ${entryIndex}`);
+        
+        if (entryIndex >= 0) {
+          // Product exists - add to client quantity and recalculate total
+          const oldClient = inventory.entries[entryIndex].client;
+          inventory.entries[entryIndex].client += quantity;
+          inventory.entries[entryIndex].total = 
+            inventory.entries[entryIndex].stdo + inventory.entries[entryIndex].client;
+          console.log(`📦 [INVENTORY] Updated "${productName}": client ${oldClient} -> ${inventory.entries[entryIndex].client}, total: ${inventory.entries[entryIndex].total}`);
+          updatedCount++;
+        } else if (KNOWN_INVENTORY_PRODUCTS.includes(productName)) {
+          // Product is in known list but not in inventory - create new entry
+          inventory.entries.push({
+            productId: productName,
+            productName: productName,
+            stock_stdo: 0,
+            stdo: 0,
+            berri: 0,
+            comm_berri: 0,
+            client: quantity,
+            total: quantity // stdo (0) + client (quantity)
+          });
+          console.log(`📦 [INVENTORY] Created new entry for "${productName}" with client: ${quantity}`);
+          createdCount++;
+        } else {
+          console.log(`📦 [INVENTORY] Product "${productName}" NOT FOUND in inventory - skipping`);
+        }
+      }
+
+      await inventory.save();
+      console.log(`✅ Daily inventory updated for ${inventoryDate} - ${updatedCount} products updated, ${createdCount} created`);
+    } catch (inventoryError: any) {
+      console.error(`⚠️ Failed to update daily inventory:`, inventoryError.message);
+    }
 
     // Send order receipt email based on payment type
     try {

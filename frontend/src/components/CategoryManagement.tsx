@@ -42,6 +42,8 @@ export function CategoryManagement() {
     image: "",
     displayOrder: "0",
     parentId: "",
+    isBanner: false,
+    bannerColor: "#C5A065",
   });
 
   useEffect(() => {
@@ -109,6 +111,8 @@ export function CategoryManagement() {
       image: category.image || "",
       displayOrder: category.displayOrder.toString(),
       parentId: category.parentId ? category.parentId.toString() : "",
+      isBanner: (category as any).isBanner || false,
+      bannerColor: (category as any).bannerColor || "#C5A065",
     });
     setIsEditModalOpen(true);
   };
@@ -141,6 +145,8 @@ export function CategoryManagement() {
         description: categoryForm.description || "",
         image: categoryForm.image || "",
         displayOrder: categoryForm.displayOrder ? parseInt(categoryForm.displayOrder) : 0,
+        isBanner: categoryForm.isBanner,
+        bannerColor: categoryForm.bannerColor,
       };
       
       if (categoryForm.parentId) {
@@ -156,6 +162,8 @@ export function CategoryManagement() {
         image: "",
         displayOrder: "0",
         parentId: "",
+        isBanner: false,
+        bannerColor: "#C5A065",
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create category');
@@ -173,6 +181,8 @@ export function CategoryManagement() {
         description: categoryForm.description || "",
         image: categoryForm.image || "",
         displayOrder: categoryForm.displayOrder ? parseInt(categoryForm.displayOrder) : 0,
+        isBanner: categoryForm.isBanner,
+        bannerColor: categoryForm.bannerColor,
       };
       
       if (categoryForm.parentId) {
@@ -195,6 +205,8 @@ export function CategoryManagement() {
         image: "",
         displayOrder: "0",
         parentId: "",
+        isBanner: false,
+        bannerColor: "#C5A065",
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update category');
@@ -394,6 +406,8 @@ export function CategoryManagement() {
                 image: "",
                 displayOrder: "0",
                 parentId: "",
+                isBanner: false,
+                bannerColor: "#C5A065",
               });
             },
           },
@@ -482,6 +496,51 @@ export function CategoryManagement() {
               Les catégories seront triées par ce numéro (0, 1, 2, etc.)
             </p>
           </div>
+
+          {/* Banner Settings - Create Modal */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                id="isBannerCreate"
+                checked={categoryForm.isBanner}
+                onChange={(e) =>
+                  setCategoryForm({ ...categoryForm, isBanner: e.target.checked })
+                }
+                className="w-4 h-4 text-[#C5A065] border-gray-300 rounded focus:ring-[#C5A065]"
+              />
+              <label htmlFor="isBannerCreate" className="text-sm font-medium text-gray-700">
+                Afficher comme bannière d'événement spécial
+              </label>
+            </div>
+            
+            {categoryForm.isBanner && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Couleur de la bannière
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={categoryForm.bannerColor}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, bannerColor: e.target.value })
+                    }
+                    className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={categoryForm.bannerColor}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, bannerColor: e.target.value })
+                    }
+                    placeholder="#C5A065"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#C5A065]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </Modal>
 
@@ -511,6 +570,8 @@ export function CategoryManagement() {
                 image: "",
                 displayOrder: "0",
                 parentId: "",
+                isBanner: false,
+                bannerColor: "#C5A065",
               });
             },
           },
@@ -600,6 +661,51 @@ export function CategoryManagement() {
             <p className="text-xs text-gray-500 mt-1">
               Les catégories seront triées par ce numéro (0, 1, 2, etc.)
             </p>
+          </div>
+
+          {/* Banner Settings - Edit Modal */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                id="isBannerEdit"
+                checked={categoryForm.isBanner}
+                onChange={(e) =>
+                  setCategoryForm({ ...categoryForm, isBanner: e.target.checked })
+                }
+                className="w-4 h-4 text-[#C5A065] border-gray-300 rounded focus:ring-[#C5A065]"
+              />
+              <label htmlFor="isBannerEdit" className="text-sm font-medium text-gray-700">
+                Afficher comme bannière d'événement spécial
+              </label>
+            </div>
+            
+            {categoryForm.isBanner && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Couleur de la bannière
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={categoryForm.bannerColor}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, bannerColor: e.target.value })
+                    }
+                    className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={categoryForm.bannerColor}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, bannerColor: e.target.value })
+                    }
+                    placeholder="#C5A065"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#C5A065]"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Modal>

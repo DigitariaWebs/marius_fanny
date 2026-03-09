@@ -24,10 +24,20 @@ export const productSchema = z.object({
   allergens: z.string().optional(),
   productionType: z.enum(["patisserie", "cuisinier", "four"]),
   targetAudience: z.enum(["clients", "pro"]),
-  customOptions: z.array(z.object({
-    name: z.string().min(1),
-    choices: z.array(z.string().min(1)),
-  })).optional(),
+  customOptions: z
+    .array(
+      z
+        .object({
+          name: z.string().min(1),
+          type: z.enum(["choice", "text"]).optional(),
+          choices: z.array(z.string().min(1)).default([]),
+        })
+        .refine(
+          (opt) => (opt.type || "choice") === "text" || opt.choices.length > 0,
+          "Les options de type choix doivent avoir au moins un choix",
+        ),
+    )
+    .optional(),
 });
 
 /**
@@ -50,10 +60,20 @@ export const createProductSchema = z.object({
   allergens: z.string().optional(),
   productionType: z.enum(["patisserie", "cuisinier", "four"]),
   targetAudience: z.enum(["clients", "pro"]),
-  customOptions: z.array(z.object({
-    name: z.string().min(1),
-    choices: z.array(z.string().min(1)),
-  })).optional(),
+  customOptions: z
+    .array(
+      z
+        .object({
+          name: z.string().min(1),
+          type: z.enum(["choice", "text"]).optional(),
+          choices: z.array(z.string().min(1)).default([]),
+        })
+        .refine(
+          (opt) => (opt.type || "choice") === "text" || opt.choices.length > 0,
+          "Les options de type choix doivent avoir au moins un choix",
+        ),
+    )
+    .optional(),
   recommendations: z.array(z.number().int().positive()).optional(),
 });
 
@@ -77,10 +97,20 @@ export const updateProductSchema = z.object({
   allergens: z.string().optional(),
   productionType: z.enum(["patisserie", "cuisinier", "four"]).optional(),
   targetAudience: z.enum(["clients", "pro"]).optional(),
-  customOptions: z.array(z.object({
-    name: z.string().min(1),
-    choices: z.array(z.string().min(1)),
-  })).optional(),
+  customOptions: z
+    .array(
+      z
+        .object({
+          name: z.string().min(1),
+          type: z.enum(["choice", "text"]).optional(),
+          choices: z.array(z.string().min(1)).default([]),
+        })
+        .refine(
+          (opt) => (opt.type || "choice") === "text" || opt.choices.length > 0,
+          "Les options de type choix doivent avoir au moins un choix",
+        ),
+    )
+    .optional(),
   recommendations: z.array(z.number().int().positive()).optional(),
   displayOrder: z.number().int().nonnegative().optional(),
 });

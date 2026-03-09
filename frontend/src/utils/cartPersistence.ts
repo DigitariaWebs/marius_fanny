@@ -9,10 +9,13 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  cartItemKey?: string;
+  selectedOptions?: Record<string, string>;
   preparationTimeHours?: number;
   hasTaxes?: boolean;
   category?: string;
   productionType?: string;
+  availableDays?: number[];
 }
 
 const CART_STORAGE_KEY = 'marius_fanny_cart';

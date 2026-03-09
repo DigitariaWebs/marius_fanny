@@ -42,6 +42,12 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  cartItemKey?: string;
+  selectedOptions?: Record<string, string>;
+  availableDays?: number[];
+  hasTaxes?: boolean;
+  category?: string;
+  productionType?: string;
 }
 
 interface HomePageProps {
@@ -120,14 +126,30 @@ const App: React.FC = () => {
     return () => window.removeEventListener("cart:updated", handleCartUpdate);
   }, []);
 
+  const buildOptionsSignature = (options?: Record<string, string>) => {
+    if (!options || Object.keys(options).length === 0) return "";
+    return Object.entries(options)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}:${value}`)
+      .join("|");
+  };
+
+  const buildCartItemKey = (product: {
+    id: number;
+    selectedOptions?: Record<string, string>;
+  }) => `${product.id}::${buildOptionsSignature(product.selectedOptions)}`;
+
   const addToCart = (product: any) => {
     console.log("➕ [APP] Adding to cart:", product);
     setCartItems((prev) => {
       console.log("📦 [APP] Previous cart:", prev);
-      const existing = prev.find((item) => item.id === product.id);
+      const incomingKey = buildCartItemKey(product);
+      const existing = prev.find(
+        (item) => (item.cartItemKey || buildCartItemKey(item)) === incomingKey,
+      );
       if (existing) {
         const newCart = prev.map((item) =>
-          item.id === product.id
+          (item.cartItemKey || buildCartItemKey(item)) === incomingKey
             ? { ...item, quantity: item.quantity + 1 }
             : item,
         );
@@ -136,17 +158,23 @@ const App: React.FC = () => {
       }
       const newCart = [
         ...prev,
-        { ...product, quantity: 1, image: product.image || product.img },
+        {
+          ...product,
+          cartItemKey: incomingKey,
+          selectedOptions: product.selectedOptions || undefined,
+          quantity: 1,
+          image: product.image || product.img,
+        },
       ];
       console.log("🆕 [APP] Added new item, new cart:", newCart);
       return newCart;
     });
   };
 
-  const updateQuantity = (id: number, delta: number) => {
+  const updateQuantity = (cartItemKey: string, delta: number) => {
     setCartItems((prev) =>
       prev.map((item) => {
-        if (item.id === id) {
+        if ((item.cartItemKey || buildCartItemKey(item)) === cartItemKey) {
           const newQty = Math.max(1, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
@@ -155,8 +183,12 @@ const App: React.FC = () => {
     );
   };
 
-  const removeItem = (id: number) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const removeItem = (cartItemKey: string) => {
+    setCartItems((prev) =>
+      prev.filter(
+        (item) => (item.cartItemKey || buildCartItemKey(item)) !== cartItemKey,
+      ),
+    );
   };
 
   return (

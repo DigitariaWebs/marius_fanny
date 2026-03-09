@@ -220,6 +220,16 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
   const handleAddToCart = () => {
     if (selectedProduct) {
+      const missingTextOption = (selectedProduct.customOptions || []).find(
+        (option) =>
+          option.type === "text" &&
+          (!selectedOptions[option.name] || !selectedOptions[option.name].trim()),
+      );
+      if (missingTextOption) {
+        alert(`Veuillez remplir le champ "${missingTextOption.name}".`);
+        return;
+      }
+
       const totalPrice = getCurrentPrice();
       const discountedPrice = totalPrice * (1 - (selectedProduct.discountPercentage || 0) / 100);
       const p: any = { 
@@ -234,7 +244,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
       if (related.length > 0) {
         setRecommendationNotif(related);
         setShowRecommendationNotif(true);
-        setTimeout(() => setShowRecommendationNotif(false), 1000000);
+        setTimeout(() => setShowRecommendationNotif(false), 12000);
       }
 
       setSelectedProduct(null);
@@ -248,8 +258,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
       {/* NOTIFICATION RECOMMANDATIONS */}
       {showRecommendationNotif && recommendationNotif.length > 0 && (
-        <div className="fixed inset-0 z-99999 flex items-start justify-center pt-8 pointer-events-none">
-        <div className="pointer-events-auto w-80 bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[12000] pointer-events-none px-2 w-full flex justify-center">
+        <div className="pointer-events-auto w-[min(22rem,calc(100vw-2rem))] bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="bg-[#2D2A26] px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-lg">✨</span>
@@ -279,7 +289,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      onAddToCart({ ...rec, price: recPrice });
+                      onAddToCart({ ...rec, price: recPrice, selectedOptions: {} });
                       setShowRecommendationNotif(false);
                     }}
                     className="shrink-0 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-[#337957] text-white hover:bg-[#2D2A26] transition-colors"
@@ -552,8 +562,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                           <span className="w-1 h-4 bg-[#337957] rounded-full"></span>
                           {option.name}
                         </h4>
+                        {option.type === "text" ? (
+                          <input
+                            type="text"
+                            value={selectedOptions[option.name] || ""}
+                            onChange={(e) =>
+                              setSelectedOptions((prev) => ({
+                                ...prev,
+                                [option.name]: e.target.value,
+                              }))
+                            }
+                            className="w-full p-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-[#337957] bg-stone-50"
+                            placeholder={`Écrire ${option.name.toLowerCase()}...`}
+                          />
+                        ) : (
                         <div className="flex gap-2 flex-wrap">
-                          {option.choices.map((choice) => {
+                          {(option.choices || []).map((choice) => {
                             const displayText = formatChoiceDisplay(choice) || choice;
                             // Prix additionnel pour l'affichage
                             let additionalPrice = 0;
@@ -584,6 +608,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                             );
                           })}
                         </div>
+                        )}
                       </div>
                     ))}
                   </div>

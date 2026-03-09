@@ -20,7 +20,7 @@ import {
   orderQuerySchema,
 } from "../schemas/order.schema.js";
 import { productionStatusSchema } from "../schemas/inventory.schema.js";
-import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import { requireAuth, requireAdmin, optionalAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -43,8 +43,8 @@ router.post(
  * Authentication required for creating and managing orders
  */
 
-// Create a new order (requires authentication)
-router.post("/", requireAuth, validateBody(createOrderSchema), createOrder);
+// Create a new order (optional auth - allows guest checkout)
+router.post("/", optionalAuth, validateBody(createOrderSchema), createOrder);
 
 // Get production list for kitchen (requires authentication)
 router.get("/production", requireAuth, getProductionList);

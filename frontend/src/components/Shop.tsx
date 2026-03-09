@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { categoryAPI } from '../lib/CategoryAPI';
 import type { Category as CategoryType } from '../types';
 import { getImageUrl } from '../utils/api';
-import ProductSelection from './ProductSelection'; 
+import ProductSelection from './ProductSelection';
 
 const styles = {
   cream: '#F9F7F2',
   text: '#2D2A26',
   gold: '#337957',
+  emerald: '#337957',
   fontScript: '"Great Vibes", cursive',
   fontSans: '"Inter", sans-serif',
 };
@@ -32,11 +33,12 @@ interface CategoryShowcaseProps {
 
 const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart }) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [banners, setBanners] = useState<CategoryType[]>([]); // Banner categories from admin
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // ÉTAT : Pour savoir quelle catégorie est sélectionnée
-  const [selectedCat, setSelectedCat] = useState<{id: number, title: string} | null>(null);
+  const [selectedCat, setSelectedCat] = useState<{id: number | string, title: string} | null>(null);
   
   // RÉFÉRENCE : Pour le scroll automatique
   const productsRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,15 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
         .filter((node) => !node.parentId || !byId.has(node.parentId))
         .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
 
+      // Include banners from all category levels (root and children)
+      const bannerCategories = Array.from(byId.values())
+        .filter((cat) => cat.isBanner === true)
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
+      setBanners(bannerCategories);
+
+      // Regular categories (non-banner)
+      const regularCategories = rootCategories.filter((cat) => cat.isBanner !== true);
+
       const getAllChildTitles = (children: ApiCategoryNode[] = []): string[] => {
         const titles: string[] = [];
         const walk = (nodes: ApiCategoryNode[]) => {
@@ -87,7 +98,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
         return titles;
       };
       
-      const displayCategories: Category[] = rootCategories.map((cat, index) => ({
+      const displayCategories: Category[] = regularCategories.map((cat, index) => ({
         id: cat.id,
         title: cat.name,
         image: cat.image || './gateau.jpg',
@@ -102,9 +113,14 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
     }
   };
 
-  const handleCategoryClick = (categoryId: number, categoryTitle: string) => {
+  const handleCategoryClick = (categoryId: number | string, categoryTitle: string) => {
     setSelectedCat({ id: categoryId, title: categoryTitle });
-    if (onCategoryClick) onCategoryClick(categoryId, categoryTitle);
+    if (onCategoryClick) {
+      // Only pass number to external handler
+      if (typeof categoryId === 'number') {
+        onCategoryClick(categoryId, categoryTitle);
+      }
+    }
     
     // Scroll vers les produits après un court délai
     setTimeout(() => {
@@ -116,6 +132,69 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
 
   return (
     <div className="flex flex-col bg-[#F9F7F2]">
+      {/* SPECIAL OCCASION BANNERS */}
+      {banners.length > 0 && (
+        <section className="relative overflow-hidden py-8">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-6 md:mb-8">
+              <h2 className="text-3xl md:text-5xl lowercase" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
+                vos événements spéciaux
+              </h2>
+              <p className="mt-2 text-sm md:text-base lowercase" style={{ color: styles.emerald }}>
+                des collections saisonnieres mises en avant pour vos occasions.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 md:space-y-5">
+            {banners.map((banner) => (
+                <article
+                  key={banner.id}
+                  onClick={() => handleCategoryClick(banner.id, banner.name)}
+                  className="group relative w-full min-h-75 h-[45vh] md:h-[52vh] max-h-140 cursor-pointer overflow-hidden"
+                >
+                  {/* Background media */}
+                  {banner.image ? (
+                    <img
+                      src={getImageUrl(banner.image)}
+                      alt={banner.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `linear-gradient(120deg, ${banner.bannerColor || '#337957'} 0%, #1A4A37 60%, #0E2C22 100%)`
+                      }}
+                    />
+                  )}
+
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-linear-to-r from-black/40 via-black/20 to-black/10 group-hover:from-black/30 group-hover:via-black/15 group-hover:to-black/5 transition-colors" />
+
+                  {/* Content */}
+                  <div className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-10 flex items-end pb-6 md:pb-8">
+                    <div className="max-w-lg rounded-xl border border-[#337957]/20 bg-white/70 backdrop-blur-[2px] p-4 md:p-5 shadow-lg lowercase">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider bg-[#337957]/10" style={{ color: styles.emerald }}>
+                        evenement special
+                      </span>
+                      <h3 className="mt-2 text-3xl md:text-4xl font-semibold leading-tight lowercase" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
+                        {banner.name}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed line-clamp-2" style={{ color: styles.emerald }}>
+                        {banner.description || 'decouvrez notre selection exclusive pour vos moments marquants.'}
+                      </p>
+                      <button className="mt-3 px-5 py-2 bg-white hover:bg-[#EAF6EF] rounded-full text-sm font-semibold transition-colors lowercase" style={{ color: styles.emerald }}>
+                        explorer la collection
+                      </button>
+                    </div>
+                  </div>
+                </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="relative py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 space-y-4">
@@ -157,12 +236,30 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
       {/* ZONE D'AFFICHAGE DES PRODUITS */}
       <div ref={productsRef}>
         {selectedCat ? (
-          <ProductSelection 
-            categoryId={selectedCat.id} 
-            categoryTitle={selectedCat.title}
-            onAddToCart={onAddToCart}
-            onBack={() => setSelectedCat(null)}
-          />
+          typeof selectedCat.id === 'number' ? (
+            <ProductSelection 
+              categoryId={selectedCat.id} 
+              categoryTitle={selectedCat.title}
+              onAddToCart={onAddToCart}
+              onBack={() => setSelectedCat(null)}
+            />
+          ) : (
+            // Special occasion - show message or all products
+            <div className="py-12 text-center">
+              <h3 className="text-2xl" style={{ fontFamily: '"Great Vibes", cursive', color: '#C5A065' }}>
+                {selectedCat.title}
+              </h3>
+              <p className="mt-4 text-gray-600">
+                Bientôt disponible - Découvrez nos créations spéciales pour {selectedCat.title}!
+              </p>
+              <button 
+                onClick={() => setSelectedCat(null)}
+                className="mt-6 px-6 py-2 bg-[#C5A065] text-white rounded-full"
+              >
+                Retour aux catégories
+              </button>
+            </div>
+          )
         ) : null}
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { 
   ChefHat, 
   Package, 
+  ClipboardList,
   CheckCircle2, 
   AlertCircle,
   Calendar,
@@ -19,6 +20,7 @@ import {
   Phone
 } from "lucide-react";
 import { authClient } from "../lib/AuthClient";
+import { dailyInventoryAPI, type DailyInventoryEntry } from "../lib/DailyInventoryAPI";
 import GoldenBackground from "./GoldenBackground";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -59,6 +61,12 @@ interface GroupedProduct {
   items: ProductionItem[];
 }
 
+interface InventorySummary {
+  entries: DailyInventoryEntry[];
+  updatedAt: string | null;
+  savedBy: string | null;
+}
+
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
@@ -75,7 +83,7 @@ function NavItem({ icon, label, active = false, onClick }: NavItemProps) {
         relative group
         ${
           active
-            ? "bg-gradient-to-r from-[#C5A065] to-[#b8935a] text-white shadow-lg shadow-[#C5A065]/30"
+            ? "bg-linear-to-r from-[#C5A065] to-[#b8935a] text-white shadow-lg shadow-[#C5A065]/30"
             : "text-stone-600 hover:bg-stone-100 hover:text-[#C5A065]"
         }
       `}
@@ -104,7 +112,20 @@ const PatissierDashboard: React.FC = () => {
     getLocalDateYYYYMMDD()
   );
   const [viewMode, setViewMode] = useState<"list" | "orders">("list");
+  const [activeModule, setActiveModule] = useState<"production" | "inventaire" | "inventaire-frais">("production");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
+  const [inventoryJournalier, setInventoryJournalier] = useState<InventorySummary>({
+    entries: [],
+    updatedAt: null,
+    savedBy: null,
+  });
+  const [inventoryFrais, setInventoryFrais] = useState<InventorySummary>({
+    entries: [],
+    updatedAt: null,
+    savedBy: null,
+  });
   const navigate = useNavigate();
 
   const loadSavedStatuses = (): { items: Record<string, boolean>; products: Record<number, boolean> } => {
@@ -130,6 +151,10 @@ const PatissierDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchProductionData();
+  }, [selectedDate]);
+
+  useEffect(() => {
+    fetchReadOnlyInventories();
   }, [selectedDate]);
 
   const fetchProductionData = async () => {
@@ -171,6 +196,34 @@ const PatissierDashboard: React.FC = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReadOnlyInventories = async () => {
+    setInventoryLoading(true);
+    setInventoryError(null);
+
+    try {
+      const [journalierRes, fraisRes] = await Promise.all([
+        dailyInventoryAPI.getByDate(selectedDate),
+        dailyInventoryAPI.getByDate(`${selectedDate}__four`),
+      ]);
+
+      setInventoryJournalier({
+        entries: journalierRes.data.entries || [],
+        updatedAt: journalierRes.data.updatedAt,
+        savedBy: journalierRes.data.savedBy,
+      });
+
+      setInventoryFrais({
+        entries: fraisRes.data.entries || [],
+        updatedAt: fraisRes.data.updatedAt,
+        savedBy: fraisRes.data.savedBy,
+      });
+    } catch (err: any) {
+      setInventoryError(err?.message || "Erreur de chargement des inventaires.");
+    } finally {
+      setInventoryLoading(false);
     }
   };
 
@@ -254,35 +307,6 @@ const PatissierDashboard: React.FC = () => {
     a.click();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F9F7F2]">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-[#C5A065]" />
-          <p className="text-gray-600">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F9F7F2]">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-900 font-semibold mb-2">Erreur</p>
-          <p className="text-gray-600">{error}</p>
-          <button
-            onClick={fetchProductionData}
-            className="mt-4 px-4 py-2 bg-[#C5A065] text-white rounded-lg hover:bg-[#b8935a]"
-          >
-            Réessayer
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative flex h-screen bg-[#F9F7F2] font-sans text-stone-800">
       <div className="fixed inset-0 z-0 opacity-30">
@@ -336,7 +360,29 @@ const PatissierDashboard: React.FC = () => {
               <NavItem
                 icon={<ChefHat size={20} />}
                 label="Liste de production"
-                active={true}
+                active={activeModule === "production"}
+                onClick={() => {
+                  setActiveModule("production");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+              <NavItem
+                icon={<ClipboardList size={20} />}
+                label="Inventaire journalier"
+                active={activeModule === "inventaire"}
+                onClick={() => {
+                  setActiveModule("inventaire");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
+              <NavItem
+                icon={<ClipboardList size={20} />}
+                label="Inventaire Frais"
+                active={activeModule === "inventaire-frais"}
+                onClick={() => {
+                  setActiveModule("inventaire-frais");
+                  setIsMobileMenuOpen(false);
+                }}
               />
             </div>
           </div>
@@ -372,7 +418,8 @@ const PatissierDashboard: React.FC = () => {
           <div className="w-6" />
         </div>
 
-        <div className="p-4 md:p-8">
+        {activeModule === "production" && (
+          <div className="p-4 md:p-8">
           {/* Header */}
           <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-sm p-6 mb-6 border border-stone-200/50">
             <div className="flex items-center justify-between mb-6">
@@ -436,7 +483,7 @@ const PatissierDashboard: React.FC = () => {
 
             {/* Filters */}
             <div className="flex flex-wrap gap-4 print:hidden">
-              <div className="flex-1 min-w-[200px]">
+              <div className="flex-1 min-w-50">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
                   <input
@@ -496,7 +543,7 @@ const PatissierDashboard: React.FC = () => {
                     <span className="flex-1 text-xs font-black uppercase tracking-widest text-stone-400">
                       Produit
                     </span>
-                    <span className="shrink-0 text-xs font-black uppercase tracking-widest text-stone-400 min-w-[3rem] text-right">
+                    <span className="shrink-0 text-xs font-black uppercase tracking-widest text-stone-400 min-w-12 text-right">
                       Quantité
                     </span>
                   </div>
@@ -532,7 +579,7 @@ const PatissierDashboard: React.FC = () => {
 
                       {/* Quantity badge */}
                       <span
-                        className={`shrink-0 text-2xl font-bold min-w-[3rem] text-right ${
+                        className={`shrink-0 text-2xl font-bold min-w-12 text-right ${
                           product.done ? "text-green-400" : "text-[#C5A065]"
                         }`}
                       >
@@ -615,7 +662,135 @@ const PatissierDashboard: React.FC = () => {
               )}
             </div>
           )}
-        </div>
+          </div>
+        )}
+
+        {(activeModule === "inventaire" || activeModule === "inventaire-frais") && (
+          <div className="p-4 md:p-8">
+            <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-sm p-6 mb-6 border border-stone-200/50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <ClipboardList className="w-7 h-7 text-[#C5A065]" />
+                  <div>
+                    <h2
+                      className="text-3xl md:text-4xl mb-1"
+                      style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+                    >
+                      {activeModule === "inventaire" ? "Inventaire Journalier" : "Inventaire Frais"}
+                    </h2>
+                    <p className="text-stone-600">Lecture seule - valeurs remplies par l'administrateur</p>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchReadOnlyInventories}
+                  className="p-2 text-stone-600 hover:bg-stone-100 rounded-lg"
+                  title="Actualiser"
+                >
+                  <RefreshCw className={`w-5 h-5 ${inventoryLoading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-stone-400" />
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-[#C5A065] focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {inventoryError && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+                {inventoryError}
+              </div>
+            )}
+
+            <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-sm border border-stone-200/50 overflow-hidden">
+              {(() => {
+                const source = activeModule === "inventaire" ? inventoryJournalier : inventoryFrais;
+                if (inventoryLoading) {
+                  return (
+                    <div className="p-8 text-center text-stone-600">
+                      <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-3 text-[#C5A065]" />
+                      Chargement de l'inventaire...
+                    </div>
+                  );
+                }
+
+                if (!source.entries.length) {
+                  return (
+                    <div className="p-8 text-center text-stone-600">
+                      Aucun inventaire saisi pour cette date.
+                    </div>
+                  );
+                }
+
+                const colTotals = source.entries.reduce(
+                  (acc, entry) => {
+                    acc.stock_stdo += entry.stock_stdo || 0;
+                    acc.stdo += entry.stdo || 0;
+                    acc.berri += entry.berri || 0;
+                    acc.comm_berri += entry.comm_berri || 0;
+                    acc.client += entry.client || 0;
+                    acc.total += entry.total || 0;
+                    return acc;
+                  },
+                  { stock_stdo: 0, stdo: 0, berri: 0, comm_berri: 0, client: 0, total: 0 }
+                );
+
+                return (
+                  <>
+                    <div className="px-6 py-3 bg-stone-50 border-b border-stone-200 text-sm text-stone-600">
+                      Derniere mise a jour: {source.updatedAt ? new Date(source.updatedAt).toLocaleString("fr-CA") : "-"}
+                      {source.savedBy ? `  -  par ${source.savedBy}` : ""}
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left min-w-225">
+                        <thead className="bg-stone-50 border-b border-stone-200">
+                          <tr className="text-[10px] uppercase tracking-widest text-stone-500">
+                            <th className="px-6 py-3">Produit</th>
+                            <th className="px-4 py-3 text-center">ST-do</th>
+                            <th className="px-4 py-3 text-center">Comm. St-do</th>
+                            <th className="px-4 py-3 text-center">BERRI</th>
+                            <th className="px-4 py-3 text-center">Comm Berri</th>
+                            <th className="px-4 py-3 text-center">Comm CLIENT</th>
+                            <th className="px-4 py-3 text-center">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100">
+                          {source.entries.map((entry) => (
+                            <tr key={entry.productId} className="hover:bg-stone-50/60">
+                              <td className="px-6 py-3 font-medium text-stone-800">{entry.productName}</td>
+                              <td className="px-4 py-3 text-center">{entry.stock_stdo || 0}</td>
+                              <td className="px-4 py-3 text-center">{entry.stdo || 0}</td>
+                              <td className="px-4 py-3 text-center">{entry.berri || 0}</td>
+                              <td className="px-4 py-3 text-center">{entry.comm_berri || 0}</td>
+                              <td className="px-4 py-3 text-center">{entry.client || 0}</td>
+                              <td className="px-4 py-3 text-center font-semibold text-[#C5A065]">{entry.total || 0}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-stone-50 border-t border-stone-200">
+                          <tr className="font-semibold text-stone-700">
+                            <td className="px-6 py-3">Totaux</td>
+                            <td className="px-4 py-3 text-center">{colTotals.stock_stdo}</td>
+                            <td className="px-4 py-3 text-center">{colTotals.stdo}</td>
+                            <td className="px-4 py-3 text-center">{colTotals.berri}</td>
+                            <td className="px-4 py-3 text-center">{colTotals.comm_berri}</td>
+                            <td className="px-4 py-3 text-center">{colTotals.client}</td>
+                            <td className="px-4 py-3 text-center text-[#C5A065]">{colTotals.total}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
