@@ -9,6 +9,7 @@ const styles = {
   cream: '#F9F7F2',
   text: '#2D2A26',
   gold: '#337957',
+  emerald: '#337957',
   fontScript: '"Great Vibes", cursive',
   fontSans: '"Inter", sans-serif',
 };
@@ -76,8 +77,10 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
         .filter((node) => !node.parentId || !byId.has(node.parentId))
         .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
 
-      // Filter banner categories (special occasions created by admin)
-      const bannerCategories = rootCategories.filter((cat) => cat.isBanner === true);
+      // Include banners from all category levels (root and children)
+      const bannerCategories = Array.from(byId.values())
+        .filter((cat) => cat.isBanner === true)
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
       setBanners(bannerCategories);
 
       // Regular categories (non-banner)
@@ -130,71 +133,67 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
   return (
     <div className="flex flex-col bg-[#F9F7F2]">
       {/* SPECIAL OCCASION BANNERS */}
-      <section className="relative py-8 px-6 bg-gradient-to-r from-amber-50 to-rose-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-6">
-            <h2 className="text-3xl md:text-4xl" style={{ fontFamily: styles.fontScript, color: '#C5A065' }}>
-              Vos Événements Spéciaux
-            </h2>
+      {banners.length > 0 && (
+        <section className="relative overflow-hidden py-8">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-6 md:mb-8">
+              <h2 className="text-3xl md:text-5xl lowercase" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
+                vos événements spéciaux
+              </h2>
+              <p className="mt-2 text-sm md:text-base lowercase" style={{ color: styles.emerald }}>
+                des collections saisonnieres mises en avant pour vos occasions.
+              </p>
+            </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {banners.length > 0 ? (
-              banners.map((banner) => (
-                <div
+
+          <div className="space-y-4 md:space-y-5">
+            {banners.map((banner) => (
+                <article
                   key={banner.id}
                   onClick={() => handleCategoryClick(banner.id, banner.name)}
-                  className="group relative h-48 md:h-56 overflow-hidden rounded-2xl cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                  className="group relative w-full min-h-75 h-[45vh] md:h-[52vh] max-h-140 cursor-pointer overflow-hidden"
                 >
-                  {/* Background gradient or image */}
+                  {/* Background media */}
                   {banner.image ? (
-                    <img 
-                      src={getImageUrl(banner.image)} 
+                    <img
+                      src={getImageUrl(banner.image)}
                       alt={banner.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   ) : (
-                    <div 
-                      className="absolute inset-0 transition-all duration-500 group-hover:scale-110"
-                      style={{ 
-                        background: `linear-gradient(135deg, ${banner.bannerColor || '#C5A065'}dd 0%, ${banner.bannerColor || '#C5A065'}88 100%)`
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `linear-gradient(120deg, ${banner.bannerColor || '#337957'} 0%, #1A4A37 60%, #0E2C22 100%)`
                       }}
                     />
                   )}
-                  
+
                   {/* Overlay */}
-                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
-                  
-                  {/* Decorative elements */}
-                  <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-4 right-4 text-4xl">✨</div>
-                    <div className="absolute bottom-4 left-4 text-3xl">🎂</div>
-                  </div>
-                  
+                  <div className="absolute inset-0 bg-linear-to-r from-black/40 via-black/20 to-black/10 group-hover:from-black/30 group-hover:via-black/15 group-hover:to-black/5 transition-colors" />
+
                   {/* Content */}
-                  <div className="relative z-10 flex flex-col items-center justify-center h-full p-6 text-center">
-                    <h3 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg" style={{ fontFamily: styles.fontScript }}>
-                      {banner.name}
-                    </h3>
-                    <p className="mt-2 text-white/90 font-medium">
-                      {banner.description || 'Découvrez notre sélection'}
-                    </p>
-                    <button className="mt-4 px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-full text-sm font-semibold transition-all">
-                      Découvrir →
-                    </button>
+                  <div className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-10 flex items-end pb-6 md:pb-8">
+                    <div className="max-w-lg rounded-xl border border-[#337957]/20 bg-white/70 backdrop-blur-[2px] p-4 md:p-5 shadow-lg lowercase">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider bg-[#337957]/10" style={{ color: styles.emerald }}>
+                        evenement special
+                      </span>
+                      <h3 className="mt-2 text-3xl md:text-4xl font-semibold leading-tight lowercase" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
+                        {banner.name}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed line-clamp-2" style={{ color: styles.emerald }}>
+                        {banner.description || 'decouvrez notre selection exclusive pour vos moments marquants.'}
+                      </p>
+                      <button className="mt-3 px-5 py-2 bg-white hover:bg-[#EAF6EF] rounded-full text-sm font-semibold transition-colors lowercase" style={{ color: styles.emerald }}>
+                        explorer la collection
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              // Fallback: show message if no banners configured
-              <div className="col-span-3 text-center py-8 text-gray-500">
-                <p className="text-lg">Pas d'événements spéciaux configurés</p>
-                <p className="text-sm mt-2">L'administrateur peut ajouter des catégories bannières depuis le panneau d'administration</p>
-              </div>
-            )}
+                </article>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="relative py-12 px-6">
         <div className="max-w-7xl mx-auto">

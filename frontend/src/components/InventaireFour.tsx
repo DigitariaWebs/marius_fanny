@@ -93,7 +93,7 @@ export default function InventaireFour() {
     <div className="p-4 md:p-8">
       <header className="mb-6">
         <h2 className="text-4xl md:text-5xl mb-1" style={{ fontFamily: '"Great Vibes", cursive', color: gold }}>
-          Inventaire Four & Pâtisserie
+          Inventaire Frais
         </h2>
         <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">Registre de production quotidienne</p>
       </header>

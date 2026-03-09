@@ -400,9 +400,25 @@ export default function OrderForm({
     }
   };
 
-  const filteredClients = clients.filter((client) =>
-    client.email.toLowerCase().includes(emailSearch.toLowerCase()),
-  );
+  const normalizePhone = (value: string) => value.replace(/\D/g, "");
+
+  const filteredClients = clients.filter((client) => {
+    const query = emailSearch.trim().toLowerCase();
+    if (!query) return true;
+
+    const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+    const email = (client.email || "").toLowerCase();
+    const phoneRaw = (client.phone || "").toLowerCase();
+    const phoneDigits = normalizePhone(client.phone || "");
+    const queryDigits = normalizePhone(query);
+
+    return (
+      fullName.includes(query) ||
+      email.includes(query) ||
+      phoneRaw.includes(query) ||
+      (queryDigits.length > 0 && phoneDigits.includes(queryDigits))
+    );
+  });
 
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client);
@@ -639,7 +655,7 @@ export default function OrderForm({
             <PopoverContent className="w-full p-0" align="start">
               <Command>
                 <CommandInput
-                  placeholder="Rechercher par email..."
+                  placeholder="Rechercher par nom, telephone ou email..."
                   value={emailSearch}
                   onValueChange={handleEmailChange}
                 />
@@ -649,7 +665,7 @@ export default function OrderForm({
                     {filteredClients.map((client) => (
                       <CommandItem
                         key={client.id}
-                        value={client.email}
+                        value={`${client.firstName} ${client.lastName} ${client.email} ${client.phone}`}
                         onSelect={() => handleClientSelect(client)}
                       >
                         <div className="flex flex-col">
@@ -657,7 +673,7 @@ export default function OrderForm({
                             {client.firstName} {client.lastName}
                           </span>
                           <span className="text-xs text-gray-500">
-                            {client.email}
+                            {client.email} - {client.phone}
                           </span>
                         </div>
                       </CommandItem>

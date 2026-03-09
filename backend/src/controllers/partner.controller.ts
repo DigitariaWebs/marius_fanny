@@ -21,6 +21,7 @@ export async function submitPartnerRequest(
   try {
     const { businessName, contactName, email, phone, address, password } =
       req.body;
+    const normalizedEmail = (email || "").toLowerCase().trim();
 
     // Basic validation
     if (!businessName || !contactName || !email || !phone || !address || !password) {
@@ -31,10 +32,39 @@ export async function submitPartnerRequest(
     }
 
     // Check if a pending or approved request already exists for this email
-    const existing = await PartnerRequest.findOne({ email: email.toLowerCase() });
+    const existing = await PartnerRequest.findOne({ email: normalizedEmail });
     if (existing) {
       if (existing.status === "approved") {
-        return next(new AppError("Un compte Pro existe déjà avec cet email.", 409));
+        const { db } = await connectMongoDB();
+        const authUser = await db.collection("user").findOne({ email: normalizedEmail });
+        const authUserId = (authUser as any)?.id;
+        const authAccountByUserId = authUserId
+          ? await db.collection("account").findOne({
+              userId: authUserId,
+              providerId: "credential",
+            })
+          : null;
+        const legacyAccountByEmail = await db.collection("account").findOne({
+          accountId: normalizedEmail,
+          providerId: "credential",
+        });
+
+        // Migrate legacy partner accounts created with accountId=email.
+        if (authUserId && legacyAccountByEmail && !authAccountByUserId) {
+          await db.collection("account").updateOne(
+            { _id: legacyAccountByEmail._id },
+            { $set: { accountId: authUserId, userId: authUserId, updatedAt: new Date() } },
+          );
+        }
+
+        // Recovery path: manual deletion left only an orphan account.
+        if (!authUser && legacyAccountByEmail) {
+          await db.collection("account").deleteOne({ _id: legacyAccountByEmail._id });
+        }
+
+        if (authUser) {
+          return next(new AppError("Un compte Pro existe déjà avec cet email.", 409));
+        }
       }
       if (existing.status === "pending") {
         return next(
@@ -53,18 +83,31 @@ export async function submitPartnerRequest(
     const approvalToken = crypto.randomBytes(40).toString("hex");
     const tokenExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h
 
-    // Save the pending request
-    await PartnerRequest.create({
-      businessName: businessName.trim(),
-      contactName: contactName.trim(),
-      email: email.toLowerCase().trim(),
-      phone: phone.trim(),
-      address: address.trim(),
-      hashedPassword,
-      approvalToken,
-      tokenExpires,
-      status: "pending",
-    });
+    // Save (or refresh) the pending request
+    if (existing && existing.status !== "pending") {
+      existing.businessName = businessName.trim();
+      existing.contactName = contactName.trim();
+      existing.email = normalizedEmail;
+      existing.phone = phone.trim();
+      existing.address = address.trim();
+      existing.hashedPassword = hashedPassword;
+      existing.approvalToken = approvalToken;
+      existing.tokenExpires = tokenExpires;
+      existing.status = "pending";
+      await existing.save();
+    } else {
+      await PartnerRequest.create({
+        businessName: businessName.trim(),
+        contactName: contactName.trim(),
+        email: normalizedEmail,
+        phone: phone.trim(),
+        address: address.trim(),
+        hashedPassword,
+        approvalToken,
+        tokenExpires,
+        status: "pending",
+      });
+    }
 
     // Build the approval link pointing to this backend endpoint
     const backendUrl =
@@ -77,7 +120,7 @@ export async function submitPartnerRequest(
     try {
       await sendPartnerRequestEmail(
         ADMIN_EMAIL,
-        { businessName, contactName, email, phone, address },
+        { businessName, contactName, email: normalizedEmail, phone, address },
         approvalLink,
       );
       console.log(`✅ [PARTNER] Admin notification sent to ${ADMIN_EMAIL}`);
@@ -136,9 +179,30 @@ export async function approvePartnerRequest(
     const now = new Date();
 
     // Check that email doesn't already exist in the user collection
-    const existingUser = await db.collection("user").findOne({
-      email: partnerReq.email,
+    const existingUser = await db.collection("user").findOne({ email: partnerReq.email });
+    const existingUserId = (existingUser as any)?.id;
+    const existingAccountByUserId = existingUserId
+      ? await db.collection("account").findOne({
+          userId: existingUserId,
+          providerId: "credential",
+        })
+      : null;
+    const legacyAccountByEmail = await db.collection("account").findOne({
+      accountId: partnerReq.email,
+      providerId: "credential",
     });
+
+    if (existingUserId && legacyAccountByEmail && !existingAccountByUserId) {
+      await db.collection("account").updateOne(
+        { _id: legacyAccountByEmail._id },
+        { $set: { accountId: existingUserId, userId: existingUserId, updatedAt: now } },
+      );
+    }
+
+    // Repair inconsistent states caused by manual DB edits.
+    if (!existingUser && legacyAccountByEmail) {
+      await db.collection("account").deleteOne({ _id: legacyAccountByEmail._id });
+    }
 
     if (!existingUser) {
       // Insert into better-auth "user" collection
@@ -157,7 +221,23 @@ export async function approvePartnerRequest(
       await db.collection("account").insertOne({
         id: crypto.randomUUID(),
         userId,
-        accountId: partnerReq.email,
+        accountId: userId,
+        providerId: "credential",
+        password: partnerReq.hashedPassword,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        expiresAt: null,
+        scope: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else if (!existingAccountByUserId && !legacyAccountByEmail) {
+      const userIdForAccount = (existingUser as any).id;
+      await db.collection("account").insertOne({
+        id: crypto.randomUUID(),
+        userId: userIdForAccount,
+        accountId: userIdForAccount,
         providerId: "credential",
         password: partnerReq.hashedPassword,
         accessToken: null,
@@ -271,6 +351,7 @@ export async function invitePartner(
     } catch {
       return next(new AppError("Lien d'invitation invalide.", 400));
     }
+    email = email.toLowerCase().trim();
 
     // Basic email format check
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -282,12 +363,12 @@ export async function invitePartner(
     // Look up name/company from stored inquiry or full partner request
     let contactName = "";
     let companyName = "";
-    const inquiry = await PartnerInquiry.findOne({ email: email.toLowerCase() }).select("+activationToken");
+    const inquiry = await PartnerInquiry.findOne({ email }).select("+activationToken");
     if (inquiry) {
       contactName = inquiry.contactName;
       companyName = inquiry.companyName;
     } else {
-      const partnerReq = await PartnerRequest.findOne({ email: email.toLowerCase() });
+      const partnerReq = await PartnerRequest.findOne({ email });
       if (partnerReq) {
         contactName = partnerReq.contactName;
         companyName = partnerReq.businessName;
@@ -299,8 +380,10 @@ export async function invitePartner(
     const activationTokenExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
 
     if (inquiry) {
+      // If admin re-sends invitation, allow re-activation flow.
       inquiry.activationToken = activationToken;
       inquiry.activationTokenExpires = activationTokenExpires;
+      inquiry.activated = false;
       inquiry.inviteSentAt = new Date();
       await inquiry.save();
     }
@@ -377,10 +460,6 @@ export async function activatePartner(
       return next(new AppError("Lien d'activation invalide ou expiré.", 404));
     }
 
-    if (inquiry.activated) {
-      return next(new AppError("Ce compte a déjà été activé. Veuillez vous connecter.", 409));
-    }
-
     if (!inquiry.activationTokenExpires || inquiry.activationTokenExpires < new Date()) {
       return next(new AppError("Ce lien d'activation a expiré. Contactez l'administrateur.", 410));
     }
@@ -389,39 +468,87 @@ export async function activatePartner(
     const { db } = await connectMongoDB();
 
     const existingUser = await db.collection("user").findOne({ email: inquiry.email });
-    if (existingUser) {
+    const existingUserId = (existingUser as any)?.id;
+    const existingAccountByUserId = existingUserId
+      ? await db.collection("account").findOne({
+          userId: existingUserId,
+          providerId: "credential",
+        })
+      : null;
+    const legacyAccountByEmail = await db.collection("account").findOne({
+      accountId: inquiry.email,
+      providerId: "credential",
+    });
+
+    if (existingUserId && legacyAccountByEmail && !existingAccountByUserId) {
+      await db.collection("account").updateOne(
+        { _id: legacyAccountByEmail._id },
+        { $set: { accountId: existingUserId, userId: existingUserId, updatedAt: new Date() } },
+      );
+    }
+
+    // If inquiry is already marked activated, only block when auth records are intact.
+    // If manual DB edits removed user/account, continue and self-heal.
+    if (inquiry.activated && existingUser && (existingAccountByUserId || legacyAccountByEmail)) {
+      return next(new AppError("Ce compte a déjà été activé. Veuillez vous connecter.", 409));
+    }
+
+    if (existingUser && (existingAccountByUserId || legacyAccountByEmail)) {
       return next(new AppError("Un compte existe déjà avec cette adresse email.", 409));
+    }
+
+    // Recovery path for partially deleted data.
+    if (!existingUser && legacyAccountByEmail) {
+      await db.collection("account").deleteOne({ _id: legacyAccountByEmail._id });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
     const userId = crypto.randomUUID();
     const now = new Date();
 
-    await db.collection("user").insertOne({
-      id: userId,
-      name: inquiry.contactName,
-      email: inquiry.email,
-      emailVerified: true,
-      image: null,
-      role: "pro",
-      createdAt: now,
-      updatedAt: now,
-    });
+    if (!existingUser) {
+      await db.collection("user").insertOne({
+        id: userId,
+        name: inquiry.contactName,
+        email: inquiry.email,
+        emailVerified: true,
+        image: null,
+        role: "pro",
+        createdAt: now,
+        updatedAt: now,
+      });
 
-    await db.collection("account").insertOne({
-      id: crypto.randomUUID(),
-      userId,
-      accountId: inquiry.email,
-      providerId: "credential",
-      password: hashedPassword,
-      accessToken: null,
-      refreshToken: null,
-      idToken: null,
-      expiresAt: null,
-      scope: null,
-      createdAt: now,
-      updatedAt: now,
-    });
+      await db.collection("account").insertOne({
+        id: crypto.randomUUID(),
+        userId,
+        accountId: userId,
+        providerId: "credential",
+        password: hashedPassword,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        expiresAt: null,
+        scope: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else {
+      const userIdForAccount = (existingUser as any).id;
+      await db.collection("account").insertOne({
+        id: crypto.randomUUID(),
+        userId: userIdForAccount,
+        accountId: userIdForAccount,
+        providerId: "credential",
+        password: hashedPassword,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        expiresAt: null,
+        scope: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
     // Mark inquiry as activated and clear the token
     inquiry.activated = true;
