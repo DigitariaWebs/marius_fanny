@@ -139,6 +139,7 @@ export function ProductManagement() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEnablingClientAllergyField, setIsEnablingClientAllergyField] = useState(false);
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const extraImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -473,6 +474,21 @@ export function ProductManagement() {
     }
   };
 
+  const handleEnableClientAllergyField = async () => {
+    setIsEnablingClientAllergyField(true);
+    setError(null);
+    try {
+      const response = await productAPI.enableClientAllergyTextField();
+      await fetchData();
+      const count = response.data?.modifiedCount ?? 0;
+      alert(`Zone allergènes client ajoutée sur ${count} produit(s).`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'activation du champ allergènes client");
+    } finally {
+      setIsEnablingClientAllergyField(false);
+    }
+  };
+
   const columns = [
     {
       key: "name",
@@ -636,6 +652,13 @@ export function ProductManagement() {
               </>
             ) : (
               <>
+                <button
+                  onClick={handleEnableClientAllergyField}
+                  disabled={isEnablingClientAllergyField}
+                  className="bg-[#2D2A26] hover:bg-[#337957] disabled:opacity-60 text-white font-bold px-5 py-3 rounded-xl transition-all duration-300"
+                >
+                  {isEnablingClientAllergyField ? "Activation..." : "Activer zone allergènes client (tous produits)"}
+                </button>
                 <button
                   onClick={enterReorderMode}
                   className="bg-stone-100 border border-stone-300 text-stone-700 font-bold px-5 py-3 rounded-xl transition-all hover:bg-stone-200 flex items-center gap-2"

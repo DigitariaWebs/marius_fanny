@@ -146,6 +146,19 @@ class ProductAPI {
       body: JSON.stringify({ orders }),
     });
   }
+
+  async updateAllProductsAllergens(allergens: string): Promise<ApiResponse<{ modifiedCount: number }>> {
+    return this.request<ApiResponse<{ modifiedCount: number }>>('/bulk/allergens', {
+      method: 'PATCH',
+      body: JSON.stringify({ allergens }),
+    });
+  }
+
+  async enableClientAllergyTextField(): Promise<ApiResponse<{ modifiedCount: number }>> {
+    return this.request<ApiResponse<{ modifiedCount: number }>>('/bulk/client-allergy-field', {
+      method: 'PATCH',
+    });
+  }
 }
 
 export const productAPI = new ProductAPI();
