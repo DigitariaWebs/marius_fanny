@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { categoryAPI } from '../lib/CategoryAPI';
 import type { Category as CategoryType } from '../types';
 import { getImageUrl } from '../utils/api';
@@ -83,8 +82,8 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
         .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.name.localeCompare(b.name));
       setBanners(bannerCategories);
 
-      // Regular categories (non-banner)
-      const regularCategories = rootCategories.filter((cat) => cat.isBanner !== true);
+      // Keep all root categories in the main shop grid, including banner categories
+      const regularCategories = rootCategories;
 
       const getAllChildTitles = (children: ApiCategoryNode[] = []): string[] => {
         const titles: string[] = [];
@@ -98,7 +97,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
         return titles;
       };
       
-      const displayCategories: Category[] = regularCategories.map((cat, index) => ({
+      const displayCategories: Category[] = regularCategories.map((cat) => ({
         id: cat.id,
         title: cat.name,
         image: cat.image || './gateau.jpg',
@@ -173,9 +172,9 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
                   <div className="absolute inset-0 bg-linear-to-r from-black/40 via-black/20 to-black/10 group-hover:from-black/30 group-hover:via-black/15 group-hover:to-black/5 transition-colors" />
 
                   {/* Content */}
-                  <div className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-10 flex items-end pb-6 md:pb-8">
+                  <div className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-center text-center">
                     <div className="max-w-lg rounded-xl border border-[#337957]/20 bg-white/70 backdrop-blur-[2px] p-4 md:p-5 shadow-lg lowercase">
-                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider bg-[#337957]/10" style={{ color: styles.emerald }}>
+                      <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold tracking-wider bg-[#337957]/10" style={{ color: styles.emerald }}>
                         evenement special
                       </span>
                       <h3 className="mt-2 text-3xl md:text-4xl font-semibold leading-tight lowercase" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
