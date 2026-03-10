@@ -58,6 +58,30 @@ router.post(
 );
 
 /**
+ * @route   PATCH /api/products/bulk/allergens
+ * @desc    Update allergens for all products
+ * @access  Private (Admin only)
+ */
+router.patch(
+  "/bulk/allergens",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(productController.updateAllProductsAllergens),
+);
+
+/**
+ * @route   PATCH /api/products/bulk/client-allergy-field
+ * @desc    Add client allergy text option to all products
+ * @access  Private (Admin only)
+ */
+router.patch(
+  "/bulk/client-allergy-field",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(productController.enableClientAllergyTextField),
+);
+
+/**
  * @route   PUT /api/products/:id
  * @desc    Update product by ID
  * @access  Private (Admin only)
