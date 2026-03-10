@@ -45,7 +45,9 @@ export const listPaymentsSchema = z.object({
 export const createInvoiceSchema = z.object({
   orderId: z.string().min(1, "Order ID is required"),
   customerEmail: z.string().email("Valid email is required"),
+  customerPhone: z.string().optional(),
   customerName: z.string().min(1, "Customer name is required"),
+  deliveryChannel: z.enum(["email", "sms"]).optional().default("email"),
   items: z.array(
     z.object({
       name: z.string(),
@@ -58,6 +60,11 @@ export const createInvoiceSchema = z.object({
   total: z.number().positive(),
   dueDate: z.string().optional(), // ISO date string
   notes: z.string().optional(),
+});
+
+export const refundOrderSchema = z.object({
+  orderId: z.string().min(1, "Order ID is required"),
+  reason: z.string().optional(),
 });
 
 /**
@@ -74,3 +81,4 @@ export type RefundPaymentInput = z.infer<typeof refundPaymentSchema>;
 export type ListPaymentsInput = z.infer<typeof listPaymentsSchema>;
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
 export type GetInvoiceInput = z.infer<typeof getInvoiceSchema>;
+export type RefundOrderInput = z.infer<typeof refundOrderSchema>;

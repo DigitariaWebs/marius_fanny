@@ -35,6 +35,7 @@ import { Button } from "./ui/button";
 import OrderForm from "./OrderForm";
 import OrderChangeHistory from "./OrderChangeHistory";
 import { orderAPI } from "../lib/OrderAPI";
+import { normalizedApiUrl } from "../lib/AuthClient";
 import { clientAPI } from "../lib/ClientAPI";
 import type { Order } from "../types";
 
@@ -53,6 +54,9 @@ interface OrderItemWithPacking {
 interface OrderWithPacking extends Omit<Order, 'items'> {
   items: OrderItemWithPacking[];
   paymentMethod?: "in_store" | "payment_link";
+  paymentLinkChannel?: "email" | "sms";
+  squarePaymentId?: string;
+  squareInvoiceId?: string;
 }
 
 export function OrderManagement() {
@@ -266,6 +270,7 @@ export function OrderManagement() {
   const [orderToDelete, setOrderToDelete] = useState<OrderWithPacking | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<OrderWithPacking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<"simple" | "complete">("simple");
 
   // Filtrer par date
   useEffect(() => {
@@ -351,9 +356,14 @@ export function OrderManagement() {
               depositPaidAt: o.depositPaidAt,
               balancePaid: o.balancePaid || false,
               balancePaidAt: o.balancePaidAt,
+              squarePaymentId: o.squarePaymentId,
+              squareInvoiceId: o.squareInvoiceId,
               paymentStatus: o.paymentStatus || "unpaid",
               status: o.status || "pending",
               source: "in_store" as const,
+              paymentMethod:
+                o.paymentType === "deposit" ? "payment_link" : "in_store",
+              paymentLinkChannel: o.paymentLinkChannel || "email",
               notes: o.notes,
               createdAt: o.createdAt,
               updatedAt: o.updatedAt,
@@ -402,6 +412,9 @@ export function OrderManagement() {
   
   const clients = uniqueClients;
   const getOrderColor = (order: OrderWithPacking) => {
+    if (order.status === "completed") {
+      return "!bg-green-50 border-l-4 !border-l-green-500 hover:!bg-green-100 cursor-pointer";
+    }
     if (order.pickupLocation === "Montreal" && order.deliveryType === "pickup") {
       return "!bg-blue-50 border-l-4 !border-l-blue-500 hover:!bg-blue-100 cursor-pointer";
     } else if (order.deliveryType === "delivery") {
@@ -428,8 +441,8 @@ export function OrderManagement() {
       },
       ready: { label: "Prete", className: "bg-green-100 text-green-800" },
       completed: {
-        label: "Completee",
-        className: "bg-gray-100 text-gray-800",
+        label: "Ramassee",
+        className: "bg-green-100 text-green-800",
       },
       cancelled: { label: "Annulee", className: "bg-red-100 text-red-800" },
     };
@@ -472,6 +485,62 @@ export function OrderManagement() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const formatServiceTime = (order: OrderWithPacking) => {
+    if (order.deliveryType === "pickup") {
+      return formatDate(order.pickupDate || order.orderDate);
+    }
+
+    if (order.deliveryDate && order.deliveryTimeSlot) {
+      const deliveryDateLabel = new Date(order.deliveryDate).toLocaleDateString("fr-CA", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+      return `${deliveryDateLabel} (${order.deliveryTimeSlot})`;
+    }
+
+    if (order.deliveryTimeSlot) return order.deliveryTimeSlot;
+    return formatDate(order.orderDate);
+  };
+
+  const parseItemNotes = (notes?: string) => {
+    if (!notes) return { options: [] as string[], allergies: "", note: "" };
+
+    const lines = notes
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const optionsLine = lines.find((line) => line.toLowerCase().startsWith("options:"));
+    const allergiesLine = lines.find((line) => line.toLowerCase().startsWith("allergies:"));
+    const noteLine = lines.find((line) => line.toLowerCase().startsWith("note:"));
+
+    const options = optionsLine
+      ? optionsLine
+          .replace(/^options:\s*/i, "")
+          .split("|")
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+      : [];
+
+    const allergies = allergiesLine
+      ? allergiesLine.replace(/^allergies:\s*/i, "").trim()
+      : "";
+
+    const fallbackLines = lines.filter(
+      (line) =>
+        !line.toLowerCase().startsWith("options:") &&
+        !line.toLowerCase().startsWith("allergies:") &&
+        !line.toLowerCase().startsWith("note:"),
+    );
+
+    const note = noteLine
+      ? noteLine.replace(/^note:\s*/i, "").trim()
+      : fallbackLines.join(" ");
+
+    return { options, allergies, note };
   };
 
   const formatCurrency = (amount: number) => {
@@ -600,27 +669,45 @@ export function OrderManagement() {
     }
   };
 
-  const handleCancelClick = (order: OrderWithPacking) => {
+  const handleRefundClick = (order: OrderWithPacking) => {
     setOrderToCancel(order);
     setIsCancelModalOpen(true);
   };
 
-  const handleCancel = async () => {
+  const handleRefund = async () => {
     if (!orderToCancel) return;
 
     setIsSubmitting(true);
     try {
-      await orderAPI.updateOrder(orderToCancel.id, { status: "cancelled" });
+      const response = await fetch(`${normalizedApiUrl}/api/payments/refund-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          orderId: orderToCancel.id,
+          reason: `Remboursement admin pour commande ${orderToCancel.orderNumber}`,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Echec du remboursement Square");
+      }
+
       const updatedOrders: OrderWithPacking[] = orders.map((o) =>
-        o.id === orderToCancel.id ? { ...o, status: "cancelled" } : o,
+        o.id === orderToCancel.id
+          ? { ...o, status: "cancelled", paymentStatus: "unpaid", balancePaid: false }
+          : o,
       );
       setOrders(updatedOrders);
       setFilteredOrders(updatedOrders);
       setIsCancelModalOpen(false);
       setOrderToCancel(null);
     } catch (err: any) {
-      console.error("❌ Failed to cancel order:", err);
-      alert(`Erreur lors de l'annulation: ${err.message || err}`);
+      console.error("❌ Failed to refund order:", err);
+      alert(`Erreur lors du remboursement: ${err.message || err}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -640,6 +727,48 @@ export function OrderManagement() {
       console.error("❌ Failed to persist order status:", err);
       alert(`Erreur lors de la sauvegarde du statut: ${err.message || err}`);
     }
+  };
+
+  const canRefundOrder = (order: OrderWithPacking) => {
+    const hasSquareReference = Boolean(order.squarePaymentId || order.squareInvoiceId);
+    return hasSquareReference && order.status !== "cancelled";
+  };
+
+  const sendPaymentLink = async (order: OrderWithPacking) => {
+    const invoicePayload = {
+      orderId: order.id,
+      customerEmail: order.client.email,
+      customerPhone: order.client.phone,
+      customerName: `${order.client.firstName} ${order.client.lastName}`.trim(),
+      deliveryChannel: order.paymentLinkChannel || "email",
+      items: order.items.map((item) => ({
+        name: item.product?.name ?? item.productId.toString(),
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+      deliveryFee: order.deliveryFee,
+      taxAmount: order.taxAmount,
+      total: order.total,
+      notes: `Lien de paiement pour commande ${order.orderNumber}`,
+    };
+
+    const response = await fetch(`${normalizedApiUrl}/api/payments/invoice`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(invoicePayload),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "Erreur creation lien de paiement");
+    }
+
+    await orderAPI.updateOrder(order.id, {
+      squareInvoiceId: result.data?.invoiceId,
+    });
+
+    return result.data;
   };
 
   const handlePrintOrders = () => {
@@ -665,7 +794,7 @@ export function OrderManagement() {
           <tr>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${getOrderDisplayNumber(order)}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${clientName}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${formatDate(order.orderDate)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${formatServiceTime(order)}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${productsSummary}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(order.total)}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${order.status}</td>
@@ -692,7 +821,7 @@ export function OrderManagement() {
               <tr style="background: #f9fafb;">
                 <th style="padding: 8px; text-align: left;">Numero</th>
                 <th style="padding: 8px; text-align: left;">Client</th>
-                <th style="padding: 8px; text-align: left;">Date commande</th>
+                <th style="padding: 8px; text-align: left;">Heure ramassage</th>
                 <th style="padding: 8px; text-align: left;">Produits</th>
                 <th style="padding: 8px; text-align: right;">Total</th>
                 <th style="padding: 8px; text-align: left;">Statut</th>
@@ -738,10 +867,10 @@ export function OrderManagement() {
         `${order.client.firstName} ${order.client.lastName}`,
     },
     {
-      key: "orderDate",
-      label: "Date de commande",
+      key: "serviceTime",
+      label: "Heure de ramassage",
       sortable: true,
-      render: (order: OrderWithPacking) => formatDate(order.orderDate),
+      render: (order: OrderWithPacking) => formatServiceTime(order),
     },
     {
       key: "total",
@@ -813,13 +942,15 @@ export function OrderManagement() {
                     onClick={() => handleUpdateStatus(order.id, "completed")}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Marquer completee
+                    Marquer ramassee
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => handleCancelClick(order)}>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Annuler
-                </DropdownMenuItem>
+                {canRefundOrder(order) && (
+                  <DropdownMenuItem onClick={() => handleRefundClick(order)}>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Rembourser via Square
+                  </DropdownMenuItem>
+                )}
               </>
             )}
             <DropdownMenuItem
@@ -833,6 +964,44 @@ export function OrderManagement() {
         </DropdownMenu>
       ),
     },
+  ];
+
+  const completeColumns = [
+    ...columns.slice(0, 3),
+    {
+      key: "productsPreview",
+      label: "Produits",
+      sortable: false,
+      render: (order: OrderWithPacking) => (
+        <div className="space-y-2 min-w-70">
+          {order.items.map((item) => {
+            const parsed = parseItemNotes(item.notes);
+            return (
+              <div key={`${order.id}-${item.id}`} className="rounded-md border border-gray-200 bg-gray-50 p-2">
+                <div className="text-xs font-semibold text-gray-900">
+                  {item.product?.name ?? `Produit #${item.productId}`} x{item.quantity}
+                </div>
+                {parsed.options.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {parsed.options.map((option) => (
+                      <span key={option} className="inline-flex rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-[10px]">
+                        {option}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {parsed.allergies && (
+                  <div className="mt-1 rounded bg-amber-100 text-amber-900 px-2 py-1 text-[10px] font-medium">
+                    Allergies: {parsed.allergies}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ),
+    },
+    ...columns.slice(3),
   ];
 
   const getSearchValue = (order: OrderWithPacking) => {
@@ -869,7 +1038,7 @@ export function OrderManagement() {
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
           <div className="sm:w-56">
             <Label htmlFor="order-date-filter" className="text-xs text-gray-600">
-              Date de commande
+              Date de creation
             </Label>
             <Input
               id="order-date-filter"
@@ -898,11 +1067,20 @@ export function OrderManagement() {
             <Printer className="h-4 w-4" />
             Imprimer toutes les commandes
           </Button>
+
+          <Button
+            onClick={() => setViewMode((prev) => (prev === "simple" ? "complete" : "simple"))}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            {viewMode === "simple" ? "Vue complete" : "Vue simplifiee"}
+          </Button>
         </div>
 
         <DataTable
           data={filteredOrders}
-          columns={columns}
+          columns={viewMode === "simple" ? columns : completeColumns}
           filters={[]}
           searchPlaceholder="Rechercher par numero, client ou telephone..."
           getSearchValue={getSearchValue}
@@ -1373,7 +1551,9 @@ export function OrderManagement() {
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="font-semibold text-gray-900">
-                          Depot (50%)
+                          {selectedOrder.paymentMethod === "in_store"
+                            ? "Paiement total (100%)"
+                            : "Depot (50%)"}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
                           {formatCurrency(selectedOrder.depositAmount)}
@@ -1426,7 +1606,9 @@ export function OrderManagement() {
                           </>
                         ) : (
                           <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                            Du au retrait
+                            {selectedOrder.paymentMethod === "in_store"
+                              ? "Aucun solde"
+                              : "Du au retrait"}
                           </span>
                         )}
                       </div>
@@ -1585,12 +1767,15 @@ export function OrderManagement() {
                 deliveryType: formData.deliveryType,
                 items: apiItems,
                 notes: formData.notes || undefined,
-                paymentType: "full" as const,
-                depositPaid: false,
+                paymentType:
+                  formData.paymentMethod === "in_store" ? ("full" as const) : ("deposit" as const),
+                depositPaid: formData.paymentMethod === "in_store",
+                paymentLinkChannel: formData.paymentLinkChannel,
               };
 
               if (formData.date) {
-                payload.pickupDate = new Date(formData.date).toISOString();
+                const pickupDateTime = `${formData.date}T${formData.pickupTime || "00:00"}:00`;
+                payload.pickupDate = new Date(pickupDateTime).toISOString();
               }
 
               if (formData.deliveryType === "delivery" && formData.deliveryAddress) {
@@ -1626,7 +1811,9 @@ export function OrderManagement() {
                   orders: [],
                 },
                 orderDate: now,
-                pickupDate: formData.date ? new Date(formData.date).toISOString() : now,
+                pickupDate: formData.date
+                  ? new Date(`${formData.date}T${formData.pickupTime || "00:00"}:00`).toISOString()
+                  : now,
                 pickupLocation: formData.pickupLocation,
                 deliveryType: formData.deliveryType,
                 deliveryAddress: formData.deliveryAddress
@@ -1661,10 +1848,30 @@ export function OrderManagement() {
                 status: "pending",
                 source: "in_store",
                 paymentMethod: formData.paymentMethod || "in_store",
+                paymentLinkChannel: formData.paymentLinkChannel || "email",
                 notes: formData.notes || undefined,
                 createdAt: now,
                 updatedAt: now,
               };
+
+              if (newOrder.paymentMethod === "payment_link") {
+                try {
+                  const invoiceData = await sendPaymentLink(newOrder);
+                  newOrder.squareInvoiceId = invoiceData?.invoiceId;
+                  newOrder.notes = `${newOrder.notes ? `${newOrder.notes}\n` : ""}Square Invoice ID: ${invoiceData?.invoiceId}`;
+                  alert(
+                    newOrder.paymentLinkChannel === "sms"
+                      ? "Lien de paiement envoye par SMS."
+                      : "Lien de paiement envoye par courriel.",
+                  );
+                } catch (invoiceErr: any) {
+                  console.error("Failed to send payment link:", invoiceErr);
+                  alert(
+                    "Commande creee, mais l'envoi du lien de paiement a echoue.",
+                  );
+                }
+              }
+
               setOrders((prev) => [newOrder, ...prev]);
               setFilteredOrders((prev) => [newOrder, ...prev]);
               setIsCreateModalOpen(false);
@@ -1735,6 +1942,11 @@ export function OrderManagement() {
             selectedOrder
               ? {
                   date: selectedOrder.orderDate.split("T")[0],
+                  pickupTime: new Date(selectedOrder.pickupDate).toLocaleTimeString("fr-CA", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  }),
                   clientId: selectedOrder.clientId,
                   firstName: selectedOrder.client.firstName,
                   lastName: selectedOrder.client.lastName,
@@ -1743,6 +1955,8 @@ export function OrderManagement() {
                   pickupLocation: selectedOrder.pickupLocation,
                   deliveryType: selectedOrder.deliveryType,
                   notes: selectedOrder.notes || "",
+                  paymentMethod: selectedOrder.paymentMethod || "in_store",
+                  paymentLinkChannel: selectedOrder.paymentLinkChannel || "email",
                   deliveryFee: selectedOrder.deliveryFee,
                   deliveryAddress: selectedOrder.deliveryAddress
                     ? {
@@ -1829,18 +2043,18 @@ export function OrderManagement() {
         )}
       </Modal>
 
-      {/* Cancel Confirmation Modal */}
+      {/* Refund Confirmation Modal */}
       <Modal
         open={isCancelModalOpen}
         onOpenChange={setIsCancelModalOpen}
         type="warning"
-        title="Annuler la commande"
-        description="Le statut de la commande sera change en annule"
+        title="Rembourser la commande"
+        description="Le remboursement sera execute via Square"
         icon={<XCircle className="h-6 w-6 text-amber-600" />}
         actions={{
           primary: {
-            label: "Annuler la commande",
-            onClick: handleCancel,
+            label: "Rembourser via Square",
+            onClick: handleRefund,
             variant: "destructive",
             disabled: isSubmitting,
             loading: isSubmitting,
@@ -1858,7 +2072,7 @@ export function OrderManagement() {
         {orderToCancel && (
           <div className="space-y-4">
             <p className="text-gray-700">
-              Etes-vous sur de vouloir annuler cette commande ?
+              Etes-vous sur de vouloir rembourser cette commande via Square ?
             </p>
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <div className="space-y-2">
@@ -1878,7 +2092,7 @@ export function OrderManagement() {
               </div>
             </div>
             <p className="text-sm text-amber-600">
-              La commande restera dans le systeme mais ne sera plus traitee.
+              Cette action est sensible. Le remboursement sera tente sur le paiement Square de la commande.
             </p>
           </div>
         )}

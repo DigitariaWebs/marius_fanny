@@ -85,6 +85,7 @@ class OrderAPI {
     }[];
     notes?: string;
     paymentType?: "full" | "deposit";
+    paymentLinkChannel?: "email" | "sms";
     depositPaid?: boolean;
   }) {
     return this.request<any>("", {

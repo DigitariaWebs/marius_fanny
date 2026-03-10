@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -120,6 +120,16 @@ export function DataTable<T extends object>({
       {},
     ),
   );
+
+  useEffect(() => {
+    setVisibleColumns((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const col of columns) {
+        next[col.key] = prev[col.key] ?? col.defaultVisible !== false;
+      }
+      return next;
+    });
+  }, [columns]);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());

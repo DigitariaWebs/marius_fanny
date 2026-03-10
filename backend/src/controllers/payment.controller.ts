@@ -7,6 +7,8 @@ import { Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { SquareError } from "square";
 import squareClient, { squareConfig } from "../config/square.js";
+import Order from "../models/Order.js";
+import { sendSms } from "../utils/smsService.js";
 
 /**
  * Create a Square payment
@@ -424,7 +426,9 @@ export const createInvoice = async (req: Request, res: Response) => {
     const {
       orderId,
       customerEmail,
+      customerPhone,
       customerName,
+      deliveryChannel = "email",
       items,
       deliveryFee = 0,
       taxAmount,
@@ -507,7 +511,7 @@ export const createInvoice = async (req: Request, res: Response) => {
           automaticPaymentSource: "NONE",
         },
       ],
-      deliveryMethod: "EMAIL",
+      deliveryMethod: deliveryChannel === "sms" ? "SHARE_MANUALLY" : "EMAIL",
       acceptedPaymentMethods: {
         card: true,
         squareGiftCard: false,
@@ -526,16 +530,30 @@ export const createInvoice = async (req: Request, res: Response) => {
       `✅ [INVOICE] Invoice created successfully! ID: ${invoice?.id}, Number: ${invoice?.invoiceNumber}, Processing time: ${processingTime}ms`,
     );
 
-    // Publish the invoice to make it active and send email
+    // Publish the invoice to make it active and send through selected channel.
     if (invoice?.id) {
       try {
-        console.log(`📤 [INVOICE] Publishing invoice ${invoice.id} to send email...`);
+        console.log(`📤 [INVOICE] Publishing invoice ${invoice.id} (${deliveryChannel})...`);
         const publishResponse = await squareClient.invoices.publish({
           invoiceId: invoice.id,
           version: invoice.version!,
           idempotencyKey: randomUUID(),
         });
-        console.log(`✅ [INVOICE] Invoice published and email sent!`);
+
+        if (deliveryChannel === "sms") {
+          const publicUrl = (publishResponse as any)?.invoice?.publicUrl || invoice.publicUrl;
+          if (!customerPhone || !publicUrl) {
+            throw new Error("SMS impossible: numero client ou lien facture manquant");
+          }
+
+          await sendSms({
+            to: customerPhone,
+            body: `Maison Fanny: votre lien de paiement pour la commande ${orderId}: ${publicUrl}`,
+          });
+          console.log(`✅ [INVOICE] Invoice published and SMS sent`);
+        } else {
+          console.log(`✅ [INVOICE] Invoice published and email sent`);
+        }
       } catch (publishError: any) {
         console.error(`⚠️ [INVOICE] Failed to publish invoice:`, publishError.message);
         // Continue even if publish fails - invoice is still created
@@ -549,6 +567,7 @@ export const createInvoice = async (req: Request, res: Response) => {
         invoiceNumber: invoice?.invoiceNumber,
         status: invoice?.status,
         publicUrl: invoice?.publicUrl,
+        deliveryChannel,
         dueDate: invoice?.paymentRequests?.[0]?.dueDate,
       },
     });
@@ -576,6 +595,119 @@ export const createInvoice = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: error.message || "An error occurred while creating invoice",
+    });
+  }
+};
+
+const findSquarePaymentIdForOrder = async (order: any): Promise<string | null> => {
+  if (order.squarePaymentId) return order.squarePaymentId;
+
+  if (!order.squareInvoiceId) return null;
+
+  const invoiceResponse = await squareClient.invoices.get({
+    invoiceId: order.squareInvoiceId,
+  });
+  const squareOrderId = (invoiceResponse as any)?.invoice?.orderId;
+
+  if (!squareOrderId) return null;
+
+  const payments = await squareClient.payments.list({
+    locationId: squareConfig.locationId,
+  });
+
+  let matchedPaymentId: string | null = null;
+  for await (const payment of payments) {
+    if (payment.orderId === squareOrderId && payment.status === "COMPLETED") {
+      matchedPaymentId = payment.id || null;
+      break;
+    }
+  }
+
+  return matchedPaymentId;
+};
+
+/**
+ * Refund an order through Square, preferring direct paymentId then invoice-linked payment.
+ * POST /api/payments/refund-order
+ */
+export const refundOrderPayment = async (req: Request, res: Response) => {
+  try {
+    const { orderId, reason } = req.body as { orderId: string; reason?: string };
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Commande non trouvee" });
+    }
+
+    const alreadyRefunded = typeof order.notes === "string" && order.notes.includes("Square Refund ID:");
+    if (alreadyRefunded) {
+      return res.status(400).json({
+        success: false,
+        error: "Cette commande semble deja remboursee",
+      });
+    }
+
+    const paymentId = await findSquarePaymentIdForOrder(order);
+    if (!paymentId) {
+      return res.status(400).json({
+        success: false,
+        error: "Aucun paiement Square remboursable trouve pour cette commande",
+      });
+    }
+
+    const refundResponse = await (squareClient.refunds as any).create({
+      idempotencyKey: randomUUID(),
+      paymentId,
+      amountMoney: {
+        amount: BigInt(Math.round(order.total * 100)),
+        currency: "CAD",
+      },
+      reason: reason || `Remboursement commande ${order.orderNumber}`,
+    });
+
+    const refund = refundResponse?.refund;
+
+    order.status = "cancelled";
+    order.paymentStatus = "unpaid";
+    order.balancePaid = false;
+    order.balancePaidAt = undefined;
+    order.notes = `${order.notes ? `${order.notes}\n` : ""}Square Refund ID: ${refund?.id || "N/A"}`;
+    order.changeHistory.push({
+      changedAt: new Date(),
+      changedBy: req.user?.id,
+      field: "paymentStatus",
+      oldValue: "paid",
+      newValue: "unpaid",
+      changeType: "payment_updated",
+      notes: `Square refund executed (paymentId: ${paymentId})`,
+    } as any);
+    await order.save();
+
+    return res.json({
+      success: true,
+      data: {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        paymentId,
+        refundId: refund?.id,
+        refundStatus: refund?.status,
+      },
+      message: "Remboursement Square effectue avec succes",
+    });
+  } catch (error: any) {
+    console.error("❌ [REFUND-ORDER] Error refunding order:", error);
+
+    if (error instanceof SquareError) {
+      return res.status(error.statusCode || 400).json({
+        success: false,
+        error: error.message || "Erreur Square lors du remboursement",
+        details: (error.body as any)?.errors,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Erreur lors du remboursement de la commande",
     });
   }
 };

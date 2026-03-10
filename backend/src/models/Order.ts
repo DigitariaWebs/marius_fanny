@@ -55,6 +55,7 @@ export interface IOrder extends Document {
   balancePaid: boolean;
   balancePaidAt?: Date;
   paymentType: "full" | "deposit"; // Payment option chosen by customer
+  paymentLinkChannel?: "email" | "sms";
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
   squarePaymentId?: string; // Square payment ID for tracking
   squareInvoiceId?: string; // Square invoice ID for invoice payments
@@ -264,6 +265,11 @@ const OrderSchema = new Schema<IOrder>(
       required: true,
       default: "full",
       index: true,
+    },
+    paymentLinkChannel: {
+      type: String,
+      enum: ["email", "sms"],
+      default: "email",
     },
     paymentStatus: {
       type: String,

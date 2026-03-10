@@ -9,6 +9,7 @@ import {
   getPayment,
   listPayments,
   refundPayment,
+  refundOrderPayment,
   getSquareConfig,
   createInvoice,
   getInvoice,
@@ -17,9 +18,11 @@ import { validateBody, validateQuery } from "../middleware/validation.js";
 import {
   createPaymentSchema,
   refundPaymentSchema,
+  refundOrderSchema,
   listPaymentsSchema,
   createInvoiceSchema,
 } from "../schemas/payment.schema.js";
+import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -44,14 +47,21 @@ router.get("/:paymentId", getPayment);
 router.get("/list", validateQuery(listPaymentsSchema), listPayments);
 
 // Refund a payment
-router.post("/refund", validateBody(refundPaymentSchema), refundPayment);
+router.post("/refund", requireAuth, requireAdmin, validateBody(refundPaymentSchema), refundPayment);
+router.post(
+  "/refund-order",
+  requireAuth,
+  requireAdmin,
+  validateBody(refundOrderSchema),
+  refundOrderPayment,
+);
 
 /**
  * Invoice routes
  */
 
 // Create a Square invoice
-router.post("/invoice", validateBody(createInvoiceSchema), createInvoice);
+router.post("/invoice", requireAuth, requireAdmin, validateBody(createInvoiceSchema), createInvoice);
 
 // Get invoice by ID
 router.get("/invoice/:invoiceId", getInvoice);

@@ -66,6 +66,7 @@ export const createOrderSchema = z
         message: "Le type de paiement doit être full ou deposit",
       })
       .default("full"),
+    paymentLinkChannel: z.enum(["email", "sms"]).optional(),
     depositPaid: z.boolean().optional().default(false),
     squarePaymentId: z.string().optional(),
   })
@@ -108,6 +109,7 @@ export const updateOrderSchema = z.object({
   balancePaid: z.boolean().optional(),
   squarePaymentId: z.string().optional(),
   squareInvoiceId: z.string().optional(),
+  paymentLinkChannel: z.enum(["email", "sms"]).optional(),
   notes: z.string().optional(),
 });
 

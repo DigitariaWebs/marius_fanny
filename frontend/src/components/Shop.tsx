@@ -137,7 +137,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-6 md:mb-8">
               <h2 className="text-3xl md:text-5xl lowercase" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
-                vos événements spéciaux
+                Vos Evénements Spéciaux
               </h2>
               <p className="mt-2 text-sm md:text-base lowercase" style={{ color: styles.emerald }}>
                 des collections saisonnieres mises en avant pour vos occasions.
@@ -174,9 +174,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
                   {/* Content */}
                   <div className="relative z-10 h-full max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-center text-center">
                     <div className="max-w-lg rounded-xl border border-[#337957]/20 bg-white/70 backdrop-blur-[2px] p-4 md:p-5 shadow-lg lowercase">
-                      <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold tracking-wider bg-[#337957]/10" style={{ color: styles.emerald }}>
-                        evenement special
-                      </span>
+                  
                       <h3 className="mt-2 text-3xl md:text-4xl font-semibold leading-tight lowercase" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
                         {banner.name}
                       </h3>

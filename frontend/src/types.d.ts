@@ -148,6 +148,9 @@ export interface Order {
   balancePaid: boolean;
   balancePaidAt?: string;
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
+  paymentLinkChannel?: "email" | "sms";
+  squarePaymentId?: string;
+  squareInvoiceId?: string;
   status: 
     | "pending"
     | "confirmed"

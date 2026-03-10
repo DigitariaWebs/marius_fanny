@@ -49,6 +49,7 @@ interface OrderFormProps {
 
 interface OrderFormData {
   date: string;
+  pickupTime: string;
   clientId?: number;
   firstName: string;
   lastName: string;
@@ -78,6 +79,7 @@ interface OrderFormData {
   depositAmount: number;
   balance: number;
   paymentMethod: "in_store" | "payment_link";
+  paymentLinkChannel: "email" | "sms";
 }
 
 interface OrderFormItem {
@@ -88,6 +90,7 @@ interface OrderFormItem {
   unitPrice: number;
   amount: number;
   notes: string;
+  selectedOptions?: Record<string, string>;
   isPacked?: boolean;
 }
 
@@ -107,6 +110,13 @@ export default function OrderForm({
     
     return {
       date: initialData?.date || new Date().toISOString().split("T")[0],
+      pickupTime:
+        initialData?.pickupTime ||
+        new Date().toLocaleTimeString("fr-CA", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }),
       clientId: initialData?.clientId,
       firstName: initialData?.firstName || "",
       lastName: initialData?.lastName || "",
@@ -131,6 +141,7 @@ export default function OrderForm({
       depositAmount: 0,
       balance: 0,
       paymentMethod: initialData?.paymentMethod || "in_store",
+      paymentLinkChannel: initialData?.paymentLinkChannel || "email",
     };
   });
 
@@ -155,7 +166,6 @@ export default function OrderForm({
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productSearch, setProductSearch] = useState<Record<string, string>>({}); // Search term per item
-  const [productDropdownOpen, setProductDropdownOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchProducts();
@@ -165,14 +175,7 @@ export default function OrderForm({
     if (formData.deliveryType === "pickup") {
       setFormData((prev) => ({
         ...prev,
-        billingAddress: {
-          ...prev.billingAddress,
-          street: prev.billingAddress?.street || "",
-          city: prev.billingAddress?.city || "",
-          province: prev.billingAddress?.province || "",
-          postalCode: prev.billingAddress?.postalCode || "",
-          sameAsDelivery: false,
-        },
+        billingAddress: undefined,
       }));
     }
   }, [formData.deliveryType]);
@@ -193,7 +196,8 @@ export default function OrderForm({
     const subtotal = formData.items.reduce((sum, item) => sum + item.amount, 0);
     const taxAmount = subtotal * TAX_RATE;
     const total = subtotal + taxAmount + formData.deliveryFee;
-    const depositAmount = total * 0.5;
+    const depositAmount =
+      formData.paymentMethod === "in_store" ? total : total * 0.5;
     const balance = total - depositAmount;
 
     setFormData((prev) => ({
@@ -296,6 +300,15 @@ export default function OrderForm({
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
+    const initialOptions: Record<string, string> = {};
+    for (const option of product.customOptions || []) {
+      if (option.type === "text") {
+        initialOptions[option.name] = "";
+      } else {
+        initialOptions[option.name] = option.choices?.[0] || "";
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((item) => {
@@ -308,6 +321,7 @@ export default function OrderForm({
             quantity,
             unitPrice: product.price,
             amount: quantity * product.price,
+            selectedOptions: initialOptions,
             isPacked: false,
           };
         }
@@ -398,6 +412,42 @@ export default function OrderForm({
         items: prev.items.filter((item) => item.id !== id),
       }));
     }
+  };
+
+  const handleOptionChange = (itemId: string, optionName: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              selectedOptions: {
+                ...(item.selectedOptions || {}),
+                [optionName]: value,
+              },
+            }
+          : item,
+      ),
+    }));
+  };
+
+  const getSerializedItemNotes = (item: OrderFormItem) => {
+    const lines: string[] = [];
+    const optionEntries = Object.entries(item.selectedOptions || {}).filter(
+      ([, value]) => value && value.trim().length > 0,
+    );
+
+    if (optionEntries.length > 0) {
+      lines.push(
+        `Options: ${optionEntries.map(([key, value]) => `${key}: ${value}`).join(" | ")}`,
+      );
+    }
+
+    if (item.notes && item.notes.trim().length > 0) {
+      lines.push(`Note: ${item.notes.trim()}`);
+    }
+
+    return lines.join("\n");
   };
 
   const normalizePhone = (value: string) => value.replace(/\D/g, "");
@@ -518,6 +568,9 @@ export default function OrderForm({
     if (!formData.date) {
       newErrors.date = "La date est requise";
     }
+    if (formData.deliveryType === "pickup" && !formData.pickupTime) {
+      newErrors.pickupTime = "L'heure de ramassage est requise";
+    }
 
     if (formData.deliveryType === "pickup") {
       if (!formData.pickupLocation) {
@@ -537,7 +590,7 @@ export default function OrderForm({
       }
     }
 
-    if (!formData.billingAddress?.sameAsDelivery) {
+    if (formData.deliveryType === "delivery" && !formData.billingAddress?.sameAsDelivery) {
       if (!formData.billingAddress?.street.trim()) {
         newErrors.billingAddress = "L'adresse de facturation est requise";
       }
@@ -595,7 +648,11 @@ export default function OrderForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit(formData);
+      const payloadItems = formData.items.map((item) => ({
+        ...item,
+        notes: getSerializedItemNotes(item),
+      }));
+      onSubmit({ ...formData, items: payloadItems });
     }
   };
 
@@ -603,6 +660,7 @@ export default function OrderForm({
     <form id="order-form" onSubmit={handleSubmit} className="space-y-6">
       {/* SECTION 1: En-tête avec DATE SEULEMENT (plus de filtres !) */}
       <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+        <div className="flex items-end gap-3">
         <div className="w-48">
           <Label htmlFor="date" className="text-xs text-gray-600">
             DATE:
@@ -617,6 +675,25 @@ export default function OrderForm({
           {errors.date && (
             <p className="text-xs text-red-500 mt-1">{errors.date}</p>
           )}
+        </div>
+
+        {formData.deliveryType === "pickup" && (
+          <div className="w-40">
+            <Label htmlFor="pickupTime" className="text-xs text-gray-600">
+              HEURE RAMASSAGE:
+            </Label>
+            <Input
+              id="pickupTime"
+              type="time"
+              value={formData.pickupTime}
+              onChange={(e) => handleInputChange("pickupTime", e.target.value)}
+              className={errors.pickupTime ? "border-red-500" : ""}
+            />
+            {errors.pickupTime && (
+              <p className="text-xs text-red-500 mt-1">{errors.pickupTime}</p>
+            )}
+          </div>
+        )}
         </div>
         
         {/* Bouton pour voir les produits */}
@@ -1021,6 +1098,7 @@ export default function OrderForm({
       )}
 
       {/* SECTION 5: Adresse de facturation */}
+      {formData.deliveryType === "delivery" && (
       <div className="space-y-4 pb-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-bold text-gray-700 uppercase">
@@ -1266,6 +1344,7 @@ export default function OrderForm({
           </div>
         )}
       </div>
+      )}
 
       {/* SECTION 6: Articles */}
       <div>
@@ -1305,7 +1384,8 @@ export default function OrderForm({
                 const product = item.productId
                   ? getProductById(item.productId)
                   : null;
-                const availableProducts = getAvailableProducts(item.id, productSearch[item.id] || "");
+                const searchValue = productSearch[item.id] || "";
+                const availableProducts = getAvailableProducts(item.id, searchValue);
                 const quantityError = errors[`item_${index}_quantity`];
 
                 return (
@@ -1317,35 +1397,36 @@ export default function OrderForm({
                           <Input
                             type="text"
                             placeholder="Rechercher un produit..."
-                            value={productSearch[item.id] || ""}
+                            value={searchValue}
                             onChange={(e) => handleProductSearchChange(item.id, e.target.value)}
                             className="h-7 text-sm"
                           />
-                          <Select
-                            value={item.productId?.toString() || ""}
-                            onValueChange={(value) =>
-                              handleProductSelect(item.id, parseInt(value))
-                            }
-                            open={productDropdownOpen[item.id]}
-                            onOpenChange={(open) => setProductDropdownOpen(prev => ({ ...prev, [item.id]: open }))}
-                          >
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Sélectionner un produit" />
-                            </SelectTrigger>
-                            <SelectContent>
+                          {item.productId && product && (
+                            <div className="text-[11px] text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1">
+                              Produit choisi: {product.name}
+                            </div>
+                          )}
+                          {searchValue.trim().length > 0 && (
+                            <div className="max-h-32 overflow-y-auto rounded border border-gray-200 bg-white">
                               {availableProducts.length === 0 ? (
-                                <div className="p-2 text-sm text-gray-500 text-center">
-                                  Aucun produit trouvé
+                                <div className="p-2 text-xs text-gray-500 text-center">
+                                  Aucun produit trouve
                                 </div>
                               ) : (
                                 availableProducts.map((p) => (
-                                  <SelectItem key={p.id} value={p.id.toString()}>
-                                    {p.name} - ${p.price.toFixed(2)}
-                                  </SelectItem>
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => handleProductSelect(item.id, p.id)}
+                                    className="w-full text-left px-2 py-1.5 text-xs hover:bg-amber-50 border-b last:border-b-0"
+                                  >
+                                    <span className="font-medium text-gray-900">{p.name}</span>
+                                    <span className="text-gray-500"> - ${p.price.toFixed(2)}</span>
+                                  </button>
                                 ))
                               )}
-                            </SelectContent>
-                          </Select>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1414,15 +1495,57 @@ export default function OrderForm({
                     {item.productId && (
                       <TableRow>
                         <TableCell colSpan={6} className="bg-gray-50 py-2">
-                          <Textarea
-                            value={item.notes}
-                            onChange={(e) =>
-                              handleItemChange(item.id, "notes", e.target.value)
-                            }
-                            placeholder="Notes pour cet article..."
-                            rows={2}
-                            className="text-xs"
-                          />
+                          <div className="space-y-3">
+                            {product?.customOptions && product.customOptions.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {product.customOptions.map((option) => (
+                                  <div key={`${item.id}-${option.name}`}>
+                                    <Label className="text-[11px] text-gray-600">
+                                      {option.name}
+                                    </Label>
+                                    {option.type === "text" ? (
+                                      <Input
+                                        value={item.selectedOptions?.[option.name] || ""}
+                                        onChange={(e) =>
+                                          handleOptionChange(item.id, option.name, e.target.value)
+                                        }
+                                        placeholder={`Entrer ${option.name.toLowerCase()}...`}
+                                        className="h-8 text-xs"
+                                      />
+                                    ) : (
+                                      <Select
+                                        value={item.selectedOptions?.[option.name] || ""}
+                                        onValueChange={(value) =>
+                                          handleOptionChange(item.id, option.name, value)
+                                        }
+                                      >
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue placeholder="Choisir" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {option.choices.map((choice) => (
+                                            <SelectItem key={choice} value={choice}>
+                                              {choice}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <Textarea
+                              value={item.notes}
+                              onChange={(e) =>
+                                handleItemChange(item.id, "notes", e.target.value)
+                              }
+                              placeholder="Notes pour cet article..."
+                              rows={2}
+                              className="text-xs"
+                            />
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
@@ -1481,6 +1604,32 @@ export default function OrderForm({
             </Label>
           </div>
         </RadioGroup>
+
+        {formData.paymentMethod === "payment_link" && (
+          <div className="space-y-2 pt-1">
+            <Label className="text-xs text-gray-600">ENVOI DU LIEN:</Label>
+            <RadioGroup
+              value={formData.paymentLinkChannel}
+              onValueChange={(value) =>
+                handleInputChange("paymentLinkChannel", value)
+              }
+              className="grid grid-cols-2 gap-4"
+            >
+              <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-[#C5A065] transition-colors">
+                <RadioGroupItem value="email" id="link_email" />
+                <Label htmlFor="link_email" className="cursor-pointer text-sm">
+                  Par courriel
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-[#C5A065] transition-colors">
+                <RadioGroupItem value="sms" id="link_sms" />
+                <Label htmlFor="link_sms" className="cursor-pointer text-sm">
+                  Par telephone (SMS)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
       </div>
 
       {/* SECTION 8: Totaux */}
@@ -1509,7 +1658,11 @@ export default function OrderForm({
             <span className="text-amber-600">${formData.total.toFixed(2)}</span>
           </div>
           <div className="flex justify-between items-center text-sm bg-amber-50 p-2 rounded">
-            <span className="text-gray-700">ACOMPTE (50%):</span>
+            <span className="text-gray-700">
+              {formData.paymentMethod === "in_store"
+                ? "PAYABLE MAINTENANT (100%):"
+                : "ACOMPTE (50%):"}
+            </span>
             <span className="font-medium text-amber-700">
               ${formData.depositAmount.toFixed(2)}
             </span>

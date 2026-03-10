@@ -68,7 +68,8 @@ export const createOrder = async (
     }
 
     const total = subtotal + taxAmount + deliveryFee;
-    const depositAmount = total * 0.5; // 50% deposit
+    // In-store/full payments are charged at 100%; deposit flow stays at 50%.
+    const depositAmount = orderData.paymentType === "full" ? total : total * 0.5;
 
     // Determine payment status based on payment type and depositPaid flag
     let depositPaid = false;
@@ -103,6 +104,7 @@ export const createOrder = async (
       total,
       depositAmount,
       paymentType: orderData.paymentType || "full",
+      paymentLinkChannel: orderData.paymentLinkChannel || "email",
       depositPaid,
       balancePaid,
       squarePaymentId: orderData.squarePaymentId,
@@ -214,7 +216,12 @@ export const createOrder = async (
     try {
       const customerName = `${orderData.clientInfo.firstName} ${orderData.clientInfo.lastName}`;
 
-      await sendOrderReceipt(orderData.paymentType || "full", {
+      const receiptMode =
+        (orderData.paymentType || "full") === "full" && !orderData.squarePaymentId
+          ? "invoice"
+          : (orderData.paymentType || "full");
+
+      await sendOrderReceipt(receiptMode as "full" | "deposit" | "invoice", {
         email: orderData.clientInfo.email,
         name: customerName,
         orderNumber: order.orderNumber,
@@ -673,7 +680,7 @@ export const updateOrder = async (
       }
 
       const total = subtotal + taxAmount + deliveryFee;
-      const depositAmount = total * 0.5;
+      const depositAmount = order.paymentType === "full" ? total : total * 0.5;
 
       order.subtotal = subtotal;
       order.taxAmount = taxAmount;
@@ -704,6 +711,23 @@ export const updateOrder = async (
         newValue: updateData.status,
         changeType: "status_changed",
         notes: `Status changed from ${oldStatus} to ${updateData.status}`
+      });
+    }
+
+    if (
+      updateData.paymentLinkChannel !== undefined &&
+      updateData.paymentLinkChannel !== order.paymentLinkChannel
+    ) {
+      const oldChannel = order.paymentLinkChannel;
+      order.paymentLinkChannel = updateData.paymentLinkChannel;
+      changes.push({
+        changedAt: new Date(),
+        changedBy: userId,
+        field: "paymentLinkChannel",
+        oldValue: oldChannel,
+        newValue: updateData.paymentLinkChannel,
+        changeType: "payment_updated",
+        notes: "Payment link delivery channel updated",
       });
     }
 
