@@ -7,7 +7,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import { sendPartnerRequestEmail, sendPartnerApprovedEmail, sendPartnerInquiryEmail, sendPartnerInvitationEmail } from "../utils/mail.js";
 import { connectMongoDB } from "../config/db.js";
 
-const ADMIN_EMAIL = "dibwissem7@gmail.com";
+const ADMIN_EMAIL = "fanny.chiecchio@gmail.com";
 
 /**
  * POST /api/partner-request
@@ -37,29 +37,38 @@ export async function submitPartnerRequest(
       if (existing.status === "approved") {
         const { db } = await connectMongoDB();
         const authUser = await db.collection("user").findOne({ email: normalizedEmail });
-        const authUserId = (authUser as any)?.id;
+        const authUserObjectId = (authUser as any)?._id;
+        const authUserId = authUserObjectId ? String(authUserObjectId) : null;
         const authAccountByUserId = authUserId
           ? await db.collection("account").findOne({
-              userId: authUserId,
+              userId: authUserObjectId,
               providerId: "credential",
             })
           : null;
-        const legacyAccountByEmail = await db.collection("account").findOne({
+        const authAccountByEmail = await db.collection("account").findOne({
           accountId: normalizedEmail,
           providerId: "credential",
         });
 
-        // Migrate legacy partner accounts created with accountId=email.
-        if (authUserId && legacyAccountByEmail && !authAccountByUserId) {
+        // Better Auth links account to user by userId (Mongo _id string).
+        if (authUserId && authAccountByUserId && !authAccountByEmail) {
           await db.collection("account").updateOne(
-            { _id: legacyAccountByEmail._id },
-            { $set: { accountId: authUserId, userId: authUserId, updatedAt: new Date() } },
+            { _id: authAccountByUserId._id },
+            { $set: { accountId: authUserId, userId: authUserObjectId, updatedAt: new Date() } },
+          );
+        }
+
+        // Migrate legacy accountId=email records to Better Auth expected accountId=userId.
+        if (authUserId && authAccountByEmail && !authAccountByUserId) {
+          await db.collection("account").updateOne(
+            { _id: authAccountByEmail._id },
+            { $set: { accountId: authUserId, userId: authUserObjectId, updatedAt: new Date() } },
           );
         }
 
         // Recovery path: manual deletion left only an orphan account.
-        if (!authUser && legacyAccountByEmail) {
-          await db.collection("account").deleteOne({ _id: legacyAccountByEmail._id });
+        if (!authUser && authAccountByEmail) {
+          await db.collection("account").deleteOne({ _id: authAccountByEmail._id });
         }
 
         if (authUser) {
@@ -175,39 +184,58 @@ export async function approvePartnerRequest(
     // Create the user in better-auth's MongoDB collections
     const { db } = await connectMongoDB();
 
-    const userId = crypto.randomUUID();
     const now = new Date();
 
     // Check that email doesn't already exist in the user collection
     const existingUser = await db.collection("user").findOne({ email: partnerReq.email });
-    const existingUserId = (existingUser as any)?.id;
+    const existingUserObjectId = (existingUser as any)?._id;
+    const existingUserId = existingUserObjectId ? String(existingUserObjectId) : null;
+    if (existingUserId) {
+      await db.collection("user").updateOne(
+        { _id: existingUser?._id },
+        {
+          $set: {
+            role: "pro",
+            emailVerified: true,
+            updatedAt: now,
+          },
+        },
+      );
+    }
     const existingAccountByUserId = existingUserId
       ? await db.collection("account").findOne({
-          userId: existingUserId,
+          userId: existingUserObjectId,
           providerId: "credential",
         })
       : null;
-    const legacyAccountByEmail = await db.collection("account").findOne({
+    const accountByEmail = await db.collection("account").findOne({
       accountId: partnerReq.email,
       providerId: "credential",
     });
 
-    if (existingUserId && legacyAccountByEmail && !existingAccountByUserId) {
+    // Migrate legacy account record linked by email to Better Auth shape.
+    if (existingUserId && accountByEmail && !existingAccountByUserId) {
       await db.collection("account").updateOne(
-        { _id: legacyAccountByEmail._id },
-        { $set: { accountId: existingUserId, userId: existingUserId, updatedAt: now } },
+        { _id: accountByEmail._id },
+        { $set: { accountId: existingUserId, userId: existingUserObjectId, updatedAt: now } },
+      );
+    }
+
+    if (existingUserId && existingAccountByUserId && !accountByEmail) {
+      await db.collection("account").updateOne(
+        { _id: existingAccountByUserId._id },
+        { $set: { accountId: existingUserId, userId: existingUserObjectId, updatedAt: now } },
       );
     }
 
     // Repair inconsistent states caused by manual DB edits.
-    if (!existingUser && legacyAccountByEmail) {
-      await db.collection("account").deleteOne({ _id: legacyAccountByEmail._id });
+    if (!existingUser && accountByEmail) {
+      await db.collection("account").deleteOne({ _id: accountByEmail._id });
     }
 
     if (!existingUser) {
       // Insert into better-auth "user" collection
-      await db.collection("user").insertOne({
-        id: userId,
+      const insertUserResult = await db.collection("user").insertOne({
         name: partnerReq.contactName,
         email: partnerReq.email,
         emailVerified: true,
@@ -217,11 +245,12 @@ export async function approvePartnerRequest(
         updatedAt: now,
       });
 
+      const createdUserId = String(insertUserResult.insertedId);
+
       // Insert into better-auth "account" collection (credential provider)
       await db.collection("account").insertOne({
-        id: crypto.randomUUID(),
-        userId,
-        accountId: userId,
+        userId: insertUserResult.insertedId,
+        accountId: createdUserId,
         providerId: "credential",
         password: partnerReq.hashedPassword,
         accessToken: null,
@@ -232,12 +261,50 @@ export async function approvePartnerRequest(
         createdAt: now,
         updatedAt: now,
       });
-    } else if (!existingAccountByUserId && !legacyAccountByEmail) {
-      const userIdForAccount = (existingUser as any).id;
+    } else if (!existingAccountByUserId && !accountByEmail) {
+      const userIdForAccount = (existingUser as any)._id;
       await db.collection("account").insertOne({
-        id: crypto.randomUUID(),
         userId: userIdForAccount,
-        accountId: userIdForAccount,
+        accountId: String(userIdForAccount),
+        providerId: "credential",
+        password: partnerReq.hashedPassword,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        expiresAt: null,
+        scope: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Final consistency check: ensure user + credential account are both present and linked.
+    let ensuredUser = await db.collection("user").findOne({ email: partnerReq.email });
+    const ensuredUserObjectId = (ensuredUser as any)?._id;
+    const ensuredUserId = ensuredUserObjectId ? String(ensuredUserObjectId) : null;
+
+    if (ensuredUserId) {
+      await db.collection("account").updateMany(
+        { providerId: "credential", $or: [{ accountId: partnerReq.email }, { userId: partnerReq.email }] },
+        { $set: { userId: ensuredUserObjectId, accountId: ensuredUserId, updatedAt: new Date() } },
+      );
+
+      // Also migrate string userId records to ObjectId for Better Auth joins.
+      await db.collection("account").updateMany(
+        { providerId: "credential", userId: ensuredUserId },
+        { $set: { userId: ensuredUserObjectId, updatedAt: new Date() } },
+      );
+    }
+
+    const ensuredAccount = await db.collection("account").findOne({
+      userId: ensuredUserId,
+      providerId: "credential",
+    });
+
+    if (!ensuredAccount) {
+      await db.collection("account").insertOne({
+        userId: ensuredUserObjectId,
+        accountId: ensuredUserId,
         providerId: "credential",
         password: partnerReq.hashedPassword,
         accessToken: null,
@@ -363,12 +430,14 @@ export async function invitePartner(
     // Look up name/company from stored inquiry or full partner request
     let contactName = "";
     let companyName = "";
-    const inquiry = await PartnerInquiry.findOne({ email }).select("+activationToken");
+    let inquiry = await PartnerInquiry.findOne({ email }).select("+activationToken");
+    let partnerReq = null as any;
+
     if (inquiry) {
       contactName = inquiry.contactName;
       companyName = inquiry.companyName;
     } else {
-      const partnerReq = await PartnerRequest.findOne({ email });
+      partnerReq = await PartnerRequest.findOne({ email });
       if (partnerReq) {
         contactName = partnerReq.contactName;
         companyName = partnerReq.businessName;
@@ -379,7 +448,25 @@ export async function invitePartner(
     const activationToken = crypto.randomBytes(32).toString("hex");
     const activationTokenExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
 
-    if (inquiry) {
+    if (!inquiry) {
+      if (!partnerReq) {
+        return next(new AppError("Aucune demande partenaire trouvée pour cet email.", 404));
+      }
+
+      // Ensure activation token is persisted even when the flow starts from PartnerRequest.
+      inquiry = await PartnerInquiry.create({
+        companyName: partnerReq.businessName,
+        contactName: partnerReq.contactName,
+        email: partnerReq.email,
+        phone: partnerReq.phone,
+        businessType: "partenaire",
+        message: "",
+        activationToken,
+        activationTokenExpires,
+        activated: false,
+        inviteSentAt: new Date(),
+      });
+    } else {
       // If admin re-sends invitation, allow re-activation flow.
       inquiry.activationToken = activationToken;
       inquiry.activationTokenExpires = activationTokenExpires;
@@ -468,47 +555,97 @@ export async function activatePartner(
     const { db } = await connectMongoDB();
 
     const existingUser = await db.collection("user").findOne({ email: inquiry.email });
-    const existingUserId = (existingUser as any)?.id;
+    const existingUserObjectId = (existingUser as any)?._id;
+    const existingUserId = existingUserObjectId ? String(existingUserObjectId) : null;
     const existingAccountByUserId = existingUserId
       ? await db.collection("account").findOne({
-          userId: existingUserId,
+          userId: existingUserObjectId,
           providerId: "credential",
         })
       : null;
-    const legacyAccountByEmail = await db.collection("account").findOne({
+    const accountByEmail = await db.collection("account").findOne({
       accountId: inquiry.email,
       providerId: "credential",
     });
 
-    if (existingUserId && legacyAccountByEmail && !existingAccountByUserId) {
+    // Migrate legacy account record linked by email to Better Auth shape.
+    if (existingUserId && accountByEmail && !existingAccountByUserId) {
       await db.collection("account").updateOne(
-        { _id: legacyAccountByEmail._id },
-        { $set: { accountId: existingUserId, userId: existingUserId, updatedAt: new Date() } },
+        { _id: accountByEmail._id },
+        { $set: { accountId: existingUserId, userId: existingUserObjectId, updatedAt: new Date() } },
       );
     }
 
-    // If inquiry is already marked activated, only block when auth records are intact.
-    // If manual DB edits removed user/account, continue and self-heal.
-    if (inquiry.activated && existingUser && (existingAccountByUserId || legacyAccountByEmail)) {
-      return next(new AppError("Ce compte a déjà été activé. Veuillez vous connecter.", 409));
+    if (existingUserId && existingAccountByUserId && !accountByEmail) {
+      await db.collection("account").updateOne(
+        { _id: existingAccountByUserId._id },
+        { $set: { accountId: existingUserId, userId: existingUserObjectId, updatedAt: new Date() } },
+      );
     }
 
-    if (existingUser && (existingAccountByUserId || legacyAccountByEmail)) {
-      return next(new AppError("Un compte existe déjà avec cette adresse email.", 409));
+    const now = new Date();
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    if (existingUserId) {
+      await db.collection("user").updateOne(
+        { _id: existingUser?._id },
+        {
+          $set: {
+            role: "pro",
+            emailVerified: true,
+            updatedAt: now,
+          },
+        },
+      );
+    }
+
+    // If account already exists, finalize inquiry state and return success.
+    // This keeps the flow idempotent and unblocks login after account self-heal.
+    if (existingUser && (existingAccountByUserId || accountByEmail)) {
+      if (existingUserId) {
+        await db.collection("account").updateMany(
+          {
+            providerId: "credential",
+            $or: [
+              { userId: existingUserId },
+              { accountId: existingUserId },
+              { accountId: inquiry.email },
+            ],
+          },
+          {
+            $set: {
+              userId: existingUserObjectId,
+              accountId: existingUserId,
+              password: hashedPassword,
+              updatedAt: now,
+            },
+          },
+        );
+
+        await db.collection("account").updateMany(
+          { providerId: "credential", userId: existingUserId },
+          { $set: { userId: existingUserObjectId, updatedAt: now } },
+        );
+      }
+
+      inquiry.activated = true;
+      inquiry.activationToken = null;
+      inquiry.activationTokenExpires = null;
+      await inquiry.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Compte Pro déjà actif. Vous pouvez vous connecter.",
+      });
     }
 
     // Recovery path for partially deleted data.
-    if (!existingUser && legacyAccountByEmail) {
-      await db.collection("account").deleteOne({ _id: legacyAccountByEmail._id });
+    if (!existingUser && accountByEmail) {
+      await db.collection("account").deleteOne({ _id: accountByEmail._id });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const userId = crypto.randomUUID();
-    const now = new Date();
-
     if (!existingUser) {
-      await db.collection("user").insertOne({
-        id: userId,
+      const insertUserResult = await db.collection("user").insertOne({
         name: inquiry.contactName,
         email: inquiry.email,
         emailVerified: true,
@@ -518,10 +655,11 @@ export async function activatePartner(
         updatedAt: now,
       });
 
+      const createdUserId = String(insertUserResult.insertedId);
+
       await db.collection("account").insertOne({
-        id: crypto.randomUUID(),
-        userId,
-        accountId: userId,
+        userId: insertUserResult.insertedId,
+        accountId: createdUserId,
         providerId: "credential",
         password: hashedPassword,
         accessToken: null,
@@ -533,11 +671,48 @@ export async function activatePartner(
         updatedAt: now,
       });
     } else {
-      const userIdForAccount = (existingUser as any).id;
+      const userIdForAccount = (existingUser as any)._id;
       await db.collection("account").insertOne({
-        id: crypto.randomUUID(),
         userId: userIdForAccount,
-        accountId: userIdForAccount,
+        accountId: String(userIdForAccount),
+        providerId: "credential",
+        password: hashedPassword,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        expiresAt: null,
+        scope: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Final consistency check: ensure user + credential account are both present and linked.
+    let ensuredUser = await db.collection("user").findOne({ email: inquiry.email });
+    const ensuredUserObjectId = (ensuredUser as any)?._id;
+    const ensuredUserId = ensuredUserObjectId ? String(ensuredUserObjectId) : null;
+
+    if (ensuredUserId) {
+      await db.collection("account").updateMany(
+        { providerId: "credential", $or: [{ accountId: inquiry.email }, { userId: inquiry.email }] },
+        { $set: { userId: ensuredUserObjectId, accountId: ensuredUserId, updatedAt: new Date() } },
+      );
+
+      await db.collection("account").updateMany(
+        { providerId: "credential", userId: ensuredUserId },
+        { $set: { userId: ensuredUserObjectId, updatedAt: new Date() } },
+      );
+    }
+
+    const ensuredAccount = await db.collection("account").findOne({
+      userId: ensuredUserId,
+      providerId: "credential",
+    });
+
+    if (!ensuredAccount) {
+      await db.collection("account").insertOne({
+        userId: ensuredUserObjectId,
+        accountId: ensuredUserId,
         providerId: "credential",
         password: hashedPassword,
         accessToken: null,

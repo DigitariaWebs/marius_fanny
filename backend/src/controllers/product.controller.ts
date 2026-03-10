@@ -237,3 +237,84 @@ export async function reorderProducts(req: AuthRequest, res: Response) {
     throw new AppError("Failed to reorder products", 500);
   }
 }
+
+/**
+ * Bulk update allergens for all products
+ */
+export async function updateAllProductsAllergens(req: AuthRequest, res: Response) {
+  try {
+    const { allergens } = req.body as { allergens?: string };
+
+    if (typeof allergens !== "string") {
+      throw new AppError("Le champ allergènes est requis", 400);
+    }
+
+    const normalizedAllergens = allergens.trim();
+
+    const result = await Product.updateMany(
+      {},
+      {
+        $set: {
+          allergens: normalizedAllergens,
+          updatedAt: new Date(),
+        },
+      },
+    );
+
+    res.json({
+      success: true,
+      data: {
+        modifiedCount: result.modifiedCount,
+      },
+      message: `Allergènes mis à jour pour ${result.modifiedCount} produit(s).`,
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError("Failed to update allergens for all products", 500);
+  }
+}
+
+/**
+ * Bulk-enable client allergy text field on all products
+ */
+export async function enableClientAllergyTextField(req: AuthRequest, res: Response) {
+  try {
+    const OPTION_NAME = "Allergies / note client";
+    let modifiedCount = 0;
+
+    const products = await Product.find({});
+
+    for (const product of products) {
+      const options = Array.isArray(product.customOptions)
+        ? [...product.customOptions]
+        : [];
+
+      const alreadyExists = options.some((opt) =>
+        String(opt.name || "").toLowerCase().includes("allerg"),
+      );
+
+      if (!alreadyExists) {
+        options.push({
+          name: OPTION_NAME,
+          type: "text",
+          choices: [],
+        });
+        product.customOptions = options as any;
+        product.updatedAt = new Date();
+        await product.save();
+        modifiedCount += 1;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        modifiedCount,
+      },
+      message: `Zone allergènes client activée sur ${modifiedCount} produit(s).`,
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError("Failed to enable client allergy text field", 500);
+  }
+}

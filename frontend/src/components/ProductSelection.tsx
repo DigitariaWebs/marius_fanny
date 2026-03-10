@@ -44,7 +44,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
   // States pour les options
   const [quantity, setQuantity] = useState(1);
-  const [allergyNote, setAllergyNote] = useState("");
   const [selectedBread, setSelectedBread] = useState<string>("Baguette");
   const [isSliced, setIsSliced] = useState<boolean>(false);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
@@ -62,20 +61,35 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     if (token.endsWith("s") && token.length > 3) return token.slice(0, -1);
     return token;
   };
+  const normalizeCategoryToken = (token: string) => {
+    // Common short forms used in product categories
+    if (token === "dej" || token === "deje") return "dejeuner";
+    if (token === "ptit" || token === "tit" || token === "petit") return "petit";
+    return token;
+  };
   const categoryTokens = (value: string) =>
     normalizeCategoryKey(value)
       .split(" ")
       .filter(Boolean)
       .map(singularizeToken);
   const categoryMatches = (productCategory: string, selectedCategory: string) => {
-    const productTokens = categoryTokens(productCategory);
-    const selectedTokens = categoryTokens(selectedCategory);
+    const productTokens = categoryTokens(productCategory).map(normalizeCategoryToken);
+    const selectedTokens = categoryTokens(selectedCategory).map(normalizeCategoryToken);
 
     if (!productTokens.length || !selectedTokens.length) return false;
 
     const productJoined = productTokens.join(" ");
     const selectedJoined = selectedTokens.join(" ");
     if (productJoined === selectedJoined) return true;
+
+    // Subset match: all product tokens (>2 chars) are contained in the selected category tokens
+    // This handles product.category="pizza" matching parent "Quiches, pâtes et pizza"
+    const meaningfulProductTokens = productTokens.filter(t => t.length > 2);
+    const meaningfulSelectedTokens = selectedTokens.filter(t => t.length > 2);
+    if (
+      meaningfulProductTokens.length > 0 &&
+      meaningfulProductTokens.every(t => meaningfulSelectedTokens.includes(t))
+    ) return true;
 
     // Secondary tolerant match: same token set (order-insensitive) only.
     if (productTokens.length !== selectedTokens.length) return false;
@@ -149,16 +163,27 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     const children = currentNode?.children || [];
     setChildCategories(children);
 
-    // Si on est au niveau parent avec des sous-catégories → vide, l'user doit choisir
+    if (products.length === 0) return;
+
+    // When a parent category has sub-categories and none is selected yet,
+    // show nothing — user must pick a sub-category first.
     if (!subCategory && children.length > 0) {
       setFilteredProducts([]);
       return;
     }
 
-    if (products.length === 0) return;
+    // Collect all category names in the current subtree (handles sub-sub-categories)
+    const getNamesInSubtree = (node: ApiCategoryNode): string[] => {
+      const names: string[] = [node.name.toLowerCase()];
+      (node.children || []).forEach(child => names.push(...getNamesInSubtree(child)));
+      return names;
+    };
+    const namesToMatch = currentNode
+      ? getNamesInSubtree(currentNode)
+      : currentName ? [currentName] : [];
 
-    const filtered = currentName
-      ? products.filter((p) => p.available && categoryMatches(p.category, currentName))
+    const filtered = namesToMatch.length > 0
+      ? products.filter((p) => p.available && namesToMatch.some(name => categoryMatches(p.category, name)))
       : products.filter((p) => p.available);
 
     setFilteredProducts(filtered);
@@ -241,7 +266,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     setSelectedProduct(product);
     // Réinitialiser toutes les options
     setQuantity(1);
-    setAllergyNote("");
     setSelectedBread("Baguette");
     setIsSliced(false);
     setSelectedOptions({});
@@ -252,6 +276,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
       const missingTextOption = (selectedProduct.customOptions || []).find(
         (option) =>
           option.type === "text" &&
+          !String(option.name || "").toLowerCase().includes("allerg") &&
           (!selectedOptions[option.name] || !selectedOptions[option.name].trim()),
       );
       if (missingTextOption) {
@@ -261,6 +286,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
       const totalPrice = getCurrentPrice();
       const discountedPrice = totalPrice * (1 - (selectedProduct.discountPercentage || 0) / 100);
+
       const p: any = { 
         ...selectedProduct, 
         price: discountedPrice,
@@ -334,23 +360,16 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
       )}
       <div className="max-w-7xl mx-auto">
         
-        {/* Navigation interne */}
-        <div className="flex justify-between items-center mb-10">
-          <button onClick={onBack} className="text-xs uppercase tracking-widest text-stone-400 hover:text-gold transition-colors">
-            ← Fermer la sélection
-          </button>
-          {subCategory && (
-            <button onClick={() => setSubCategory(null)} className="text-xs font-bold text-gold uppercase">
-              Voir tout {categoryTitle}
+        <header className="mb-12 mt-6 md:mt-8">
+          <div className="relative flex items-center justify-center min-h-[48px]">
+            <button onClick={subCategory ? () => setSubCategory(null) : onBack} className="absolute left-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#337957] text-white text-sm font-bold uppercase tracking-wide shadow-md hover:bg-[#2D2A26] transition-colors">
+              ← Retour
             </button>
-          )}
-        </div>
-
-        <header className="mb-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-medium text-dark mb-2" style={{ fontFamily: '"Century Gothic", sans-serif' }}>
-            {subCategory ? subCategory.title : categoryTitle}
-          </h2>
-          <div className="w-16 h-1 bg-gold mx-auto rounded-full"></div>
+            <h2 className="text-2xl md:text-3xl font-medium text-dark text-center" style={{ fontFamily: '"Century Gothic", sans-serif' }}>
+              {subCategory ? subCategory.title : categoryTitle}
+            </h2>
+          </div>
+          <div className="w-16 h-1 bg-gold mx-auto rounded-full mt-3"></div>
         </header>
 
         {/* Sous-catégories si existantes */}
@@ -756,48 +775,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 )}
 
                 {/* JOURS DE DISPONIBILITÉ déplacé en haut (déjà affiché avant allergènes) */}
-
-                {/* OPTIONS BOÎTE À LUNCH (Legacy support) */}
-                {isLunchCategory(selectedProduct?.category || "") && !selectedProduct.customOptions?.length && (
-                  <>
-                    <div className="mb-6">
-                      <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-[#337957] rounded-full"></span>
-                        Pain
-                      </h4>
-                      <div className="flex gap-2 flex-wrap">
-                        {["Baguette", "Roulé pita", "Croissant"].map((pain) => (
-                          <button
-                            key={pain}
-                            type="button"
-                            onClick={() => setSelectedBread(pain)}
-                            className={`flex-1 py-3 px-2 rounded text-sm font-medium transition-all ${
-                              selectedBread === pain
-                                ? "bg-[#337957] text-white shadow-md"
-                                : "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50"
-                            }`}
-                          >
-                            {pain}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="mb-6">
-                      <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
-                        <span className="w-1 h-4 bg-red-400 rounded-full"></span>
-                        Allergies ?
-                      </h4>
-                      <textarea
-                        value={allergyNote}
-                        onChange={(e) => setAllergyNote(e.target.value)}
-                        placeholder="Ex: Arachides, Sans gluten..."
-                        className="w-full p-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-[#337957] bg-stone-50"
-                        rows={2}
-                      />
-                    </div>
-                  </>
-                )}
 
 
 
