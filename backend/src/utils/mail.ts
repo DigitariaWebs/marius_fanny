@@ -22,6 +22,26 @@ const DISPLAY_FROM = `"Marius & Fanny" <${process.env.EMAIL_USER || FROM_EMAIL}>
 // Public logo URL (hosted on Cloudinary)
 const LOGO_URL = "https://res.cloudinary.com/deyjooxbi/image/upload/v1773330080/branding/marius_fanny_logo.avif";
 
+// Google review link for post-order feedback.
+const GOOGLE_REVIEW_URL =
+  process.env.GOOGLE_REVIEW_URL ||
+  "https://www.google.com/maps/search/?api=1&query=Marius%20%26%20Fanny";
+
+const buildGoogleReviewSection = () => `
+  <div style="background-color: #FFF8E7; padding: 18px; border-radius: 8px; margin-top: 24px; border-left: 4px solid #C5A065; text-align: center;">
+    <p style="color: #2D2A26; margin: 0; font-weight: bold;">
+      Votre commande vous a plu ?
+    </p>
+    <p style="color: #555; margin: 8px 0 14px 0; font-size: 14px; line-height: 1.5;">
+      Laissez-nous un avis sur Google, cela aide beaucoup Marius & Fanny.
+    </p>
+    <a href="${GOOGLE_REVIEW_URL}"
+       style="display: inline-block; padding: 12px 22px; background-color: #C5A065; color: white; text-decoration: none; border-radius: 999px; font-weight: bold;">
+      Laisser un avis Google
+    </a>
+  </div>
+`;
+
 /**
  * Send an email via Resend if API key is set, else fall back to Nodemailer.
  */
@@ -629,6 +649,8 @@ export async function sendFullPaymentReceipt(
                 Votre commande est maintenant en cours de préparation. Nous vous contacterons pour la livraison ou le ramassage.
               </p>
             </div>
+
+            ${buildGoogleReviewSection()}
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
@@ -786,6 +808,8 @@ export async function sendDepositReceipt(
                 Un montant de <strong>${balanceDue.toFixed(2)}$</strong> sera dû lors de la récupération ou de la livraison de votre commande.
               </p>
             </div>
+
+            ${buildGoogleReviewSection()}
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
@@ -945,6 +969,8 @@ export async function sendInvoiceOrderConfirmation(
                   : ""
               }
             </div>
+
+            ${buildGoogleReviewSection()}
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">

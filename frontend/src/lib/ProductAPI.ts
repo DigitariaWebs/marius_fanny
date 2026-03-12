@@ -94,7 +94,7 @@ class ProductAPI {
 
     if (response.status === 401) {
       window.location.href = "/se-connecter";
-      throw new Error("Session expirée. Veuillez vous reconnecter.");
+      throw new Error("AUTH_REDIRECT");
     }
 
     if (!response.ok) {
