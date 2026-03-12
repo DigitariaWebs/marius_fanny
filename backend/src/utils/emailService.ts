@@ -109,6 +109,7 @@ export async function sendOrderReceipt(
     depositAmount?: number;
     paymentId?: string;
     invoiceUrl?: string;
+    orderDate?: Date;
   },
 ): Promise<void> {
   console.log(
@@ -131,6 +132,7 @@ export async function sendOrderReceipt(
           orderData.deliveryFee,
           orderData.total,
           orderData.paymentId,
+          orderData.orderDate,
         );
         console.log(
           `✅ [ORDER RECEIPT] Full payment receipt sent to ${orderData.email}`,
@@ -156,6 +158,7 @@ export async function sendOrderReceipt(
           orderData.depositAmount,
           balanceDue,
           orderData.paymentId,
+          orderData.orderDate,
         );
         console.log(
           `✅ [ORDER RECEIPT] Deposit receipt sent to ${orderData.email}`,
@@ -173,6 +176,7 @@ export async function sendOrderReceipt(
           orderData.deliveryFee,
           orderData.total,
           orderData.invoiceUrl,
+          orderData.orderDate,
         );
         console.log(
           `✅ [ORDER RECEIPT] Invoice order confirmation sent to ${orderData.email}`,

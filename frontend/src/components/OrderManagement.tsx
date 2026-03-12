@@ -19,6 +19,7 @@ import {
   DollarSign,
   Check,
   Printer,
+  Undo2,
 } from "lucide-react";
 import { DataTable } from "./ui/DataTable";
 import { Modal } from "./ui/modal";
@@ -58,6 +59,20 @@ interface OrderWithPacking extends Omit<Order, 'items'> {
   squarePaymentId?: string;
   squareInvoiceId?: string;
 }
+
+const buildOrderItemsUpdatePayload = (items: OrderItemWithPacking[]) =>
+  items.map((item) => ({
+    productId: item.productId,
+    productName: item.product?.name ?? `Produit #${item.productId}`,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    amount: item.subtotal,
+    notes: item.notes,
+    productionStatus:
+      item.productionStatus === "ready" || item.productionStatus === "in_progress"
+        ? item.productionStatus
+        : "pending",
+  }));
 
 export function OrderManagement() {
   const [orders, setOrders] = useState<OrderWithPacking[]>([
@@ -383,34 +398,21 @@ export function OrderManagement() {
 
   // Charger les clients depuis l'API
   const [clientsList, setClientsList] = useState<any[]>([]);
+  const fetchClients = async () => {
+    try {
+      const data = await clientAPI.getClients(1, 100);
+      setClientsList(data.clients);
+    } catch (err) {
+      console.error("Failed to fetch clients:", err);
+    }
+  };
+
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const data = await clientAPI.getClients(1, 100);
-        setClientsList(data.clients);
-      } catch (err) {
-        console.error("Failed to fetch clients:", err);
-      }
-    };
     fetchClients();
   }, []);
 
-  // Combiner les clients des commandes avec les clients de l'API
-  const orderClients = orders
-    .map((order) => order.client)
-    .filter(
-      (client, index, self) =>
-        index === self.findIndex((c) => c.id === client.id) && client.id !== 0,
-    );
-  
-  // Fusionner les clients de l'API avec ceux des commandes
-  const allClients = [...clientsList, ...orderClients];
-  const uniqueClients = allClients.filter(
-    (client, index, self) =>
-      index === self.findIndex((c) => c.id === client.id),
-  );
-  
-  const clients = uniqueClients;
+  // Only real clients from the API should appear in the selectable client list.
+  const clients = clientsList;
   const getOrderColor = (order: OrderWithPacking) => {
     if (order.status === "completed") {
       return "!bg-green-50 border-l-4 !border-l-green-500 hover:!bg-green-100 cursor-pointer";
@@ -623,15 +625,55 @@ export function OrderManagement() {
       setSelectedOrderForProducts(updatedOrder);
     }
 
-    // Persist the status change to the backend so it survives navigation
-    if (allPacked && currentOrder.status !== "ready") {
-      try {
-        const result = await orderAPI.updateOrder(orderId, { status: "ready" });
-        console.log("✅ Statut sauvegardé:", result);
-      } catch (err: any) {
-        console.error("❌ Failed to persist order status:", err);
-        alert(`Erreur lors de la sauvegarde du statut: ${err.message || err}`);
-      }
+    try {
+      const result = await orderAPI.updateOrder(orderId, {
+        items: buildOrderItemsUpdatePayload(updatedItems),
+        ...(allPacked && currentOrder.status !== "ready" ? { status: "ready" } : {}),
+      });
+      console.log("✅ Emballage sauvegardé:", result);
+    } catch (err: any) {
+      console.error("❌ Failed to persist packed item:", err);
+      alert(`Erreur lors de la sauvegarde de l'emballage: ${err.message || err}`);
+    }
+  };
+
+  // Fonction pour désemballer un produit (revenir en arrière)
+  const handleUnpackItem = async (orderId: string, itemId: number) => {
+    const currentOrder = orders.find((o) => o.id === orderId);
+    if (!currentOrder) return;
+
+    const updatedItems = currentOrder.items.map((item) =>
+      item.id === itemId ? { ...item, isPacked: false, productionStatus: "pending" } : item,
+    );
+    // If order was "ready" because all items were packed, revert to in_production
+    const wasAllPacked = currentOrder.items.every((item) => item.productionStatus === "ready");
+    const newStatus = (wasAllPacked && currentOrder.status === "ready" ? "in_production" : currentOrder.status) as OrderWithPacking["status"];
+
+    const updatedOrder: OrderWithPacking = {
+      ...currentOrder,
+      items: updatedItems,
+      status: newStatus,
+    };
+
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => (order.id === orderId ? updatedOrder : order)),
+    );
+
+    if (selectedOrderForProducts?.id === orderId) {
+      setSelectedOrderForProducts(updatedOrder);
+    }
+
+    try {
+      const result = await orderAPI.updateOrder(orderId, {
+        items: buildOrderItemsUpdatePayload(updatedItems),
+        ...(wasAllPacked && currentOrder.status === "ready"
+          ? { status: "in_production" }
+          : {}),
+      });
+      console.log("✅ Désemballage sauvegardé:", result);
+    } catch (err: any) {
+      console.error("❌ Failed to persist unpacked item:", err);
+      alert(`Erreur lors de la sauvegarde de l'emballage: ${err.message || err}`);
     }
   };
 
@@ -920,30 +962,54 @@ export function OrderManagement() {
                   </DropdownMenuItem>
                 )}
                 {order.status === "confirmed" && (
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleUpdateStatus(order.id, "in_production")
-                    }
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    Mettre en production
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleUpdateStatus(order.id, "in_production")
+                      }
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Mettre en production
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleUpdateStatus(order.id, "pending")}
+                    >
+                      <Undo2 className="h-4 w-4 mr-2" />
+                      Revenir à en attente
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {order.status === "in_production" && (
-                  <DropdownMenuItem
-                    onClick={() => handleUpdateStatus(order.id, "ready")}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Marquer prete
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => handleUpdateStatus(order.id, "ready")}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Marquer prete
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleUpdateStatus(order.id, "confirmed")}
+                    >
+                      <Undo2 className="h-4 w-4 mr-2" />
+                      Revenir à confirmée
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {order.status === "ready" && (
-                  <DropdownMenuItem
-                    onClick={() => handleUpdateStatus(order.id, "completed")}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Marquer ramassee
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => handleUpdateStatus(order.id, "completed")}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Marquer ramassee
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleUpdateStatus(order.id, "in_production")}
+                    >
+                      <Undo2 className="h-4 w-4 mr-2" />
+                      Revenir à en production
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {canRefundOrder(order) && (
                   <DropdownMenuItem onClick={() => handleRefundClick(order)}>
@@ -952,6 +1018,14 @@ export function OrderManagement() {
                   </DropdownMenuItem>
                 )}
               </>
+            )}
+            {order.status === "completed" && (
+              <DropdownMenuItem
+                onClick={() => handleUpdateStatus(order.id, "ready")}
+              >
+                <Undo2 className="h-4 w-4 mr-2" />
+                Revenir à prête
+              </DropdownMenuItem>
             )}
             <DropdownMenuItem
               onClick={() => handleDeleteClick(order)}
@@ -1157,10 +1231,15 @@ export function OrderManagement() {
                               Emballer
                             </Button>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                            <Button
+                              onClick={() => handleUnpackItem(selectedOrderForProducts.id, item.id)}
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs border-green-600 text-green-800 hover:bg-green-50"
+                            >
                               <Check className="w-3 h-3 mr-1" />
-                              Emballe
-                            </span>
+                              Emballé
+                            </Button>
                           )}
                         </td>
                       </tr>
@@ -1791,6 +1870,7 @@ export function OrderManagement() {
               }
 
               const result = await orderAPI.createOrder(payload);
+              await fetchClients();
               const saved = result.data;
               const now = new Date().toISOString();
 

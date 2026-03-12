@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.js";
 import { User } from "../models/User.js";
+import Order from "../models/Order.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { canManageUser } from "../utils/roles.js";
 
@@ -126,7 +127,7 @@ export async function updateCurrentUser(req: AuthRequest, res: Response) {
 export async function updateUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { name, role, profile } = req.body;
+    const { name, role, profile, firstName, lastName, phone, status, email: newEmail } = req.body;
 
     // Get current user's role
     const currentUser = await User.findOne({ email: req.user?.email });
@@ -153,16 +154,33 @@ export async function updateUser(req: AuthRequest, res: Response) {
       );
     }
 
+    // Build update object
+    const updateFields: Record<string, any> = {};
+
+    // Traditional fields
+    if (name) updateFields.name = name;
+    if (role) updateFields.role = role;
+    if (profile) updateFields.profile = profile;
+
+    // Client-specific fields (from ClientManagement)
+    if (firstName !== undefined || lastName !== undefined) {
+      const fName = firstName ?? targetUser.name?.split(" ")[0] ?? "";
+      const lName = lastName ?? targetUser.name?.split(" ").slice(1).join(" ") ?? "";
+      updateFields.name = `${fName} ${lName}`.trim();
+    }
+    if (phone !== undefined) {
+      updateFields["profile.phoneNumber"] = phone;
+    }
+    if (status !== undefined) {
+      updateFields.status = status;
+    }
+    if (newEmail !== undefined) {
+      updateFields.email = newEmail;
+    }
+
     const user = await User.findByIdAndUpdate(
       id,
-      {
-        $set: {
-          ...(name && { name }),
-          ...(role && { role }),
-          ...
-          (profile && { profile }),
-        },
-      },
+      { $set: updateFields },
       { new: true, runValidators: true },
     );
 
@@ -300,9 +318,18 @@ export async function getAllClients(req: AuthRequest, res: Response) {
     ]);
 
     // Transform users to client format
-    const clients = users.map((user) => {
+    const clients = await Promise.all(users.map(async (user) => {
       const numericId = user.id || parseInt(user._id.toString().slice(-8), 16);
       const nameParts = (user.name || "").split(" ");
+
+      // Fetch orders for this client
+      const orders = await Order.find({
+        $or: [
+          { userId: user._id.toString() },
+          { "clientInfo.email": user.email },
+        ],
+      }).sort({ orderDate: -1 });
+
       return {
         id: numericId,
         firstName: nameParts[0] || "",
@@ -313,9 +340,19 @@ export async function getAllClients(req: AuthRequest, res: Response) {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         addresses: [],
-        orders: [],
+        orders: orders.map((order) => ({
+          id: order._id.toString(),
+          orderNumber: order.orderNumber,
+          orderDate: order.orderDate,
+          status: order.status,
+          total: order.total,
+          items: order.items,
+          pickupDate: order.pickupDate,
+          pickupLocation: order.pickupLocation,
+          deliveryType: order.deliveryType,
+        })),
       };
-    });
+    }));
 
     res.json({
       success: true,

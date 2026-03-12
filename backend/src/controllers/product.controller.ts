@@ -138,18 +138,29 @@ export async function updateProduct(req: AuthRequest, res: Response) {
     const idStr = Array.isArray(id) ? id[0] : id;
     const updateData = req.body;
 
-    const product = await Product.findOneAndUpdate(
-      { id: parseInt(idStr) },
-      {
-        ...updateData,
-        updatedAt: new Date(),
-      },
-      { new: true, runValidators: true }
-    );
+    const product = await Product.findOne({ id: parseInt(idStr) });
 
     if (!product) {
       throw new AppError("Product not found", 404);
     }
+
+    // Apply updates field by field so Mongoose tracks changes properly
+    const allowedFields = [
+      "name", "category", "price", "discountPercentage", "available",
+      "minOrderQuantity", "maxOrderQuantity", "description", "image", "images",
+      "preparationTimeHours", "availableDays", "hasTaxes", "allergens",
+      "productionType", "targetAudience", "customOptions", "recommendations",
+      "displayOrder",
+    ] as const;
+
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        (product as any)[field] = updateData[field];
+      }
+    }
+    product.updatedAt = new Date();
+
+    await product.save();
 
     res.json({
       success: true,
@@ -158,6 +169,7 @@ export async function updateProduct(req: AuthRequest, res: Response) {
     });
   } catch (error) {
     if (error instanceof AppError) throw error;
+    console.error("Failed to update product:", error);
     throw new AppError("Failed to update product", 500);
   }
 }

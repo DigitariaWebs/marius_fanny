@@ -163,8 +163,8 @@ function ClientManagement() {
     }
 
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await clientAPI.updateClient(editingClient.id, formData);
       setClients(
         clients.map((client) =>
           client.id === editingClient.id
@@ -179,8 +179,12 @@ function ClientManagement() {
       setIsEditModalOpen(false);
       setEditingClient(null);
       resetForm();
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erreur lors de la modification du client");
+      setIsErrorModalOpen(true);
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
   };
 
   const handleDeleteClick = (client: Client) => {
@@ -192,13 +196,17 @@ function ClientManagement() {
     if (!deletingClient) return;
 
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await clientAPI.deleteClient(deletingClient.id);
       setClients(clients.filter((client) => client.id !== deletingClient.id));
       setIsDeleteModalOpen(false);
       setDeletingClient(null);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erreur lors de la suppression du client");
+      setIsErrorModalOpen(true);
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
   };
 
   const handleDetailsClick = (client: Client) => {
@@ -206,18 +214,25 @@ function ClientManagement() {
     setIsDetailsModalOpen(true);
   };
 
-  const handleToggleStatus = (client: Client) => {
-    setClients(
-      clients.map((c) =>
-        c.id === client.id
-          ? {
-              ...c,
-              status: c.status === "active" ? "inactive" : "active",
-              updatedAt: new Date().toISOString(),
-            }
-          : c,
-      ),
-    );
+  const handleToggleStatus = async (client: Client) => {
+    const newStatus = client.status === "active" ? "inactive" : "active";
+    try {
+      await clientAPI.updateClient(client.id, { status: newStatus });
+      setClients(
+        clients.map((c) =>
+          c.id === client.id
+            ? {
+                ...c,
+                status: newStatus,
+                updatedAt: new Date().toISOString(),
+              }
+            : c,
+        ),
+      );
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erreur lors du changement de statut");
+      setIsErrorModalOpen(true);
+    }
   };
 
   const getFullName = (client: Client) => {

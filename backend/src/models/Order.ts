@@ -14,6 +14,7 @@ export interface IOrderItem {
   unitPrice: number;
   amount: number;
   notes?: string;
+  productionStatus?: "pending" | "in_progress" | "ready";
 }
 
 export interface IClientInfo {
@@ -130,6 +131,11 @@ const OrderItemSchema = new Schema<IOrderItem>(
     notes: {
       type: String,
       trim: true,
+    },
+    productionStatus: {
+      type: String,
+      enum: ["pending", "in_progress", "ready"],
+      default: "pending",
     },
   },
   { _id: false },

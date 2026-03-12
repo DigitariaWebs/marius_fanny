@@ -27,6 +27,12 @@ export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   role: z.enum(["user", "pro", "staff", "customerService", "admin", "deliveryDriver", "cuisinier", "patissier", "four"]).optional(),
   profile: userProfileSchema.optional(),
+  // Client-specific fields
+  firstName: z.string().min(1).max(100).optional(),
+  lastName: z.string().max(100).optional(),
+  phone: z.string().max(20).optional(),
+  email: z.string().email().optional(),
+  status: z.enum(["active", "inactive", "placeholder"]).optional(),
 });
 
 /**

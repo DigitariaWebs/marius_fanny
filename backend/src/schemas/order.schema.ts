@@ -23,6 +23,7 @@ export const orderItemSchema = z.object({
   unitPrice: z.number().nonnegative("Le prix unitaire doit être non négatif"),
   amount: z.number().nonnegative("Le montant doit être non négatif"),
   notes: z.string().optional(),
+  productionStatus: z.enum(["pending", "in_progress", "ready"]).optional(),
 });
 
 // Client info schema

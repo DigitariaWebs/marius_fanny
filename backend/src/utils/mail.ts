@@ -16,6 +16,12 @@ const FROM_EMAIL = resend
   ? (process.env.RESEND_FROM_EMAIL as string)
   : (process.env.EMAIL_USER || "noreply@marius-fanny.com");
 
+// Display name for outgoing emails
+const DISPLAY_FROM = `"Marius & Fanny" <${process.env.EMAIL_USER || FROM_EMAIL}>`;
+
+// Public logo URL (hosted on Cloudinary)
+const LOGO_URL = "https://res.cloudinary.com/deyjooxbi/image/upload/v1773330080/branding/marius_fanny_logo.avif";
+
 /**
  * Send an email via Resend if API key is set, else fall back to Nodemailer.
  */
@@ -65,13 +71,14 @@ export async function sendVerificationEmail(
 
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: DISPLAY_FROM,
       to: email,
       subject: "✨ Confirmez votre email - Marius & Fanny",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
 
           <div style="text-align: center; margin-bottom: 30px;">
+            <img src="${LOGO_URL}" alt="Marius & Fanny" style="max-width: 120px; margin-bottom: 10px;" />
             <h1 style="color: #C5A065; font-family: 'Great Vibes', cursive; font-size: 40px; margin: 0;">
               Marius & Fanny
             </h1>
@@ -106,7 +113,7 @@ export async function sendVerificationEmail(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2024 Marius & Fanny. Tous droits réservés.</p>
+            <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
           </div>
 
         </div>
@@ -129,13 +136,14 @@ export async function sendPasswordResetEmail(
 ): Promise<void> {
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: DISPLAY_FROM,
       to: email,
       subject: "🔐 Réinitialiser votre mot de passe - Marius & Fanny",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
 
           <div style="text-align: center; margin-bottom: 30px;">
+            <img src="${LOGO_URL}" alt="Marius & Fanny" style="max-width: 120px; margin-bottom: 10px;" />
             <h1 style="color: #C5A065; font-family: 'Great Vibes', cursive; font-size: 40px; margin: 0;">
               Marius & Fanny
             </h1>
@@ -256,7 +264,7 @@ export async function sendPartnerRequestEmail(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2024 Marius &amp; Fanny. Tous droits réservés.</p>
+            <p>© 2026 Marius &amp; Fanny. Tous droits réservés.</p>
           </div>
 
         </div>
@@ -322,7 +330,7 @@ export async function sendPartnerApprovedEmail(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2024 Marius &amp; Fanny. Tous droits réservés.</p>
+            <p>© 2026 Marius &amp; Fanny. Tous droits réservés.</p>
           </div>
 
         </div>
@@ -413,7 +421,7 @@ export async function sendPartnerInquiryEmail(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2024 Marius &amp; Fanny. Tous droits réservés.</p>
+            <p>© 2026 Marius &amp; Fanny. Tous droits réservés.</p>
           </div>
 
         </div>
@@ -484,7 +492,7 @@ export async function sendPartnerInvitationEmail(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2024 Marius &amp; Fanny. Tous droits réservés.</p>
+            <p>© 2026 Marius &amp; Fanny. Tous droits réservés.</p>
           </div>
 
         </div>
@@ -512,6 +520,7 @@ export async function sendFullPaymentReceipt(
   deliveryFee: number,
   total: number,
   paymentId: string,
+  orderDate?: Date,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -532,16 +541,19 @@ export async function sendFullPaymentReceipt(
       )
       .join("");
 
+    const orderDateObj = orderDate ? new Date(orderDate) : new Date();
+    const formattedDate = orderDateObj.toLocaleDateString("fr-CA", { year: "numeric", month: "long", day: "numeric" });
+    const formattedTime = orderDateObj.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+    const paddedNumber = orderNumber.replace(/^ORD-/, "#");
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: DISPLAY_FROM,
       to: email,
-      subject: `✅ Confirmation de paiement - Commande ${orderNumber}`,
+      subject: `✅ Confirmation de paiement - Commande ${paddedNumber}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #C5A065; font-family: 'Great Vibes', cursive; font-size: 40px; margin: 0;">
-              Marius & Fanny
-            </h1>
+            <img src="${LOGO_URL}" alt="Marius & Fanny" style="max-width: 180px; height: auto;" />
           </div>
 
           <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -561,7 +573,9 @@ export async function sendFullPaymentReceipt(
 
             <div style="background-color: #F9F7F2; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
               <p style="color: #999; margin: 0 0 5px 0; font-size: 12px;">Numéro de commande</p>
-              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${orderNumber}</p>
+              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${paddedNumber}</p>
+              <p style="color: #999; margin: 10px 0 5px 0; font-size: 12px;">Date de commande</p>
+              <p style="color: #555; margin: 0; font-size: 14px;">${formattedDate} à ${formattedTime}</p>
               <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">ID de paiement: ${paymentId}</p>
             </div>
 
@@ -618,15 +632,15 @@ export async function sendFullPaymentReceipt(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>Des questions ? Contactez-nous à ${process.env.EMAIL_USER}</p>
-            <p>© 2024 Marius & Fanny. Tous droits réservés.</p>
+            <p>Des questions ? Contactez-nous à <a href="mailto:mariusetfanny@gmail.com" style="color: #C5A065;">mariusetfanny@gmail.com</a></p>
+            <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
           </div>
         </div>
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("✅ Reçu de paiement complet envoyé:", info.response);
+    await sendEmail(mailOptions);
+    console.log("✅ Reçu de paiement complet envoyé vers:", email);
   } catch (error) {
     console.error("❌ Erreur lors de l'envoi du reçu:", error);
     throw error;
@@ -648,6 +662,7 @@ export async function sendDepositReceipt(
   depositPaid: number,
   balanceDue: number,
   paymentId: string,
+  orderDate?: Date,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -668,16 +683,26 @@ export async function sendDepositReceipt(
       )
       .join("");
 
+    const orderDateObj = orderDate ? new Date(orderDate) : new Date();
+    const formattedDate = orderDateObj.toLocaleDateString("fr-CA", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const formattedTime = orderDateObj.toLocaleTimeString("fr-CA", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const paddedNumber = orderNumber.replace(/^ORD-/, "#");
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: DISPLAY_FROM,
       to: email,
-      subject: `✅ Acompte reçu - Commande ${orderNumber}`,
+      subject: `✅ Acompte reçu - Commande ${paddedNumber}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #C5A065; font-family: 'Great Vibes', cursive; font-size: 40px; margin: 0;">
-              Marius & Fanny
-            </h1>
+            <img src="${LOGO_URL}" alt="Marius & Fanny" style="max-width: 180px; height: auto;" />
           </div>
 
           <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -697,7 +722,9 @@ export async function sendDepositReceipt(
 
             <div style="background-color: #F9F7F2; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
               <p style="color: #999; margin: 0 0 5px 0; font-size: 12px;">Numéro de commande</p>
-              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${orderNumber}</p>
+              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${paddedNumber}</p>
+              <p style="color: #999; margin: 10px 0 5px 0; font-size: 12px;">Date de commande</p>
+              <p style="color: #555; margin: 0; font-size: 14px;">${formattedDate} à ${formattedTime}</p>
               <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">ID de paiement: ${paymentId}</p>
             </div>
 
@@ -762,15 +789,15 @@ export async function sendDepositReceipt(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>Des questions ? Contactez-nous à ${process.env.EMAIL_USER}</p>
-            <p>© 2024 Marius & Fanny. Tous droits réservés.</p>
+            <p>Des questions ? Contactez-nous à <a href="mailto:mariusetfanny@gmail.com" style="color: #C5A065;">mariusetfanny@gmail.com</a></p>
+            <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
           </div>
         </div>
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("✅ Reçu d'acompte envoyé:", info.response);
+    await sendEmail(mailOptions);
+    console.log("✅ Reçu d'acompte envoyé vers:", email);
   } catch (error) {
     console.error("❌ Erreur lors de l'envoi du reçu d'acompte:", error);
     throw error;
@@ -790,6 +817,7 @@ export async function sendInvoiceOrderConfirmation(
   deliveryFee: number,
   total: number,
   invoiceUrl?: string,
+  orderDate?: Date,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -810,16 +838,26 @@ export async function sendInvoiceOrderConfirmation(
       )
       .join("");
 
+    const orderDateObj = orderDate ? new Date(orderDate) : new Date();
+    const formattedDate = orderDateObj.toLocaleDateString("fr-CA", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const formattedTime = orderDateObj.toLocaleTimeString("fr-CA", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const paddedNumber = orderNumber.replace(/^ORD-/, "#");
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: DISPLAY_FROM,
       to: email,
-      subject: `📋 Confirmation de commande - ${orderNumber}`,
+      subject: `📋 Confirmation de commande - ${paddedNumber}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #C5A065; font-family: 'Great Vibes', cursive; font-size: 40px; margin: 0;">
-              Marius & Fanny
-            </h1>
+            <img src="${LOGO_URL}" alt="Marius & Fanny" style="max-width: 180px; height: auto;" />
           </div>
 
           <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -839,7 +877,9 @@ export async function sendInvoiceOrderConfirmation(
 
             <div style="background-color: #F9F7F2; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
               <p style="color: #999; margin: 0 0 5px 0; font-size: 12px;">Numéro de commande</p>
-              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${orderNumber}</p>
+              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${paddedNumber}</p>
+              <p style="color: #999; margin: 10px 0 5px 0; font-size: 12px;">Date de commande</p>
+              <p style="color: #555; margin: 0; font-size: 14px;">${formattedDate} à ${formattedTime}</p>
             </div>
 
             <h3 style="color: #2D2A26; border-bottom: 2px solid #C5A065; padding-bottom: 10px;">
@@ -908,15 +948,15 @@ export async function sendInvoiceOrderConfirmation(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>Des questions ? Contactez-nous à ${process.env.EMAIL_USER}</p>
-            <p>© 2024 Marius & Fanny. Tous droits réservés.</p>
+            <p>Des questions ? Contactez-nous à <a href="mailto:mariusetfanny@gmail.com" style="color: #C5A065;">mariusetfanny@gmail.com</a></p>
+            <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
           </div>
         </div>
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("✅ Confirmation de commande envoyée:", info.response);
+    await sendEmail(mailOptions);
+    console.log("✅ Confirmation de commande envoyée vers:", email);
   } catch (error) {
     console.error("❌ Erreur lors de l'envoi de la confirmation:", error);
     throw error;

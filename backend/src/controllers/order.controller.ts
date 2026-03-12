@@ -3,6 +3,7 @@ import Order from "../models/Order.js";
 import { Product } from "../models/Product.js";
 import { ProductionItemStatus } from "../models/ProductionItemStatus.js";
 import { DailyInventory } from "../models/DailyInventory.js";
+import { User } from "../models/User.js";
 import type { ApiResponse, PaginatedResponse } from "../types.js";
 import type {
   CreateOrderInput,
@@ -29,6 +30,32 @@ export const createOrder = async (
 ) => {
   try {
     const orderData = req.body;
+
+    // --- Noon cutoff: orders for tomorrow must be placed before 12:00 ---
+    const now = new Date();
+    const targetDateStr =
+      orderData.pickupDate
+        ? new Date(orderData.pickupDate).toISOString().split("T")[0]
+        : orderData.deliveryDate
+          ? new Date(orderData.deliveryDate).toISOString().split("T")[0]
+          : null;
+
+    if (targetDateStr) {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split("T")[0];
+      const currentHour = now.getHours();
+
+      // If the order is for tomorrow and it's past noon, reject
+      if (targetDateStr === tomorrowStr && currentHour >= 12) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Les commandes pour demain doivent être passées avant 12h00. Veuillez choisir une date ultérieure.",
+        });
+      }
+    }
 
     // Calculate totals
     const subtotal = orderData.items.reduce(
@@ -121,6 +148,34 @@ export const createOrder = async (
         error: "Erreur lors de la sauvegarde de la commande",
         message: saveError.message,
       });
+    }
+
+    // Automatically create a client record when this email does not exist yet.
+    try {
+      const normalizedEmail = orderData.clientInfo.email.trim().toLowerCase();
+      const existingClient = await User.findOne({ email: normalizedEmail });
+
+      if (!existingClient) {
+        const firstName = orderData.clientInfo.firstName.trim();
+        const lastName = orderData.clientInfo.lastName.trim();
+        const fullName = `${firstName} ${lastName}`.trim();
+
+        const client = new User({
+          email: normalizedEmail,
+          name: fullName,
+          role: "user",
+          status: "active",
+          emailVerified: true,
+          profile: {
+            phoneNumber: orderData.clientInfo.phone,
+          },
+        });
+
+        await client.save();
+        console.log("✅ Client auto-created from order:", normalizedEmail);
+      }
+    } catch (clientError: any) {
+      console.error("⚠️ Failed to auto-create client from order:", clientError.message);
     }
 
     // Update daily inventory - add order quantities to Comm CLIENT column
@@ -237,6 +292,7 @@ export const createOrder = async (
         depositAmount: depositPaid ? depositAmount : undefined,
         paymentId: orderData.squarePaymentId,
         invoiceUrl: undefined, // Will be updated via webhook or separate call
+        orderDate: order.orderDate,
       });
 
       console.log(

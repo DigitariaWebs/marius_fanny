@@ -49,6 +49,23 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const currentWeekDay = new Date().getDay();
 
+  const getMissingRequiredOptions = (
+    product: Product | null,
+    options: Record<string, string>,
+  ) => {
+    if (!product?.customOptions?.length) return [] as string[];
+
+    return product.customOptions
+      .filter((option) => !String(options[option.name] || "").trim())
+      .map((option) => option.name);
+  };
+
+  const missingRequiredOptions = getMissingRequiredOptions(
+    selectedProduct,
+    selectedOptions,
+  );
+  const hasMissingRequiredOptions = missingRequiredOptions.length > 0;
+
   // Logique de filtrage (Backend-logic preserved)
   const normalizeStr = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const normalizeCategoryKey = (s: string) =>
@@ -273,14 +290,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
   const handleAddToCart = () => {
     if (selectedProduct) {
-      const missingTextOption = (selectedProduct.customOptions || []).find(
-        (option) =>
-          option.type === "text" &&
-          !String(option.name || "").toLowerCase().includes("allerg") &&
-          (!selectedOptions[option.name] || !selectedOptions[option.name].trim()),
-      );
-      if (missingTextOption) {
-        alert(`Veuillez remplir le champ "${missingTextOption.name}".`);
+      if (hasMissingRequiredOptions) {
+        alert(
+          `Veuillez choisir ou remplir l'option obligatoire "${missingRequiredOptions[0]}".`,
+        );
         return;
       }
 
@@ -344,12 +357,20 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      onAddToCart({ ...rec, price: recPrice, selectedOptions: {} });
+                      if (rec.customOptions?.length) {
+                        setSelectedProduct(rec);
+                        setQuantity(1);
+                        setSelectedBread("Baguette");
+                        setIsSliced(false);
+                        setSelectedOptions({});
+                      } else {
+                        onAddToCart({ ...rec, price: recPrice, selectedOptions: {} });
+                      }
                       setShowRecommendationNotif(false);
                     }}
                     className="shrink-0 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-[#337957] text-white hover:bg-[#2D2A26] transition-colors"
                   >
-                    + Panier
+                    {rec.customOptions?.length ? "Configurer" : "+ Panier"}
                   </button>
                 </div>
               );
@@ -606,9 +627,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   <div className="space-y-6 mb-6">
                     {selectedProduct.customOptions.map((option, idx) => (
                       <div key={idx}>
-                        <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">
+                        <h4 className={`text-xs font-bold uppercase mb-2 flex items-center gap-2 ${
+                          missingRequiredOptions.includes(option.name)
+                            ? "text-red-600"
+                            : "text-stone-500"
+                        }`}>
                           <span className="w-1 h-4 bg-[#337957] rounded-full"></span>
-                          {option.name}
+                          {option.name} *
                         </h4>
                         {option.type === "text" ? (
                           <input
@@ -620,7 +645,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                                 [option.name]: e.target.value,
                               }))
                             }
-                            className="w-full p-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-[#337957] bg-stone-50"
+                            className={`w-full p-3 border rounded-lg text-sm focus:outline-none bg-stone-50 ${
+                              missingRequiredOptions.includes(option.name)
+                                ? "border-red-300 focus:border-red-500"
+                                : "border-stone-200 focus:border-[#337957]"
+                            }`}
                             placeholder={`Écrire ${option.name.toLowerCase()}...`}
                           />
                         ) : (
@@ -776,6 +805,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
                 {/* JOURS DE DISPONIBILITÉ déplacé en haut (déjà affiché avant allergènes) */}
 
+                {hasMissingRequiredOptions && (
+                  <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    Veuillez compléter toutes les options obligatoires avant d'ajouter ce produit au panier.
+                  </div>
+                )}
+
 
 
                 {/* ESPACE SUPPLÉMENTAIRE POUR LE SCROLL */}
@@ -805,7 +840,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 bg-[#2D2A26] text-white h-14 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-[#337957] transition-all shadow-lg active:scale-95"
+                    disabled={hasMissingRequiredOptions}
+                    className="flex-1 bg-[#2D2A26] text-white h-14 rounded-lg font-bold uppercase tracking-widest text-xs transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed enabled:hover:bg-[#337957]"
                   >
                     Ajouter
                     <span className="ml-2 opacity-70 font-normal normal-case hidden sm:inline">
