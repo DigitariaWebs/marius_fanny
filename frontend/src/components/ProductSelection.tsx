@@ -99,18 +99,26 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
     if (!productTokens.length || !selectedTokens.length) return false;
 
+    // Exact match first
     const productJoined = productTokens.join(" ");
     const selectedJoined = selectedTokens.join(" ");
     if (productJoined === selectedJoined) return true;
 
-    // Subset match: all product tokens (>2 chars) are contained in the selected category tokens
-    // This handles product.category="pizza" matching parent "Quiches, pâtes et pizza"
+    // For subset match: require bidirectional overlap (both sides must have matching tokens)
+    // This prevents "salade" from matching "salade repas"
     const meaningfulProductTokens = productTokens.filter(t => t.length > 2);
     const meaningfulSelectedTokens = selectedTokens.filter(t => t.length > 2);
-    if (
-      meaningfulProductTokens.length > 0 &&
-      meaningfulProductTokens.every(t => meaningfulSelectedTokens.includes(t))
-    ) return true;
+    if (meaningfulProductTokens.length > 0 && meaningfulSelectedTokens.length > 0) {
+      // Check if there's significant overlap in both directions
+      const productInSelected = meaningfulProductTokens.filter(t => meaningfulSelectedTokens.includes(t));
+      const selectedInProduct = meaningfulSelectedTokens.filter(t => meaningfulProductTokens.includes(t));
+      // Both must have at least one meaningful token in common, and the overlap should be substantial
+      if (productInSelected.length > 0 && selectedInProduct.length > 0 && 
+          productInSelected.length === meaningfulProductTokens.length &&
+          selectedInProduct.length === meaningfulSelectedTokens.length) {
+        return true;
+      }
+    }
 
     // Secondary tolerant match: same token set (order-insensitive) only.
     if (productTokens.length !== selectedTokens.length) return false;
