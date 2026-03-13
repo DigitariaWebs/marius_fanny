@@ -66,6 +66,7 @@ export const createInvoiceSchema = z.object({
 export const refundOrderSchema = z.object({
   orderId: z.string().min(1, "Order ID is required"),
   reason: z.string().optional(),
+  employeeName: z.string().trim().min(1, "Employee name is required"),
 });
 
 /**

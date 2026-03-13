@@ -17,7 +17,7 @@ export const addressSchema = z.object({
 
 // Order item schema
 export const orderItemSchema = z.object({
-  productId: z.number().int().positive("L'ID du produit doit être positif"),
+  productId: z.number().int().nonnegative("L'ID du produit doit être 0 ou positif"),
   productName: z.string().min(1, "Le nom du produit est requis"),
   quantity: z.number().int().positive("La quantité doit être positive"),
   unitPrice: z.number().nonnegative("Le prix unitaire doit être non négatif"),

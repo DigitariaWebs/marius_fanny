@@ -806,7 +806,21 @@ const findSquarePaymentIdForOrder = async (order: any): Promise<string | null> =
  */
 export const refundOrderPayment = async (req: Request, res: Response) => {
   try {
-    const { orderId, reason } = req.body as { orderId: string; reason?: string };
+    const { orderId, reason, employeeName } = req.body as {
+      orderId: string;
+      reason?: string;
+      employeeName?: string;
+    };
+
+    if (!employeeName || !employeeName.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Le nom de l'employe est obligatoire pour effectuer un remboursement",
+      });
+    }
+
+    const employeeId = req.user?.id;
+    const employeeLabel = `${employeeName.trim()} (ID: ${employeeId ?? "inconnu"})`;
 
     const order = await Order.findById(orderId);
     if (!order) {
@@ -863,12 +877,12 @@ export const refundOrderPayment = async (req: Request, res: Response) => {
     order.notes = `${order.notes ? `${order.notes}\n` : ""}Square Refund ID: ${refund?.id || "N/A"}`;
     order.changeHistory.push({
       changedAt: new Date(),
-      changedBy: req.user?.id,
+      changedBy: employeeId,
       field: "paymentStatus",
       oldValue: "paid",
       newValue: "unpaid",
       changeType: "payment_updated",
-      notes: `Square refund executed (paymentId: ${paymentId})`,
+      notes: `Square refund executed by ${employeeLabel} (paymentId: ${paymentId}, refundId: ${refund?.id || "N/A"})`,
     } as any);
     await order.save();
 

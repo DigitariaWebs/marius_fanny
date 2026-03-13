@@ -93,6 +93,8 @@ interface OrderFormItem {
   notes: string;
   selectedOptions?: Record<string, string>;
   isPacked?: boolean;
+  isCustom?: boolean;
+  customDescription?: string;
 }
 
 export default function OrderForm({
@@ -370,11 +372,15 @@ export default function OrderForm({
     return products.find((p) => p.id === productId) || null;
   };
 
-  const validatePreparationTime = (orderDate: string, productId: number) => {
+  const validatePreparationTime = (
+    orderDate: string,
+    productId: number,
+    pickupTime?: string,
+  ) => {
     const product = products.find((p) => p.id === productId);
     if (!product || !product.preparationTimeHours) return true;
 
-    const orderDateTime = new Date(orderDate);
+    const orderDateTime = new Date(`${orderDate}T${pickupTime || "00:00"}:00`);
     const now = new Date();
     const timeDiff = orderDateTime.getTime() - now.getTime();
     const hoursDiff = timeDiff / (1000 * 60 * 60);
@@ -405,12 +411,38 @@ export default function OrderForm({
       amount: 0,
       notes: "",
       isPacked: false,
+      isCustom: false,
     };
     setFormData((prev) => ({
       ...prev,
       items: [...prev.items, newItem],
     }));
   };
+
+  const addCustomItem = () => {
+    const newItem: OrderFormItem = {
+      id: Date.now().toString(),
+      productId: null,
+      productName: "",
+      quantity: 1,
+      unitPrice: 0,
+      amount: 0,
+      notes: "",
+      isPacked: false,
+      isCustom: true,
+      customDescription: "",
+    };
+    setFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, newItem],
+    }));
+  };
+
+  const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
+    const h = Math.floor(i / 2).toString().padStart(2, "0");
+    const m = i % 2 === 0 ? "00" : "30";
+    return `${h}:${m}`;
+  });
 
   const removeItem = (id: string) => {
     if (formData.items.length > 1) {
@@ -458,14 +490,20 @@ export default function OrderForm({
 
   const getSerializedItemNotes = (item: OrderFormItem) => {
     const lines: string[] = [];
-    const optionEntries = Object.entries(item.selectedOptions || {}).filter(
-      ([, value]) => value && value.trim().length > 0,
-    );
 
-    if (optionEntries.length > 0) {
-      lines.push(
-        `Options: ${optionEntries.map(([key, value]) => `${key}: ${value}`).join(" | ")}`,
+    if (item.isCustom) {
+      if (item.customDescription && item.customDescription.trim().length > 0) {
+        lines.push(`Description: ${item.customDescription.trim()}`);
+      }
+    } else {
+      const optionEntries = Object.entries(item.selectedOptions || {}).filter(
+        ([, value]) => value && value.trim().length > 0,
       );
+      if (optionEntries.length > 0) {
+        lines.push(
+          `Options: ${optionEntries.map(([key, value]) => `${key}: ${value}`).join(" | ")}`,
+        );
+      }
     }
 
     if (item.notes && item.notes.trim().length > 0) {
@@ -596,6 +634,13 @@ export default function OrderForm({
     if (formData.deliveryType === "pickup" && !formData.pickupTime) {
       newErrors.pickupTime = "L'heure de ramassage est requise";
     }
+    if (
+      formData.deliveryType === "pickup" &&
+      formData.pickupTime &&
+      !/^([01]\d|2[0-3]):(00|30)$/.test(formData.pickupTime)
+    ) {
+      newErrors.pickupTime = "L'heure doit etre au format HH:MM avec minutes 00 ou 30";
+    }
 
     if (formData.deliveryType === "pickup") {
       if (!formData.pickupLocation) {
@@ -631,14 +676,21 @@ export default function OrderForm({
     }
 
     const hasValidItem = formData.items.some(
-      (item) => item.productId && item.quantity > 0,
+      (item) => (item.productId || item.isCustom) && item.quantity > 0,
     );
     if (!hasValidItem) {
       newErrors.items = "Au moins un article est requis";
     }
 
     formData.items.forEach((item, index) => {
-      if (item.productId) {
+      if (item.isCustom) {
+        if (!item.productName.trim()) {
+          newErrors[`item_${index}_name`] = "Le nom est requis";
+        }
+        if (item.unitPrice <= 0) {
+          newErrors[`item_${index}_price`] = "Le prix doit être supérieur à 0";
+        }
+      } else if (item.productId) {
         const product = getProductById(item.productId);
         if (product) {
           if (item.quantity < product.minOrderQuantity) {
@@ -653,18 +705,16 @@ export default function OrderForm({
       }
     });
 
-    // Disabled preparation time validation for admin orders - admin knows the preparation time
-    /*
+    // Validation du délai de préparation (avertissement bloquant pour l'admin)
     formData.items.forEach((item, index) => {
-      if (item.productId) {
-        if (!validatePreparationTime(formData.date, item.productId)) {
+      if (item.productId && !item.isCustom) {
+        if (!validatePreparationTime(formData.date, item.productId, formData.pickupTime)) {
           const warning = getPreparationTimeWarning(item.productId);
           newErrors[`item_${index}_preparation`] =
-            warning || "Temps de préparation insuffisant";
+            `⚠️ ${warning || "Délai de préparation insuffisant pour la date sélectionnée."}`;
         }
       }
     });
-    */
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -675,6 +725,7 @@ export default function OrderForm({
     if (validate()) {
       const payloadItems = formData.items.map((item) => ({
         ...item,
+        productId: item.isCustom ? 0 : item.productId,
         notes: getSerializedItemNotes(item),
       }));
       onSubmit({ ...formData, items: payloadItems });
@@ -686,42 +737,48 @@ export default function OrderForm({
       {/* SECTION 1: En-tête avec DATE SEULEMENT (plus de filtres !) */}
       <div className="flex items-center justify-between pb-4 border-b border-gray-200">
         <div className="flex items-end gap-3">
-        <div className="w-48">
-          <Label htmlFor="date" className="text-xs text-gray-600">
-            DATE:
-          </Label>
-          <Input
-            id="date"
-            type="date"
-            value={formData.date}
-            onChange={(e) => handleInputChange("date", e.target.value)}
-            className={errors.date ? "border-red-500" : ""}
-          />
-          {errors.date && (
-            <p className="text-xs text-red-500 mt-1">{errors.date}</p>
+          <div className="w-48">
+            <Label htmlFor="date" className="text-xs text-gray-600">
+              DATE:
+            </Label>
+            <Input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => handleInputChange("date", e.target.value)}
+              className={errors.date ? "border-red-500" : ""}
+            />
+            {errors.date && (
+              <p className="text-xs text-red-500 mt-1">{errors.date}</p>
+            )}
+          </div>
+
+          {formData.deliveryType === "pickup" && (
+            <div className="w-40">
+              <Label htmlFor="pickupTime" className="text-xs text-gray-600">
+                HEURE RAMASSAGE:
+              </Label>
+              <Input
+                id="pickupTime"
+                type="text"
+                list="time-slots-list"
+                placeholder="HH:MM (ex: 10:30)"
+                value={formData.pickupTime}
+                onChange={(e) => handleInputChange("pickupTime", e.target.value)}
+                className={errors.pickupTime ? "border-red-500" : ""}
+              />
+              <datalist id="time-slots-list">
+                {TIME_SLOTS.map((slot) => (
+                  <option key={slot} value={slot} />
+                ))}
+              </datalist>
+              {errors.pickupTime && (
+                <p className="text-xs text-red-500 mt-1">{errors.pickupTime}</p>
+              )}
+            </div>
           )}
         </div>
 
-        {formData.deliveryType === "pickup" && (
-          <div className="w-40">
-            <Label htmlFor="pickupTime" className="text-xs text-gray-600">
-              HEURE RAMASSAGE:
-            </Label>
-            <Input
-              id="pickupTime"
-              type="time"
-              value={formData.pickupTime}
-              onChange={(e) => handleInputChange("pickupTime", e.target.value)}
-              className={errors.pickupTime ? "border-red-500" : ""}
-            />
-            {errors.pickupTime && (
-              <p className="text-xs text-red-500 mt-1">{errors.pickupTime}</p>
-            )}
-          </div>
-        )}
-        </div>
-        
-        {/* Bouton pour voir les produits */}
         {onViewProducts && (
           <Button
             type="button"
@@ -1375,16 +1432,28 @@ export default function OrderForm({
       <div>
         <div className="flex items-center justify-between mb-2">
           <Label className="text-xs text-gray-600">ARTICLES:</Label>
-          <Button
-            type="button"
-            onClick={addItem}
-            variant="ghost"
-            size="sm"
-            className="text-xs text-amber-600 hover:text-amber-700"
-          >
-            <Plus className="w-4 h-4" />
-            Ajouter
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              onClick={addItem}
+              variant="ghost"
+              size="sm"
+              className="text-xs text-amber-600 hover:text-amber-700"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter
+            </Button>
+            <Button
+              type="button"
+              onClick={addCustomItem}
+              variant="ghost"
+              size="sm"
+              className="text-xs text-purple-600 hover:text-purple-700"
+            >
+              <Plus className="w-4 h-4" />
+              Item personnalisé
+            </Button>
+          </div>
         </div>
 
         {/* Indicateur de commande prête */}
@@ -1412,11 +1481,41 @@ export default function OrderForm({
                 const searchValue = productSearch[item.id] || "";
                 const availableProducts = getAvailableProducts(item.id, searchValue);
                 const quantityError = errors[`item_${index}_quantity`];
+                const preparationError = errors[`item_${index}_preparation`];
+                const nameError = errors[`item_${index}_name`];
+                const priceError = errors[`item_${index}_price`];
+                // Avertissement délai de préparation en temps réel
+                const livePreparationWarning =
+                  !item.isCustom && item.productId && formData.date
+                    ? !validatePreparationTime(formData.date, item.productId, formData.pickupTime)
+                      ? getPreparationTimeWarning(item.productId) || "Délai de préparation insuffisant pour la date sélectionnée."
+                      : null
+                    : null;
 
                 return (
                   <React.Fragment key={item.id}>
-                    <TableRow>
+                    <TableRow className={item.isCustom ? "bg-purple-50" : ""}>
                       <TableCell>
+                        {item.isCustom ? (
+                          <div className="space-y-1">
+                            <div className="text-[10px] font-semibold text-purple-700 uppercase mb-1">Item personnalisé</div>
+                            <Input
+                              type="text"
+                              placeholder="Nom de l'item..."
+                              value={item.productName}
+                              onChange={(e) => handleItemChange(item.id, "productName", e.target.value)}
+                              className={`h-7 text-sm ${nameError ? "border-red-500" : ""}`}
+                            />
+                            {nameError && <p className="text-xs text-red-500">{nameError}</p>}
+                            <Input
+                              type="text"
+                              placeholder="Description (optionnel)..."
+                              value={item.customDescription || ""}
+                              onChange={(e) => handleItemChange(item.id, "customDescription", e.target.value)}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        ) : (
                         <div className="space-y-1">
                           {/* Search input for products */}
                           <Input
@@ -1429,6 +1528,11 @@ export default function OrderForm({
                           {item.productId && product && (
                             <div className="text-[11px] text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1">
                               Produit choisi: {product.name}
+                            </div>
+                          )}
+                          {(livePreparationWarning || preparationError) && (
+                            <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                              ⚠️ {livePreparationWarning || preparationError}
                             </div>
                           )}
                           {searchValue.trim().length > 0 && (
@@ -1453,6 +1557,7 @@ export default function OrderForm({
                             </div>
                           )}
                         </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Input
@@ -1467,7 +1572,7 @@ export default function OrderForm({
                               parseInt(e.target.value) || 1,
                             )
                           }
-                          disabled={!item.productId}
+                          disabled={!item.productId && !item.isCustom}
                           className={`h-8 text-sm ${quantityError ? "border-red-500" : ""}`}
                         />
                         {quantityError && (
@@ -1477,9 +1582,29 @@ export default function OrderForm({
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm font-medium text-gray-700">
-                          ${item.unitPrice.toFixed(2)}
-                        </div>
+                        {item.isCustom ? (
+                          <div>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              value={item.unitPrice}
+                              onChange={(e) =>
+                                handleItemChange(
+                                  item.id,
+                                  "unitPrice",
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              className={`h-8 text-sm w-24 ${priceError ? "border-red-500" : ""}`}
+                            />
+                            {priceError && <p className="text-xs text-red-500 mt-1">{priceError}</p>}
+                          </div>
+                        ) : (
+                          <div className="text-sm font-medium text-gray-700">
+                            ${item.unitPrice.toFixed(2)}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm font-medium text-gray-700">
@@ -1517,8 +1642,8 @@ export default function OrderForm({
                         </Button>
                       </TableCell>
                     </TableRow>
-                    {item.productId && (
-                      <TableRow>
+                    {(item.productId || item.isCustom) && (
+                      <TableRow className={item.isCustom ? "bg-purple-50" : ""}>
                         <TableCell colSpan={6} className="bg-gray-50 py-2">
                           <div className="space-y-3">
                             {product?.customOptions && product.customOptions.length > 0 && (
@@ -1566,7 +1691,7 @@ export default function OrderForm({
                               onChange={(e) =>
                                 handleItemChange(item.id, "notes", e.target.value)
                               }
-                              placeholder="Notes pour cet article..."
+                              placeholder={item.isCustom ? "Description / instructions pour cet item..." : "Notes pour cet article..."}
                               rows={2}
                               className="text-xs"
                             />
