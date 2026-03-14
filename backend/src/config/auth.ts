@@ -16,6 +16,18 @@ async function initializeAuth() {
     const { client, db } = await connectMongoDB();
 
     const isProduction = process.env.NODE_ENV === "production";
+
+    // Session settings (seconds)
+    // - expiresIn: overall session lifetime
+    // - updateAge: rolling refresh interval (writes to session when used after this age)
+    const sessionExpiresIn = Number(
+      process.env.BETTER_AUTH_SESSION_EXPIRES_IN ??
+        (isProduction ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7),
+    );
+    const sessionUpdateAge = Number(
+      process.env.BETTER_AUTH_SESSION_UPDATE_AGE ??
+        (isProduction ? 60 * 60 : 60 * 60 * 24),
+    );
     
     return betterAuth({
       baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
@@ -23,6 +35,10 @@ async function initializeAuth() {
       database: mongodbAdapter(db, {
         client, 
       }),
+      session: {
+        expiresIn: sessionExpiresIn,
+        updateAge: sessionUpdateAge,
+      },
       advanced: {
         useSecureCookies: isProduction,
         defaultCookieAttributes: {

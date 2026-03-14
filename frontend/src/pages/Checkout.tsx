@@ -478,6 +478,10 @@ const Checkout: React.FC = () => {
           quantity: item.quantity,
           unitPrice: item.price,
           amount: item.price * item.quantity,
+          selectedOptions:
+            item.selectedOptions && Object.keys(item.selectedOptions).length > 0
+              ? item.selectedOptions
+              : undefined,
           notes:
             item.selectedOptions && Object.keys(item.selectedOptions).length > 0
               ? Object.entries(item.selectedOptions)

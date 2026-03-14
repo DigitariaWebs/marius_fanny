@@ -393,7 +393,9 @@ export default function OrderForm({
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(p => 
         p.name.toLowerCase().includes(search) ||
-        p.category?.toLowerCase().includes(search)
+        (Array.isArray((p as any).category)
+          ? (p as any).category.some((c: string) => String(c).toLowerCase().includes(search))
+          : String((p as any).category || "").toLowerCase().includes(search))
       );
     }
 

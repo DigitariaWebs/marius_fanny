@@ -21,7 +21,7 @@ export type StaffFormData = Pick<
 export interface Product {
   id: number;
   name: string;
-  category: string;
+  category: string[];
   price: number;
   discountPercentage?: number;
   available: boolean;
@@ -103,6 +103,12 @@ export interface Client {
   email: string;
   phone: string;
   status: "active" | "inactive" | "placeholder";
+  billing?: {
+    kind: "standard" | "representant" | "gouvernement";
+    organization?: string;
+    paymentTermsDays: number;
+    allowUnpaidOrders: boolean;
+  };
   createdAt: string;
   updatedAt: string;
   addresses: Address[];
@@ -151,6 +157,16 @@ export interface Order {
   paymentLinkChannel?: "email" | "sms";
   squarePaymentId?: string;
   squareInvoiceId?: string;
+  refunds?: Array<{
+    refundedAt: string;
+    employeeName: string;
+    employeeId?: string;
+    paymentId: string;
+    refundId?: string;
+    refundStatus?: string;
+    amountCents: number;
+    reason?: string;
+  }>;
   status: 
     | "pending"
     | "confirmed"

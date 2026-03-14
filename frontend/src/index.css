@@ -13,6 +13,13 @@ body {
   overflow-x: auto !important;
 }
 
+/* Ajuste l'échelle générale sur desktop (le site était perçu comme trop "zoomé"). */
+@media (min-width: 768px) {
+  html {
+    font-size: 13px;
+  }
+}
+
 /* Garde tes configurations personnalisées si tu en as en dessous */
 @theme {
     --color-bakery-cream: #f9f7f2;

@@ -12,6 +12,13 @@ export const userProfileSchema = z.object({
     .optional(),
 });
 
+export const billingSchema = z.object({
+  kind: z.enum(["standard", "representant", "gouvernement"]).optional(),
+  organization: z.string().max(120).optional(),
+  paymentTermsDays: z.number().int().min(0).max(365).optional(),
+  allowUnpaidOrders: z.boolean().optional(),
+});
+
 /**
  * Update current user schema
  */
@@ -27,6 +34,7 @@ export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   role: z.enum(["user", "pro", "staff", "customerService", "admin", "deliveryDriver", "cuisinier", "patissier", "four", "vendeur"]).optional(),
   profile: userProfileSchema.optional(),
+  billing: billingSchema.optional(),
   // Client-specific fields
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().max(100).optional(),
@@ -53,6 +61,7 @@ export const createClientSchema = z.object({
   lastName: z.string().min(1).max(100),
   phone: z.string().min(1).max(20),
   status: z.enum(["active", "inactive", "placeholder"]).optional().default("active"),
+  billing: billingSchema.optional(),
 });
 
 /**

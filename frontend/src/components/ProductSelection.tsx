@@ -135,6 +135,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     return n.includes("lunch") || n.includes("salade repas") || n.includes("plateau repas");
   };
 
+  const asCategoryArray = (value: unknown): string[] => {
+    if (Array.isArray(value)) return value.map((v) => String(v));
+    if (typeof value === "string") return [value];
+    return [];
+  };
+
   const flattenTree = (nodes: ApiCategoryNode[]): ApiCategoryNode[] => {
     const result: ApiCategoryNode[] = [];
     const walk = (items: ApiCategoryNode[]) => {
@@ -159,6 +165,15 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
 
   useEffect(() => {
     if (selectedProduct) setModalMainImage(selectedProduct.image || '');
+  }, [selectedProduct]);
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, [selectedProduct]);
 
   const fetchData = async () => {
@@ -218,7 +233,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
       : currentName ? [currentName] : [];
 
     const filtered = namesToMatch.length > 0
-      ? products.filter((p) => p.available && namesToMatch.some(name => categoryMatches(p.category, name)))
+      ? products.filter((p) =>
+          p.available &&
+          namesToMatch.some((name) =>
+            asCategoryArray((p as any).category).some((c) => categoryMatches(c, name)),
+          ),
+        )
       : products.filter((p) => p.available);
 
     setFilteredProducts(filtered);
@@ -475,11 +495,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           {/* Fond transparent au lieu de noir */}
           <div
-            className="absolute inset-0 bg-transparent"
+            className="absolute inset-0 bg-black/25 backdrop-blur-[2px]"
             onClick={() => setSelectedProduct(null)}
           />
 
-          <div className="relative bg-white w-full md:max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+          <div className="relative bg-white w-full md:max-w-6xl max-h-[95vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
             
             <button
               onClick={() => setSelectedProduct(null)}
@@ -538,7 +558,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
               )}
             </div>
 
-            <div className="w-full md:w-1/2 flex flex-col h-[60vh] md:h-[80vh] overflow-hidden">
+            <div className="w-full md:w-1/2 flex flex-col h-[60vh] md:h-[85vh] overflow-hidden">
               
               <div 
                 className="flex-1 overflow-y-auto p-6 md:p-8" 
@@ -685,7 +705,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 )}
 
                 {/* OPTIONS POUR LES PAINS (Legacy support if not using customOptions) */}
-                {selectedProduct?.category === "Pains" && !selectedProduct.customOptions?.length && (
+                {asCategoryArray((selectedProduct as any).category).includes("Pains") && !selectedProduct.customOptions?.length && (
                   <>
                     <div className="mb-6">
                       <h4 className="text-xs font-bold uppercase mb-2 text-stone-500 flex items-center gap-2">

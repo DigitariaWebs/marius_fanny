@@ -39,6 +39,7 @@ interface ProductionItem {
   pickupLocation: string;
   orderStatus: string;
   notes: string;
+  selectedOptions?: Record<string, string>;
   allergies?: string; // Ajout des allergies
   // Simple statut: fait ou pas fait
   done: boolean;
@@ -60,6 +61,79 @@ interface OrderGroup {
   items: ProductionItem[];
   done: boolean;
 }
+
+const isMontrealPickup = (item: Pick<ProductionItem, "deliveryType" | "pickupLocation">) => {
+  if (item.deliveryType !== "pickup") return false;
+  const location = (item.pickupLocation || "").toLowerCase();
+  return location.includes("montreal") || location.includes("montr");
+};
+
+const normalizeOptionName = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const isAllergyOptionName = (name: string) =>
+  normalizeOptionName(name).includes("allerg");
+
+const getNonAllergyOptionsText = (options?: Record<string, string>) => {
+  const parts = Object.entries(options || {})
+    .filter(([k, v]) => !isAllergyOptionName(k) && String(v || "").trim())
+    .map(([k, v]) => `${k}: ${String(v).trim()}`);
+  return parts.length > 0 ? parts.join(" • ") : "";
+};
+
+const extractAllergies = (item: Pick<ProductionItem, "allergies" | "notes" | "selectedOptions">) => {
+  if (item.allergies) return item.allergies;
+
+  const fromOptions = Object.entries(item.selectedOptions || {})
+    .filter(([key, value]) => isAllergyOptionName(key) && String(value || "").trim())
+    .map(([, value]) => String(value).trim())
+    .filter(Boolean);
+  if (fromOptions.length > 0) return fromOptions.join(", ");
+
+  return item.notes?.match(/allergie?[^.]*/i)?.[0] || null;
+};
+
+const parseTimeSlotStartMinutes = (slot: string | undefined | null) => {
+  const value = String(slot || "").trim().toLowerCase();
+  if (!value || value.includes("non sp")) return Number.POSITIVE_INFINITY;
+
+  // Matches: "9", "9h", "9:30", "9h30", "09:30", "9 h 30"
+  const match = value.match(/(\d{1,2})\s*(?:h|:)?\s*(\d{2})?/);
+  if (!match) return Number.POSITIVE_INFINITY;
+
+  const hours = Number(match[1]);
+  const minutes = match[2] ? Number(match[2]) : 0;
+  if (!Number.isFinite(hours) || hours < 0 || hours > 23) return Number.POSITIVE_INFINITY;
+  if (!Number.isFinite(minutes) || minutes < 0 || minutes > 59) return Number.POSITIVE_INFINITY;
+  return hours * 60 + minutes;
+};
+
+const getFulfillmentAccent = (item: Pick<ProductionItem, "deliveryType" | "pickupLocation">) => {
+  if (item.deliveryType === "delivery") {
+    return {
+      borderClass: "border-l-4 border-l-yellow-400",
+      pillClass: "bg-yellow-100 text-yellow-900 border-yellow-200",
+      label: "Livraison",
+    };
+  }
+
+  if (isMontrealPickup(item)) {
+    return {
+      borderClass: "border-l-4 border-l-blue-400",
+      pillClass: "bg-blue-100 text-blue-900 border-blue-200",
+      label: "Cueillette Montréal",
+    };
+  }
+
+  if (item.deliveryType === "pickup") {
+    return {
+      borderClass: "border-l-4 border-l-stone-200",
+      pillClass: "bg-white text-stone-700 border-stone-200",
+      label: "Cueillette Laval",
+    };
+  }
+
+  return null;
+};
 
 const ProductionList: React.FC = () => {
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
@@ -100,8 +174,8 @@ const ProductionList: React.FC = () => {
 
       const items: ProductionItem[] = apiItems.map((item: any) => ({
         ...item,
-        // Extraire les allergies si présentes dans les notes ou un champ dédié
-        allergies: item.allergies || item.notes?.match(/allergie?[^.]*/i)?.[0] || null,
+        // Extraire les allergies depuis un champ dédié, des options, ou des notes
+        allergies: extractAllergies(item),
         done: !!item.done,
       }));
 
@@ -338,7 +412,7 @@ const ProductionList: React.FC = () => {
     }
     if (sortByPickupTime) {
       orders = [...orders].sort((a, b) =>
-        a.deliveryTimeSlot.localeCompare(b.deliveryTimeSlot)
+        parseTimeSlotStartMinutes(a.deliveryTimeSlot) - parseTimeSlotStartMinutes(b.deliveryTimeSlot)
       );
     }
     return orders;
@@ -354,8 +428,12 @@ const ProductionList: React.FC = () => {
     const notDoneOrders = filteredOrders.filter(g => !g.done);
     const doneOrders = filteredOrders.filter(g => g.done);
 
-    const OrderCard = ({ group }: { group: OrderGroup }) => (
-      <div className={`bg-white rounded-xl border p-4 hover:shadow-md transition-all ${group.done ? 'border-green-200 opacity-70' : 'border-stone-200'}`}>
+    const OrderCard = ({ group }: { group: OrderGroup }) => {
+      const sample = group.items[0];
+      const accent = sample ? getFulfillmentAccent(sample) : null;
+
+      return (
+      <div className={`bg-white rounded-xl border p-4 hover:shadow-md transition-all ${group.done ? 'border-green-200 opacity-70' : 'border-stone-200'} ${accent?.borderClass || ''}`}>
         <div className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -369,9 +447,16 @@ const ProductionList: React.FC = () => {
               <span className="text-sm font-bold text-[#C5A065] uppercase tracking-wider">
                 #{formatOrderNumber(group.orderNumber)}
               </span>
-              <div className="flex items-center gap-1 text-stone-600 text-sm font-medium">
-                <Clock size={13} />
-                <span>{group.deliveryTimeSlot || '—'}</span>
+              <div className="flex items-center gap-2 text-stone-600 text-sm font-medium">
+                {accent && (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${accent.pillClass}`}>
+                    {accent.label}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Clock size={13} />
+                  <span>{group.deliveryTimeSlot || '—'}</span>
+                </span>
               </div>
             </div>
 
@@ -382,7 +467,17 @@ const ProductionList: React.FC = () => {
                   key={item.id}
                   className={`text-sm ${group.done ? 'line-through text-stone-400' : 'text-[#2D2A26] font-medium'}`}
                 >
-                  {item.productName} <span className="text-stone-400 font-normal">× {item.quantity}</span>
+                  <div>
+                    {item.productName} <span className="text-stone-400 font-normal">× {item.quantity}</span>
+                  </div>
+                  {Object.keys(item.selectedOptions || {}).some((k) => !isAllergyOptionName(k) && String(item.selectedOptions?.[k] || "").trim()) && (
+                    <div className={`mt-0.5 text-[12px] ${group.done ? "text-stone-400" : "text-stone-600"} font-normal`}>
+                      {Object.entries(item.selectedOptions || {})
+                        .filter(([k, v]) => !isAllergyOptionName(k) && String(v || "").trim())
+                        .map(([k, v]) => `${k}: ${String(v).trim()}`)
+                        .join(" \u2022 ")}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -398,6 +493,7 @@ const ProductionList: React.FC = () => {
         </div>
       </div>
     );
+    };
 
     return (
       <div className="space-y-4">
@@ -506,19 +602,94 @@ const ProductionList: React.FC = () => {
             {sortedGroups.map(group => {
               const uniqueOrders = (() => {
                 const sorted = sortByPickupTime
-                  ? [...group.items].sort((a, b) => a.deliveryTimeSlot.localeCompare(b.deliveryTimeSlot))
+                  ? [...group.items].sort((a, b) => parseTimeSlotStartMinutes(a.deliveryTimeSlot) - parseTimeSlotStartMinutes(b.deliveryTimeSlot))
                   : group.items;
                 return uniqueItemsForGroup(sorted);
               })();
               const totalCount = uniqueOrders.length;
+              const fulfillmentCounts = uniqueOrders.reduce(
+                (acc, item) => {
+                  if (item.deliveryType === "delivery") acc.delivery += 1;
+                  if (isMontrealPickup(item)) acc.montrealPickup += 1;
+                  if (item.deliveryType === "pickup" && !isMontrealPickup(item)) acc.lavalPickup += 1;
+                  return acc;
+                },
+                { delivery: 0, montrealPickup: 0, lavalPickup: 0 },
+              );
+              const optionLines = uniqueOrders
+                .map((item) => {
+                  const text = getNonAllergyOptionsText(item.selectedOptions);
+                  if (!text) return null;
+                  return `#${formatOrderNumber(item.orderNumber)}: ${text}`;
+                })
+                .filter(Boolean) as string[];
+              const optionPreview = optionLines.slice(0, 3);
               
               return (
                 <tr key={group.productId} className="hover:bg-stone-50/50 transition-colors">
                   <td className="py-3 px-4">
                     <div className="font-medium text-[#2D2A26]">{group.productName}</div>
-                    <div className="text-xs text-stone-400 mt-1">
-                      {totalCount} commande{totalCount > 1 ? 's' : ''}
+                    <div className="text-xs text-stone-400 mt-1 flex items-center gap-2">
+                      <span>{totalCount} commande{totalCount > 1 ? 's' : ''}</span>
+                      <span className="inline-flex items-center gap-1">
+                        {fulfillmentCounts.montrealPickup > 0 && (
+                          <span
+                            className="w-2 h-2 rounded-full bg-blue-400"
+                            title="Cueillette Montréal"
+                          />
+                        )}
+                        {fulfillmentCounts.lavalPickup > 0 && (
+                          <span
+                            className="w-2 h-2 rounded-full bg-white border border-stone-300"
+                            title="Cueillette Laval"
+                          />
+                        )}
+                        {fulfillmentCounts.delivery > 0 && (
+                          <span
+                            className="w-2 h-2 rounded-full bg-yellow-400"
+                            title="Livraison"
+                          />
+                        )}
+                      </span>
                     </div>
+                    {(fulfillmentCounts.montrealPickup > 0 || fulfillmentCounts.lavalPickup > 0 || fulfillmentCounts.delivery > 0) && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {fulfillmentCounts.montrealPickup > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border bg-blue-100 text-blue-900 border-blue-200">
+                            Montréal: {fulfillmentCounts.montrealPickup}
+                          </span>
+                        )}
+                        {fulfillmentCounts.lavalPickup > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border bg-white text-stone-700 border-stone-200">
+                            Laval: {fulfillmentCounts.lavalPickup}
+                          </span>
+                        )}
+                        {fulfillmentCounts.delivery > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border bg-yellow-100 text-yellow-900 border-yellow-200">
+                            Livraison: {fulfillmentCounts.delivery}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {optionLines.length > 0 && (
+                      <div className="mt-2 text-[12px] text-stone-600">
+                        <div className="font-bold text-[11px] uppercase tracking-wider text-stone-400 mb-1">
+                          Options
+                        </div>
+                        <div className="space-y-0.5">
+                          {optionPreview.map((line) => (
+                            <div key={line} className="truncate" title={line}>
+                              {line}
+                            </div>
+                          ))}
+                          {optionLines.length > optionPreview.length && (
+                            <div className="text-stone-400">
+                              +{optionLines.length - optionPreview.length} autre(s)
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-lg font-bold text-[#C5A065]">
@@ -731,6 +902,19 @@ const ProductionList: React.FC = () => {
               </select>
             </div>
           )}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-stone-400 font-bold uppercase tracking-wider">Code couleur</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border bg-blue-100 text-blue-900 border-blue-200">
+            Cueillette Montréal
+          </span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border bg-white text-stone-700 border-stone-200">
+            Cueillette Laval
+          </span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border bg-yellow-100 text-yellow-900 border-yellow-200">
+            Livraison
+          </span>
         </div>
       </div>
 

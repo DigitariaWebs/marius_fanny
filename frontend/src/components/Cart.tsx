@@ -155,8 +155,14 @@ const CartDrawer: React.FC<CartProps> = ({
     0,
   );
 
+  const categoryText = (item: any) => {
+    const value = item?.category;
+    if (Array.isArray(value)) return value.join(" ").toLowerCase();
+    return String(value || "").toLowerCase();
+  };
+
   const viennoiseriesCount = items.reduce((sum, item) => {
-    const category = (item.category || "").toLowerCase();
+    const category = categoryText(item);
     return category.includes("viennoiser") ? sum + item.quantity : sum;
   }, 0);
 
@@ -164,7 +170,7 @@ const CartDrawer: React.FC<CartProps> = ({
   const patisseriesCount = items.reduce((sum, item) => {
     const isPatisserie =
       item.productionType === "patisserie" ||
-      (item.category || "").toLowerCase().includes("patisser");
+      categoryText(item).includes("patisser");
     return isPatisserie ? sum + item.quantity : sum;
   }, 0);
 
@@ -173,7 +179,7 @@ const CartDrawer: React.FC<CartProps> = ({
   const bakedGoodsExempt = viennoiseriesAndPatisseriesCount >= 6;
 
   const taxes = items.reduce((sum, item) => {
-    const category = (item.category || "").toLowerCase();
+    const category = categoryText(item);
     const isViennoiserie = category.includes("viennoiser");
     const isPatisserie =
       item.productionType === "patisserie" ||

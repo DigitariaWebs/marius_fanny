@@ -1,28 +1,11 @@
-import { useState } from "react";
-import { Phone, MapPin } from "lucide-react";
+import { Phone, MapPin, Instagram, Facebook } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Footer: React.FC = () => {
-  const [email, setEmail] = useState<string>("");
-  const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
   const navigate = useNavigate();
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      console.log("Subscribed:", email);
-      setIsSubscribed(true);
-      setEmail("");
-
-      setTimeout(() => {
-        setIsSubscribed(false);
-      }, 3000);
-    }
-  };
 
   const mainLinks = [
     { name: "La Boutique", id: "shop" },
-    { name: "Nos Favoris", id: "best-sellers" },
     { name: "Notre Histoire", id: "timeline" },
     { name: "Devenir partenaire", id: "devenir-partenaire" },
     { name: "Contacter", id: "contact" },
@@ -52,65 +35,52 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="relative bg-[#F9F7F2] text-[#2D2A26] overflow-hidden">
-      {/* Section principale du footer */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
-        {/* Grid layout */}
-        <div className="grid lg:grid-cols-3 gap-12 mb-16">
-          {/* Colonne 1 - Info entreprise */}
-          <div>
+        {/* Grid layout - 3 Colonnes */}
+        <div className="grid lg:grid-cols-3 gap-12 mb-16 items-start">
+          
+          {/* Colonne 1 - Nos Boutiques */}
+          <div className="order-1">
             <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#337957]">
               Nos Boutiques
             </h3>
             <div className="space-y-6 text-sm">
-              {/* Laval */}
               <div>
                 <div className="flex items-start gap-3 mb-2">
                   <MapPin size={20} className="shrink-0 mt-1 text-[#337957]" />
                   <div>
-                    <p className="font-black text-[#337957] uppercase mb-1">
-                      Laval
-                    </p>
+                    <p className="font-black text-[#337957] uppercase mb-1">Laval</p>
                     <p className="font-bold">239-E Boulevard Samson, Laval</p>
                   </div>
                 </div>
                 <div className="ml-8 text-[#2D2A26]/70">
-                  <p>Lundi au jeudi : 7h00 à 18h00</p>
-                  <p>Vendredi : 7h00 à 18h30</p>
-                  <p>Samedi-dimanche : 8h00 à 18h00</p>
+                  <p>Lun - Jeu : 7h00 à 18h00</p>
+                  <p>Ven : 7h00 à 18h30</p>
+                  <p>Sam - Dim : 8h00 à 18h00</p>
                 </div>
                 <div className="flex items-center gap-3 ml-8 mt-2">
                   <Phone size={18} className="shrink-0 text-[#337957]" />
-                  <a
-                    href="tel:+14506890655"
-                    className="hover:text-[#337957] transition-colors font-bold"
-                  >
+                  <a href="tel:+14506890655" className="hover:text-[#337957] transition-colors font-bold">
                     450-689-0655
                   </a>
                 </div>
               </div>
 
-              {/* Montreal */}
               <div>
                 <div className="flex items-start gap-3 mb-2">
                   <MapPin size={20} className="shrink-0 mt-1 text-[#337957]" />
                   <div>
-                    <p className="font-black text-[#337957] uppercase mb-1">
-                      Montréal
-                    </p>
+                    <p className="font-black text-[#337957] uppercase mb-1">Montréal</p>
                     <p className="font-bold">2006 rue St-Hubert, Montréal</p>
                   </div>
                 </div>
                 <div className="ml-8 text-[#2D2A26]/70">
-                  <p>Lundi au vendredi : 7h00 à 17h00</p>
-                  <p>Samedi : 8h00 à 17h00</p>
-                  <p>Dimanche : 8h00 à 17h00</p>
+                  <p>Lun - Ven : 7h00 à 17h00</p>
+                  <p>Sam - Dim : 8h00 à 17h00</p>
                 </div>
                 <div className="flex items-center gap-3 ml-8 mt-2">
                   <Phone size={18} className="shrink-0 text-[#337957]" />
-                  <a
-                    href="tel:+15143791898"
-                    className="hover:text-[#337957] transition-colors font-bold"
-                  >
+                  <a href="tel:+15143791898" className="hover:text-[#337957] transition-colors font-bold">
                     514-379-1898
                   </a>
                 </div>
@@ -118,8 +88,19 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Colonne 2 - Navigation */}
-          <div>
+          {/* Colonne 2 - MILIEU : Marque & Description */}
+          <div className="order-2 flex flex-col items-center text-center px-4">
+            <h3 className="text-3xl font-black mb-6 uppercase tracking-widest text-[#337957]">
+              Pâtisserie Provençale
+            </h3>
+            <p className="text-sm font-medium leading-relaxed text-[#2D2A26]/80 max-w-xs mb-8">
+              Artisans passionnés depuis des générations, nous mettons tout notre savoir-faire au service de vos papilles pour créer des moments de pure gourmandise.
+            </p>
+            <div className="flex gap-4">
+            </div>
+          </div>
+
+          <div className="order-3 lg:text-right">
             <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#337957]">
               Navigation
             </h3>
@@ -128,7 +109,7 @@ const Footer: React.FC = () => {
                 <li key={link.id}>
                   <button
                     onClick={() => handleAnchorClick(link.id)}
-                    className="text-lg font-bold hover:text-[#337957] transition-colors uppercase text-left"
+                    className="text-lg font-bold hover:text-[#337957] transition-colors uppercase"
                   >
                     {link.name}
                   </button>
@@ -136,69 +117,35 @@ const Footer: React.FC = () => {
               ))}
             </ul>
           </div>
-
-          {/* Colonne 3 - Newsletter */}
-          <div>
-            <h3 className="text-2xl font-black mb-6 uppercase tracking-wide text-[#337957]">
-              Abonnez-vous à notre infolettre
-            </h3>
-            <p className="text-sm mb-6 leading-relaxed text-[#2D2A26]/70">
-              Recevez nos nouveautés, promotions exclusives et nos meilleures
-              recettes directement dans votre boîte mail.
-            </p>
-
-            {isSubscribed ? (
-              <div className="bg-green-100 border-2 border-green-500 rounded-full px-6 py-4 text-center">
-                <p className="font-bold text-green-700">
-                  ✓ Merci pour votre inscription !
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="flex gap-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="EMAIL"
-                  required
-                  className="flex-1 bg-white border-2 border-[#337957] text-[#2D2A26] placeholder-[#2D2A26]/50 px-6 py-4 rounded-full font-bold uppercase text-sm focus:outline-none focus:ring-4 focus:ring-[#337957]/30 transition-all"
-                />
-                <button
-                  type="submit"
-                  className="bg-[#337957] text-white px-8 py-4 rounded-full font-black uppercase text-sm hover:bg-[#B59055] transition-all duration-300 hover:scale-105"
-                >
-                  S'abonner
-                </button>
-              </form>
-            )}
-          </div>
         </div>
 
-        <div className="relative overflow-hidden py-12">
-          <h2 className="text-[4rem] md:text-[6rem] lg:text-[8rem] font-black uppercase leading-none text-[#337957] tracking-tighter opacity-20">
+        {/* Section décorative (Grand texte en arrière-plan) */}
+        <div className="relative overflow-hidden py-8">
+          <h2 className="text-[4rem] md:text-[6rem] lg:text-[8rem] font-black uppercase leading-none text-[#337957] tracking-tighter opacity-10">
             PATISSERIE
             <br />
             PROVENCALE
           </h2>
         </div>
 
+        {/* Bas du footer */}
         <div className="border-t-2 border-[#337957]/30 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-            <p className="text-[#2D2A26]/70">
+            <p className="text-[#2D2A26]/70 font-bold">
               Copyright 2026 | Pâtisserie Provençale
             </p>
 
             <div className="flex gap-6">
               <a
                 href="#conditions"
-                className="text-[#2D2A26]/70 hover:text-[#337957] transition-colors"
+                className="text-[#2D2A26]/70 hover:text-[#337957] transition-colors font-bold"
               >
                 Conditions d'utilisation
               </a>
               <span className="text-[#2D2A26]/40">|</span>
               <button
                 onClick={() => handleAnchorClick("politique-de-retour")}
-                className="text-[#2D2A26]/70 hover:text-[#337957] transition-colors"
+                className="text-[#2D2A26]/70 hover:text-[#337957] transition-colors font-bold"
               >
                 Politique de retour
               </button>

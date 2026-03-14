@@ -46,7 +46,7 @@ type CustomOptionField = {
 
 type ProductFormState = {
   name: string;
-  category: string;
+  category: string[];
   price: string;
   discountPercentage: string;
   availableDays: number[];
@@ -82,7 +82,7 @@ const buildPayloadOptions = (options: CustomOptionField[]) =>
         (opt.type === "text" || opt.choices.length > 0),
     );
 
-const createDefaultProductForm = (category = ""): ProductFormState => ({
+const createDefaultProductForm = (category: string[] = []): ProductFormState => ({
   name: "",
   category,
   price: "",
@@ -217,7 +217,7 @@ export function ProductManagement() {
         if (flattened.length > 0) {
           setProductForm(prev => ({
             ...prev,
-            category: flattened[0].name,
+            category: [flattened[0].name],
           }));
         }
       }
@@ -373,7 +373,7 @@ export function ProductManagement() {
       setIsCreateModalOpen(false);
       setProductForm(
         createDefaultProductForm(
-          categories.length > 0 ? categories[0].name : "",
+          categories.length > 0 ? [categories[0].name] : [],
         ),
       );
     } catch (err) {
@@ -416,7 +416,7 @@ export function ProductManagement() {
       setSelectedProduct(null);
       setProductForm(
         createDefaultProductForm(
-          categories.length > 0 ? categories[0].name : "",
+          categories.length > 0 ? [categories[0].name] : [],
         ),
       );
     } catch (err) {
@@ -518,7 +518,7 @@ export function ProductManagement() {
       render: (product: Product) => (
         <div className="flex items-center gap-2">
           <Tag size={14} className="text-gray-400" />
-          <span className="text-sm text-gray-600">{product.category}</span>
+          <span className="text-sm text-gray-600">{product.category.join(", ")}</span>
         </div>
       ),
     },
@@ -715,14 +715,16 @@ export function ProductManagement() {
 
         {!loading && !error && reorderMode && (() => {
           // Group products by category while preserving displayOrder within each group
-          const categoryNames = Array.from(new Set(reorderList.map(p => p.category)));
+          const categoryNames = Array.from(
+            new Set(reorderList.map((p) => p.category[0] || "")),
+          ).filter(Boolean);
           return (
             <div className="space-y-4">
               <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
                 <span className="text-amber-700 text-sm font-medium">⠿ Glissez-déposez les produits pour les réordonner au sein de chaque catégorie. L'ordre sera respecté sur la boutique.</span>
               </div>
               {categoryNames.map((catName) => {
-                const catProducts = reorderList.filter(p => p.category === catName);
+                const catProducts = reorderList.filter((p) => (p.category[0] || "") === catName);
                 return (
                   <div key={catName} className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
                     <div className="px-6 py-3 bg-stone-50 border-b border-stone-200 flex items-center gap-2">
@@ -797,7 +799,7 @@ export function ProductManagement() {
               setIsCreateModalOpen(false);
               setProductForm(
                 createDefaultProductForm(
-                  categories.length > 0 ? categories[0].name : "",
+                  categories.length > 0 ? [categories[0].name] : [],
                 ),
               );
             },
@@ -852,11 +854,15 @@ export function ProductManagement() {
                 Catégorie *
               </label>
               <select
+                multiple
                 value={productForm.category}
-                onChange={(e) =>
-                  setProductForm({ ...productForm, category: e.target.value })
-                }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
+                onChange={(e) => {
+                  const values = Array.from(e.target.selectedOptions).map(
+                    (opt) => opt.value,
+                  );
+                  setProductForm({ ...productForm, category: values });
+                }}
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none h-32"
               >
                 {flattenCategoriesWithIndentation(categories).map((cat) => (
                   <option key={cat.id} value={cat.name}>
@@ -864,6 +870,9 @@ export function ProductManagement() {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500">
+                Vous pouvez sélectionner plusieurs catégories (Ctrl/⌘ + clic).
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -1343,7 +1352,7 @@ export function ProductManagement() {
               setSelectedProduct(null);
               setProductForm(
                 createDefaultProductForm(
-                  categories.length > 0 ? categories[0].name : "",
+                  categories.length > 0 ? [categories[0].name] : [],
                 ),
               );
             },
@@ -1398,11 +1407,15 @@ export function ProductManagement() {
                 Catégorie *
               </label>
               <select
+                multiple
                 value={productForm.category}
-                onChange={(e) =>
-                  setProductForm({ ...productForm, category: e.target.value })
-                }
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
+                onChange={(e) => {
+                  const values = Array.from(e.target.selectedOptions).map(
+                    (opt) => opt.value,
+                  );
+                  setProductForm({ ...productForm, category: values });
+                }}
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none h-32"
               >
                 {flattenCategoriesWithIndentation(categories).map((cat) => (
                   <option key={cat.id} value={cat.name}>
@@ -1410,6 +1423,9 @@ export function ProductManagement() {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500">
+                Vous pouvez sélectionner plusieurs catégories (Ctrl/⌘ + clic).
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -1906,7 +1922,7 @@ export function ProductManagement() {
                   Catégorie
                 </label>
                 <p className="text-base text-[#2D2A26] mt-1">
-                  {selectedProduct.category}
+                  {selectedProduct.category.join(", ")}
                 </p>
               </div>
               <div>
@@ -2095,7 +2111,7 @@ export function ProductManagement() {
             <p className="text-sm text-red-800">
               <strong>Produit :</strong> {productToDelete.name}
               <br />
-              <strong>Catégorie :</strong> {productToDelete.category}
+              <strong>Catégorie :</strong> {productToDelete.category.join(", ")}
               <br />
               <strong>Prix :</strong> {formatCurrency(productToDelete.price)}
             </p>

@@ -256,7 +256,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 1,
     name: "La Marguerite (6 pers.)",
-    category: "Gâteaux",
+    category: ["Gâteaux"],
     price: 37.5,
     available: true,
     minOrderQuantity: 1,
@@ -271,7 +271,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 2,
     name: "Tarte Citron Meringuée",
-    category: "Gâteaux",
+    category: ["Gâteaux"],
     price: 29.95,
     available: true,
     minOrderQuantity: 1,
@@ -286,7 +286,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 3,
     name: "Baguette Tradition",
-    category: "Pains",
+    category: ["Pains"],
     price: 3.5,
     available: false,
     minOrderQuantity: 1,
@@ -301,7 +301,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 4,
     name: "Pain Campagne Bio",
-    category: "Pains",
+    category: ["Pains"],
     price: 4.8,
     available: true,
     minOrderQuantity: 1,
@@ -316,7 +316,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 5,
     name: "Croissant Pur Beurre",
-    category: "Viennoiseries",
+    category: ["Viennoiseries"],
     price: 2.2,
     available: true,
     minOrderQuantity: 1,
@@ -331,7 +331,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 6,
     name: "Pain au Chocolat",
-    category: "Viennoiseries",
+    category: ["Viennoiseries"],
     price: 2.4,
     available: true,
     minOrderQuantity: 1,
@@ -346,7 +346,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 7,
     name: "Macarons Assortis (12 pcs)",
-    category: "Chocolats",
+    category: ["Chocolats"],
     price: 24.0,
     available: true,
     minOrderQuantity: 1,
@@ -361,7 +361,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 8,
     name: "Chocolats Pralinés (250g)",
-    category: "Chocolats",
+    category: ["Chocolats"],
     price: 18.5,
     available: true,
     minOrderQuantity: 1,

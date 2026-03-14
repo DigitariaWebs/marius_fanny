@@ -1,3 +1,5 @@
+import { authClient } from "./AuthClient";
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const normalizedApiUrl = API_URL.startsWith("http")
   ? API_URL
@@ -8,7 +10,8 @@ class OrderAPI {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOn401 = true,
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
@@ -22,6 +25,15 @@ class OrderAPI {
     });
 
     if (response.status === 401) {
+      if (retryOn401) {
+        try {
+          await authClient.getSession();
+        } catch {
+          // ignore - fallthrough to redirect
+        }
+        return this.request<T>(endpoint, options, false);
+      }
+
       window.location.href = "/se-connecter";
       throw new Error("AUTH_REDIRECT");
     }
@@ -82,6 +94,7 @@ class OrderAPI {
       quantity: number;
       unitPrice: number;
       amount: number;
+      selectedOptions?: Record<string, string>;
       notes?: string;
     }[];
     notes?: string;

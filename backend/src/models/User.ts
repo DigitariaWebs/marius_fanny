@@ -16,6 +16,12 @@ export interface IUser extends Document {
     avatar?: string;
     phoneNumber?: string;
   };
+  billing?: {
+    kind: "standard" | "representant" | "gouvernement";
+    organization?: string;
+    paymentTermsDays: number; // 0 = same day, 30 = net 30, etc.
+    allowUnpaidOrders: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
   resetPasswordToken?: string;
@@ -70,6 +76,27 @@ const UserSchema = new Schema<IUser>(
       bio: String,
       avatar: String,
       phoneNumber: String,
+    },
+    billing: {
+      kind: {
+        type: String,
+        enum: ["standard", "representant", "gouvernement"],
+        default: "standard",
+      },
+      organization: {
+        type: String,
+        trim: true,
+      },
+      paymentTermsDays: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 365,
+      },
+      allowUnpaidOrders: {
+        type: Boolean,
+        default: false,
+      },
     },
     resetPasswordToken: {
       type: String,

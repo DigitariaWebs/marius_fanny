@@ -49,6 +49,15 @@ export default function ProDashboard() {
 
   const navigate = useNavigate();
 
+  const categoryList = (product: Product): string[] => {
+    const value: any = (product as any).category;
+    if (Array.isArray(value)) return value.map(String).filter(Boolean);
+    if (typeof value === "string" && value.trim()) return [value.trim()];
+    return [];
+  };
+  const categoryText = (product: Product) => categoryList(product).join(", ");
+  const primaryCategory = (product: Product) => categoryList(product)[0] || "";
+
   // Check auth & load data
   useEffect(() => {
     const init = async () => {
@@ -119,14 +128,14 @@ export default function ProDashboard() {
       filtered = filtered.filter(
         (p) =>
           p.name.toLowerCase().includes(query) ||
-          p.category?.toLowerCase().includes(query) ||
+          categoryText(p).toLowerCase().includes(query) ||
           p.description?.toLowerCase().includes(query)
       );
     }
 
     // Category filter
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((p) => p.category === selectedCategory);
+      filtered = filtered.filter((p) => categoryList(p).includes(selectedCategory));
     }
 
     // Availability filter
@@ -159,7 +168,7 @@ export default function ProDashboard() {
 
   // Get unique category names from products
   const productCategories = Array.from(
-    new Set(allProducts.map((p) => p.category).filter(Boolean))
+    new Set(allProducts.flatMap((p) => categoryList(p)).filter(Boolean))
   );
 
   if (loading) {
@@ -274,7 +283,7 @@ export default function ProDashboard() {
                   <Package size={20} />
                   <span className="font-medium text-sm">{cat}</span>
                   <span className="ml-auto text-xs opacity-70">
-                    {allProducts.filter((p) => p.category === cat).length}
+                    {allProducts.filter((p) => categoryList(p).includes(cat)).length}
                   </span>
                 </button>
               ))}
@@ -459,7 +468,7 @@ export default function ProDashboard() {
 
                   <div className="p-4">
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#C5A065] mb-1">
-                      {product.category}
+                      {primaryCategory(product)}
                     </p>
                     <h3 className="font-bold text-stone-800 mb-2 line-clamp-2">
                       {product.name}
@@ -513,7 +522,7 @@ export default function ProDashboard() {
                         {product.name}
                       </h3>
                       <span className="text-[8px] font-black uppercase tracking-widest text-[#C5A065] bg-[#C5A065]/10 px-2 py-0.5 rounded-full shrink-0">
-                        {product.category}
+                        {primaryCategory(product)}
                       </span>
                     </div>
                     {product.description && (
@@ -581,7 +590,7 @@ export default function ProDashboard() {
 
             <div className="p-6">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#C5A065] mb-2">
-                {selectedProduct.category}
+                {categoryText(selectedProduct)}
               </p>
               <h2 className="text-2xl font-bold text-stone-800 mb-3">
                 {selectedProduct.name}

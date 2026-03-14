@@ -69,6 +69,8 @@ function ClientManagement() {
     email: "",
     phone: "",
     status: "active" as "active" | "inactive" | "placeholder",
+    billingKind: "standard" as "standard" | "representant" | "gouvernement",
+    billingOrganization: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -81,6 +83,8 @@ function ClientManagement() {
       email: "",
       phone: "",
       status: "active",
+      billingKind: "standard",
+      billingOrganization: "",
     });
   };
 
@@ -108,6 +112,9 @@ function ClientManagement() {
     ) {
       return "Email invalide";
     }
+    if (formData.billingKind === "gouvernement" && !formData.billingOrganization.trim()) {
+      return "L'organisation est requise pour un client gouvernemental";
+    }
     return null;
   };
 
@@ -127,6 +134,10 @@ function ClientManagement() {
         lastName: formData.lastName,
         phone: formData.phone,
         status: formData.status,
+        billing: {
+          kind: formData.billingKind,
+          organization: formData.billingOrganization || undefined,
+        },
       });
       setIsCreateModalOpen(false);
       resetForm();
@@ -148,6 +159,8 @@ function ClientManagement() {
       email: client.email,
       phone: client.phone,
       status: client.status,
+      billingKind: client.billing?.kind || "standard",
+      billingOrganization: client.billing?.organization || "",
     });
     setIsEditModalOpen(true);
   };
@@ -164,13 +177,33 @@ function ClientManagement() {
 
     setIsSubmitting(true);
     try {
-      await clientAPI.updateClient(editingClient.id, formData);
+      await clientAPI.updateClient(editingClient.id, {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        status: formData.status,
+        billing: {
+          kind: formData.billingKind,
+          organization: formData.billingOrganization || undefined,
+        },
+      });
       setClients(
         clients.map((client) =>
           client.id === editingClient.id
             ? {
                 ...client,
-                ...formData,
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                phone: formData.phone,
+                status: formData.status,
+                billing: {
+                  kind: formData.billingKind,
+                  organization: formData.billingOrganization || undefined,
+                  paymentTermsDays: formData.billingKind === "gouvernement" ? 30 : 0,
+                  allowUnpaidOrders: formData.billingKind !== "standard",
+                },
                 updatedAt: new Date().toISOString(),
               }
             : client,
@@ -326,6 +359,31 @@ function ClientManagement() {
           <span>{client.phone}</span>
         </div>
       ),
+    },
+    {
+      key: "billing",
+      label: "Paiement",
+      sortable: true,
+      render: (client: Client) => {
+        const kind = client.billing?.kind || "standard";
+        const label =
+          kind === "representant"
+            ? "Représentant (jour même)"
+            : kind === "gouvernement"
+              ? `Gouvernemental (30j)${client.billing?.organization ? ` • ${client.billing.organization}` : ""}`
+              : "Standard";
+        const classes =
+          kind === "representant"
+            ? "bg-blue-50 text-blue-700 border-blue-200"
+            : kind === "gouvernement"
+              ? "bg-purple-50 text-purple-700 border-purple-200"
+              : "bg-stone-50 text-stone-700 border-stone-200";
+        return (
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${classes}`}>
+            {label}
+          </span>
+        );
+      },
     },
     {
       key: "orders",
@@ -566,6 +624,40 @@ function ClientManagement() {
               placeholder="Ex: 514-555-0123"
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Type de paiement
+            </label>
+            <select
+              value={formData.billingKind}
+              onChange={(e) => handleInputChange("billingKind", e.target.value)}
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+            >
+              <option value="standard">Standard (paiement requis)</option>
+              <option value="representant">Représentant (paye le jour même)</option>
+              <option value="gouvernement">Gouvernemental (net 30)</option>
+            </select>
+            {formData.billingKind === "gouvernement" && (
+              <div className="mt-3 space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Organisation <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.billingOrganization}
+                  onChange={(e) =>
+                    handleInputChange("billingOrganization", e.target.value)
+                  }
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+                  placeholder="Ex: Ville de la Vallée, Commission scolaire de Laval"
+                />
+              </div>
+            )}
+            <p className="text-xs text-gray-500">
+              Représentant et Gouvernemental peuvent commander sans paiement immédiat.
+            </p>
+          </div>
         </div>
       </Modal>
 
@@ -680,6 +772,37 @@ function ClientManagement() {
               className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
               placeholder="Ex: 514-555-0123"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Type de paiement
+            </label>
+            <select
+              value={formData.billingKind}
+              onChange={(e) => handleInputChange("billingKind", e.target.value)}
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+            >
+              <option value="standard">Standard (paiement requis)</option>
+              <option value="representant">Représentant (paye le jour même)</option>
+              <option value="gouvernement">Gouvernemental (net 30)</option>
+            </select>
+            {formData.billingKind === "gouvernement" && (
+              <div className="mt-3 space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Organisation <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.billingOrganization}
+                  onChange={(e) =>
+                    handleInputChange("billingOrganization", e.target.value)
+                  }
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065]/50 outline-none text-sm"
+                  placeholder="Ex: Ville de la Vallée, Commission scolaire de Laval"
+                />
+              </div>
+            )}
           </div>
 
           <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">

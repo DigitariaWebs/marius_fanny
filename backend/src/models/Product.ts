@@ -3,7 +3,7 @@ import { Schema, model } from 'mongoose';
 export interface IProduct {
   id: number;
   name: string;
-  category: string;
+  category: string[];
   price: number;
   discountPercentage?: number;
   available: boolean;
@@ -34,7 +34,24 @@ export interface IProduct {
 const productSchema = new Schema<IProduct>({
   id: { type: Number, required: true, unique: true },
   name: { type: String, required: true },
-  category: { type: String, required: true },
+  category: {
+    type: [String],
+    required: true,
+    set: (value: unknown) => {
+      if (Array.isArray(value)) {
+        return value.map((v) => String(v).trim()).filter(Boolean);
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed ? [trimmed] : [];
+      }
+      return [];
+    },
+    validate: {
+      validator: (value: unknown) => Array.isArray(value) && value.length > 0,
+      message: "Category must have at least one value",
+    },
+  },
   price: { type: Number, required: true },
   discountPercentage: { type: Number, min: 0, max: 100, default: 0 },
   available: { type: Boolean, required: true, default: true },
