@@ -513,9 +513,9 @@ const CartDrawer: React.FC<CartProps> = ({
               </div>
             ) : (
               items.map((item) => (
-                <div key={getCartItemKey(item)} className="flex gap-4 group">
+                <div key={getCartItemKey(item)} className="flex flex-col gap-3 group border border-stone-100 rounded-2xl p-3">
                   {/* Image Produit */}
-                  <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 bg-stone-100 border border-stone-100">
+                  <div className="w-full h-40 rounded-xl overflow-hidden bg-stone-100 border border-stone-100">
                     <img
                       src={getImageUrl(item.image)}
                       alt={item.name}

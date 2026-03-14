@@ -567,6 +567,8 @@ export const createOrder = async (
         paymentId: orderData.squarePaymentId,
         invoiceUrl: undefined, // Will be updated via webhook or separate call
         orderDate: order.orderDate,
+        pickupDate: order.pickupDate || (orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined),
+        pickupTimeSlot: orderData.deliveryTimeSlot || undefined,
       });
 
       console.log(

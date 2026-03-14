@@ -541,6 +541,8 @@ export async function sendFullPaymentReceipt(
   total: number,
   paymentId: string,
   orderDate?: Date,
+  pickupDate?: Date,
+  pickupTimeSlot?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -564,7 +566,18 @@ export async function sendFullPaymentReceipt(
     const orderDateObj = orderDate ? new Date(orderDate) : new Date();
     const formattedDate = orderDateObj.toLocaleDateString("fr-CA", { year: "numeric", month: "long", day: "numeric" });
     const formattedTime = orderDateObj.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
-    const paddedNumber = orderNumber.replace(/^ORD-/, "#");
+    const paddedNumber = orderNumber.split("-").pop() || orderNumber;
+    const pickupDateObj = pickupDate ? new Date(pickupDate) : null;
+    const formattedPickupDate = pickupDateObj
+      ? pickupDateObj.toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+      : null;
+    const pickupSection = formattedPickupDate
+      ? `<div style="background-color: #EAF6EF; border: 2px solid #337957; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center;">
+          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 Date de ramassage</p>
+          <p style="color: #2D2A26; font-size: 18px; font-weight: bold; margin: 0;">${formattedPickupDate}</p>
+          ${pickupTimeSlot ? `<p style="color: #337957; font-size: 15px; margin: 6px 0 0 0;">⏰ Heure : <strong>${pickupTimeSlot}</strong></p>` : ""}
+        </div>`
+      : "";
 
     const mailOptions = {
       from: DISPLAY_FROM,
@@ -597,6 +610,7 @@ export async function sendFullPaymentReceipt(
               <p style="color: #999; margin: 10px 0 5px 0; font-size: 12px;">Date de commande</p>
               <p style="color: #555; margin: 0; font-size: 14px;">${formattedDate} à ${formattedTime}</p>
               <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">ID de paiement: ${paymentId}</p>
+              ${pickupSection}
             </div>
 
             <h3 style="color: #2D2A26; border-bottom: 2px solid #C5A065; padding-bottom: 10px;">
@@ -685,6 +699,8 @@ export async function sendDepositReceipt(
   balanceDue: number,
   paymentId: string,
   orderDate?: Date,
+  pickupDate?: Date,
+  pickupTimeSlot?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -715,7 +731,19 @@ export async function sendDepositReceipt(
       hour: "2-digit",
       minute: "2-digit",
     });
-    const paddedNumber = orderNumber.replace(/^ORD-/, "#");
+    const paddedNumber = orderNumber.split("-").pop() || orderNumber;
+
+    const pickupDateObjD = pickupDate ? new Date(pickupDate) : null;
+    const formattedPickupDateD = pickupDateObjD
+      ? pickupDateObjD.toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+      : null;
+    const pickupSectionD = formattedPickupDateD
+      ? `<div style="background-color: #EAF6EF; border: 2px solid #337957; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center;">
+          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 Date de ramassage</p>
+          <p style="color: #2D2A26; font-size: 18px; font-weight: bold; margin: 0;">${formattedPickupDateD}</p>
+          ${pickupTimeSlot ? `<p style="color: #337957; font-size: 15px; margin: 6px 0 0 0;">⏰ Heure : <strong>${pickupTimeSlot}</strong></p>` : ""}
+        </div>`
+      : "";
 
     const mailOptions = {
       from: DISPLAY_FROM,
@@ -744,10 +772,11 @@ export async function sendDepositReceipt(
 
             <div style="background-color: #F9F7F2; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
               <p style="color: #999; margin: 0 0 5px 0; font-size: 12px;">Numéro de commande</p>
-              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${paddedNumber}</p>
+              <p style="color: #C5A065; font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 2px; font-family: monospace;">${paddedNumber}</p>
               <p style="color: #999; margin: 10px 0 5px 0; font-size: 12px;">Date de commande</p>
               <p style="color: #555; margin: 0; font-size: 14px;">${formattedDate} à ${formattedTime}</p>
               <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">ID de paiement: ${paymentId}</p>
+              ${pickupSectionD}
             </div>
 
             <h3 style="color: #2D2A26; border-bottom: 2px solid #C5A065; padding-bottom: 10px;">
@@ -842,6 +871,8 @@ export async function sendInvoiceOrderConfirmation(
   total: number,
   invoiceUrl?: string,
   orderDate?: Date,
+  pickupDate?: Date,
+  pickupTimeSlot?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -872,7 +903,19 @@ export async function sendInvoiceOrderConfirmation(
       hour: "2-digit",
       minute: "2-digit",
     });
-    const paddedNumber = orderNumber.replace(/^ORD-/, "#");
+    const paddedNumber = orderNumber.split("-").pop() || orderNumber;
+
+    const pickupDateObjI = pickupDate ? new Date(pickupDate) : null;
+    const formattedPickupDateI = pickupDateObjI
+      ? pickupDateObjI.toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+      : null;
+    const pickupSectionI = formattedPickupDateI
+      ? `<div style="background-color: #EAF6EF; border: 2px solid #337957; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center;">
+          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 Date de ramassage</p>
+          <p style="color: #2D2A26; font-size: 18px; font-weight: bold; margin: 0;">${formattedPickupDateI}</p>
+          ${pickupTimeSlot ? `<p style="color: #337957; font-size: 15px; margin: 6px 0 0 0;">⏰ Heure : <strong>${pickupTimeSlot}</strong></p>` : ""}
+        </div>`
+      : "";
 
     const mailOptions = {
       from: DISPLAY_FROM,
@@ -902,9 +945,10 @@ export async function sendInvoiceOrderConfirmation(
 
             <div style="background-color: #F9F7F2; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
               <p style="color: #999; margin: 0 0 5px 0; font-size: 12px;">Numéro de commande</p>
-              <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0;">${paddedNumber}</p>
+              <p style="color: #C5A065; font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 2px; font-family: monospace;">${paddedNumber}</p>
               <p style="color: #999; margin: 10px 0 5px 0; font-size: 12px;">Date de commande</p>
               <p style="color: #555; margin: 0; font-size: 14px;">${formattedDate} à ${formattedTime}</p>
+              ${pickupSectionI}
             </div>
 
             <h3 style="color: #2D2A26; border-bottom: 2px solid #C5A065; padding-bottom: 10px;">

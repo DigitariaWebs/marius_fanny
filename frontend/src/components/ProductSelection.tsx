@@ -423,8 +423,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
           </div>
         )}
 
+   
+
         {/* Liste des produits */}
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {filteredProducts.map(product => {
             const prepBadge = product.preparationTimeHours ? getPreparationBadge(product.preparationTimeHours) : null;
             const hasDiscount = Number(product.discountPercentage) > 0;
@@ -437,51 +439,46 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
               <div
                 key={product.id}
                 onClick={() => handleProductClick(product)}
-                className="group relative overflow-hidden rounded-xl cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 bg-stone-200"
-                style={{ aspectRatio: '4/5' }}
+                className="relative overflow-hidden rounded-2xl cursor-pointer shadow-md bg-stone-200"
+                style={{ aspectRatio: '3/4' }}
               >
                 <img
                   src={getImageUrl(product.image)}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-105 contrast-[1.03]"
+                  className="absolute inset-0 w-full h-full object-cover brightness-105 contrast-[1.03]"
                   alt={product.name}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
-                <div className="absolute top-2 left-2 flex flex-col gap-1">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                   {hasDiscount && (
-                    <span className="text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full shadow tracking-wide">
+                    <span className="text-xs font-bold bg-red-500 text-white px-2 py-1 rounded-full shadow tracking-wide">
                       -{product.discountPercentage}%
                     </span>
                   )}
                   {prepBadge && (
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow tracking-wide ${prepBadge.bgColor} ${prepBadge.textColor}`}>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full shadow tracking-wide ${prepBadge.bgColor} ${prepBadge.textColor}`}>
                       ⏱ {prepBadge.text}
                     </span>
                   )}
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3">
+                <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4">
                   <h3
-                    className="text-white font-semibold text-[11px] md:text-xs leading-tight mb-1 drop-shadow-md line-clamp-2"
+                    className="text-white font-bold text-sm md:text-base leading-tight mb-1.5 drop-shadow-lg line-clamp-2"
                     style={{ fontFamily: '"Century Gothic", sans-serif' }}
                   >
                     {product.name}
                   </h3>
                   {showPrice && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       {hasDiscount && (
-                        <span className="text-white/50 line-through text-[10px]">
+                        <span className="text-white/60 line-through text-xs md:text-sm">
                           {product.price.toFixed(2)}$
                         </span>
                       )}
-                      <span className="text-white font-bold text-xs drop-shadow">
+                      <span className="text-white font-bold text-sm md:text-base drop-shadow">
                         {discountedPrice.toFixed(2)} $
                       </span>
                     </div>
                   )}
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="bg-white/90 text-[#2D2A26] text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full shadow-lg">
-                    Voir
-                  </span>
                 </div>
               </div>
             );

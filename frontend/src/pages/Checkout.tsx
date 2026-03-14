@@ -156,10 +156,15 @@ const Checkout: React.FC = () => {
     const readyDate = new Date(readyTime);
     readyDate.setHours(0, 0, 0, 0);
 
-    // Business rule: Must order before noon for next day delivery
-    // If it's after noon (12:00 PM) and trying to deliver tomorrow, push to day after
-    if (now.getHours() >= 12 && maxPreparationHours === 24) {
-      readyDate.setDate(readyDate.getDate() + 1);
+    // Business rule: Must order before noon for next day pickup
+    // After noon, minimum date is day after tomorrow regardless of prep time
+    if (now.getHours() >= 12) {
+      const dayAfterTomorrow = new Date(now);
+      dayAfterTomorrow.setDate(now.getDate() + 2);
+      dayAfterTomorrow.setHours(0, 0, 0, 0);
+      if (readyDate < dayAfterTomorrow) {
+        readyDate.setTime(dayAfterTomorrow.getTime());
+      }
     }
 
     // If products won't be ready until late in the day (after 6 PM),

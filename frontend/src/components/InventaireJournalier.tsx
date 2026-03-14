@@ -99,6 +99,44 @@ export default function InventaireJournalier() {
   });
   const [newProductName, setNewProductName] = useState("");
 
+  // Clé sentinelle dans MongoDB pour persister la liste cross-appareils
+  const PRODUCTS_SENTINEL_KEY = "__products_config_daily";
+
+  // Charger la liste depuis le backend au démarrage
+  useEffect(() => {
+    const loadProductsFromBackend = async () => {
+      try {
+        const res = await dailyInventoryAPI.getByDate(PRODUCTS_SENTINEL_KEY);
+        if (res.data.entries && res.data.entries.length > 0) {
+          const names = res.data.entries.map((e) => e.productName);
+          setCustomProducts(names);
+          localStorage.setItem("inventaire_produits_personnalises", JSON.stringify(names));
+        }
+      } catch {
+        // Pas encore de liste sauvegardée côté backend — utiliser localStorage/défauts
+      }
+    };
+    loadProductsFromBackend();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sauvegarder la liste de produits dans le backend
+  const saveProductsToBackend = (list: string[]) => {
+    dailyInventoryAPI.save({
+      date: PRODUCTS_SENTINEL_KEY,
+      entries: list.map((name) => ({
+        productId: name,
+        productName: name,
+        stock_stdo: 0,
+        stdo: 0,
+        berri: 0,
+        comm_berri: 0,
+        client: 0,
+        total: 0,
+      })),
+    }).catch(() => {/* ignorer les erreurs réseau */});
+  };
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
@@ -125,15 +163,17 @@ export default function InventaireJournalier() {
     const updatedList = [...customProducts, name];
     setCustomProducts(updatedList);
     localStorage.setItem("inventaire_produits_personnalises", JSON.stringify(updatedList));
+    saveProductsToBackend(updatedList);
     setNewProductName("");
-    setToast({ type: "success", msg: `Produit "${name}" ajouté.` });
+    setToast({ type: "success", msg: `Produit "${name}" ajouté et sauvegardé.` });
   };
 
   const handleRemoveProduct = (name: string) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir retirer "${name}" de la liste ? (Les données déjà sauvegardées ne seront pas perdues sur le serveur, mais la ligne disparaîtra)`)) {
+    if (window.confirm(`Êtes-vous sûr de vouloir retirer "${name}" de la liste ?\n\nCette action supprime le produit de l'inventaire pour tous les utilisateurs, jusqu'à ce qu'il soit rajouté.`)) {
       const updatedList = customProducts.filter((p) => p !== name);
       setCustomProducts(updatedList);
       localStorage.setItem("inventaire_produits_personnalises", JSON.stringify(updatedList));
+      saveProductsToBackend(updatedList);
       setToast({ type: "success", msg: `Produit "${name}" retiré.` });
     }
   };

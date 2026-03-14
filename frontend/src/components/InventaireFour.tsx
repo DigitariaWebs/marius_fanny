@@ -42,6 +42,44 @@ export default function InventaireFour() {
   });
   const [newProd, setNewProd] = useState("");
 
+  // Clé sentinelle MongoDB pour persister la liste cross-appareils
+  const PRODUCTS_SENTINEL_KEY = "__products_config_four";
+
+  // Charger la liste depuis le backend au démarrage
+  useEffect(() => {
+    const loadProductsFromBackend = async () => {
+      try {
+        const res = await dailyInventoryAPI.getByDate(PRODUCTS_SENTINEL_KEY);
+        if (res.data.entries && res.data.entries.length > 0) {
+          const names = res.data.entries.map((e: any) => e.productName);
+          setProducts(names);
+          localStorage.setItem("produits_inventaire_four", JSON.stringify(names));
+        }
+      } catch {
+        // Pas encore sauvegardé côté backend — utiliser localStorage/défauts
+      }
+    };
+    loadProductsFromBackend();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sauvegarder la liste de produits dans le backend
+  const saveProductsToBackend = (list: string[]) => {
+    dailyInventoryAPI.save({
+      date: PRODUCTS_SENTINEL_KEY,
+      entries: list.map((name) => ({
+        productId: name,
+        productName: name,
+        stock_stdo: 0,
+        stdo: 0,
+        berri: 0,
+        comm_berri: 0,
+        client: 0,
+        total: 0,
+      })),
+    }).catch(() => {});
+  };
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -115,10 +153,11 @@ export default function InventaireFour() {
           />
           <button 
             onClick={() => {
-              if(!newProd) return;
-              const up = [...products, newProd];
+              if(!newProd.trim()) return;
+              const up = [...products, newProd.trim()];
               setProducts(up);
               localStorage.setItem("produits_inventaire_four", JSON.stringify(up));
+              saveProductsToBackend(up);
               setNewProd("");
             }}
             className="p-2 rounded-xl text-white" style={{ background: gold }}
@@ -210,9 +249,12 @@ export default function InventaireFour() {
                 </td>
                 <td className="pr-4">
                   <button onClick={() => {
-                    const up = products.filter(p => p !== row.id);
-                    setProducts(up);
-                    localStorage.setItem("produits_inventaire_four", JSON.stringify(up));
+                    if (window.confirm(`Retirer "${row.name}" de la liste pour tous les utilisateurs ?`)) {
+                      const up = products.filter(p => p !== row.id);
+                      setProducts(up);
+                      localStorage.setItem("produits_inventaire_four", JSON.stringify(up));
+                      saveProductsToBackend(up);
+                    }
                   }} className="text-stone-300 hover:text-red-500"><Trash2 size={16}/></button>
                 </td>
               </tr>
