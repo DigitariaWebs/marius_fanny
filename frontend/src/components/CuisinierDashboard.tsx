@@ -51,6 +51,32 @@ interface ProductionItem {
   done: boolean;
 }
 
+const isMontrealPickup = (item: Pick<ProductionItem, "deliveryType" | "pickupLocation">) => {
+  if (item.deliveryType !== "pickup") return false;
+  const location = (item.pickupLocation || "").toLowerCase();
+  return location.includes("montreal") || location.includes("montr");
+};
+
+const getFulfillmentAccent = (item: Pick<ProductionItem, "deliveryType" | "pickupLocation">) => {
+  if (item.deliveryType === "delivery") {
+    return {
+      borderClass: "border-l-4 border-l-yellow-400",
+      pillClass: "bg-yellow-100 text-yellow-900 border-yellow-200",
+      label: "Livraison",
+    };
+  }
+
+  if (isMontrealPickup(item)) {
+    return {
+      borderClass: "border-l-4 border-l-blue-400",
+      pillClass: "bg-blue-100 text-blue-900 border-blue-200",
+      label: "Montréal",
+    };
+  }
+
+  return null;
+};
+
 interface GroupedProduct {
   productId: number;
   productName: string;
@@ -531,11 +557,14 @@ const CuisinierDashboard: React.FC = () => {
                   <p className="text-stone-600">Aucune commande pour cette date</p>
                 </div>
               ) : (
-                filteredItems.map((item) => (
+                filteredItems.map((item) => {
+                  const accent = getFulfillmentAccent(item);
+
+                  return (
                   <div
                     key={item.id}
                     className={`bg-white/80 backdrop-blur-md rounded-lg shadow-sm p-6 border border-stone-200/50 ${
-                      item.done ? "border-l-4 border-l-green-500" : ""
+                      item.done ? "border-l-4 border-l-green-500" : (accent?.borderClass || "")
                     }`}
                   >
                     <div className="flex items-start gap-4">
@@ -570,9 +599,16 @@ const CuisinierDashboard: React.FC = () => {
                             <MapPin className="w-4 h-4 text-stone-400" />
                             <div>
                               <p className="text-sm text-stone-600">Livraison</p>
-                              <p className="font-medium">
-                                {item.deliveryType === "pickup" ? "Ramassage" : "Livraison"}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-medium">
+                                  {item.deliveryType === "pickup" ? "Ramassage" : "Livraison"}
+                                </p>
+                                {accent && (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${accent.pillClass}`}>
+                                    {accent.label}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm text-stone-500">
                                 {item.deliveryDate} - {item.deliveryTimeSlot}
                               </p>
@@ -588,7 +624,8 @@ const CuisinierDashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}

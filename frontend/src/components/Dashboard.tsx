@@ -445,7 +445,7 @@ export default function AdminDashboard() {
                             {product.name}
                           </p>
                           <p className="text-xs md:text-sm text-gray-500">
-                            {product.category}
+                            {Array.isArray(product.category) ? product.category.join(", ") : String(product.category || "")}
                           </p>
                         </div>
                         <div className="text-right shrink-0">

@@ -389,6 +389,7 @@ export function OrderManagement() {
               squarePaymentId: o.squarePaymentId,
               squareInvoiceId: o.squareInvoiceId,
               paymentStatus: o.paymentStatus || "unpaid",
+              refunds: o.refunds || undefined,
               status: o.status || "pending",
               source: "in_store" as const,
               paymentMethod:
@@ -760,13 +761,42 @@ export function OrderManagement() {
         throw new Error(result.error || "Echec du remboursement Square");
       }
 
-      const updatedOrders: OrderWithPacking[] = orders.map((o) =>
-        o.id === orderToCancel.id
-          ? { ...o, status: "cancelled", paymentStatus: "unpaid", balancePaid: false }
-          : o,
-      );
+      const refundEntry = result?.data?.refundEntry
+        ? {
+            ...result.data.refundEntry,
+            refundedAt: String(
+              result.data.refundEntry.refundedAt || new Date().toISOString(),
+            ),
+          }
+        : {
+            refundedAt: new Date().toISOString(),
+            employeeName: refundEmployeeName.trim(),
+            employeeId: undefined,
+            paymentId: result?.data?.paymentId || "",
+            refundId: result?.data?.refundId,
+            refundStatus: result?.data?.refundStatus,
+            amountCents: Number(result?.data?.refundAmountCents || 0),
+            reason: `Remboursement admin pour commande ${orderToCancel.orderNumber}`,
+          };
+
+      const updatedOrders: OrderWithPacking[] = orders.map((o) => {
+        if (o.id !== orderToCancel.id) return o;
+        const nextRefunds = [...((o as any).refunds || [])];
+        if (refundEntry && refundEntry.employeeName) nextRefunds.push(refundEntry);
+        return {
+          ...o,
+          status: "cancelled",
+          paymentStatus: "unpaid",
+          balancePaid: false,
+          refunds: nextRefunds,
+        };
+      });
       setOrders(updatedOrders);
       setFilteredOrders(applyOrderFilters(updatedOrders));
+      if (selectedOrder?.id === orderToCancel.id) {
+        const nextSelected = updatedOrders.find((o) => o.id === orderToCancel.id);
+        if (nextSelected) setSelectedOrder(nextSelected);
+      }
       setIsCancelModalOpen(false);
       setOrderToCancel(null);
     } catch (err: any) {
@@ -1649,6 +1679,40 @@ export function OrderManagement() {
 
               <TabsContent value="payments" className="space-y-4">
                 <div className="space-y-3">
+                  {selectedOrder.refunds && selectedOrder.refunds.length > 0 && (() => {
+                    const last = selectedOrder.refunds[selectedOrder.refunds.length - 1];
+                    const amount = (last.amountCents || 0) / 100;
+                    return (
+                      <div className="border rounded-lg p-4 bg-red-50 border-red-200">
+                        <div className="flex justify-between items-start gap-4">
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              Remboursement Square
+                            </div>
+                            <div className="text-sm text-gray-700 mt-1">
+                              Effectué par <span className="font-bold">{last.employeeName}</span>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1 space-y-0.5">
+                              <div>Date: {formatDate(last.refundedAt)}</div>
+                              <div>Montant: {formatCurrency(amount)}</div>
+                              {last.reason && <div>Raison: {last.reason}</div>}
+                              {last.refundId && <div>Refund ID: {last.refundId}</div>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                              Remboursé
+                            </span>
+                            {last.refundStatus && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                Statut: {last.refundStatus}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {/* Méthode de paiement */}
                   <div className="border rounded-lg p-4 bg-amber-50 border-amber-200">
                     <div className="flex justify-between items-center">
@@ -1878,6 +1942,10 @@ export function OrderManagement() {
                   quantity: item.quantity,
                   unitPrice: item.unitPrice,
                   amount: item.amount,
+                  selectedOptions:
+                    item.selectedOptions && Object.keys(item.selectedOptions).length > 0
+                      ? item.selectedOptions
+                      : undefined,
                   notes: item.notes || undefined,
                 }));
 
@@ -1956,6 +2024,10 @@ export function OrderManagement() {
                     subtotal: item.amount,
                     productionStatus: "pending",
                     notes: item.notes || undefined,
+                    selectedOptions:
+                      item.selectedOptions && Object.keys(item.selectedOptions).length > 0
+                        ? item.selectedOptions
+                        : undefined,
                     product: {
                       id: item.productId ?? 0,
                       name: item.productName || ((item as any).isCustom ? "Item personnalisé" : `Produit #${item.productId}`),
@@ -2064,6 +2136,10 @@ export function OrderManagement() {
                   quantity: item.quantity,
                   unitPrice: item.unitPrice,
                   amount: item.amount,
+                  selectedOptions:
+                    item.selectedOptions && Object.keys(item.selectedOptions).length > 0
+                      ? item.selectedOptions
+                      : undefined,
                   notes: item.notes || undefined,
                 }));
 
@@ -2208,6 +2284,7 @@ export function OrderManagement() {
                     unitPrice: item.unitPrice,
                     amount: item.subtotal,
                     notes: item.notes || "",
+                    selectedOptions: (item as any).selectedOptions || undefined,
                     isPacked: item.productionStatus === "ready"
                   }))
                 }

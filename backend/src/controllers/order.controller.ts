@@ -34,15 +34,20 @@ async function computeTaxAmount(items: { productId: number; quantity: number; am
     : [];
   const productMap = new Map<number, any>(products.map((p: any) => [p.id, p]));
 
+  const categoryText = (category: unknown) => {
+    if (Array.isArray(category)) return category.join(" ").toLowerCase();
+    return String(category || "").toLowerCase();
+  };
+
   const viennoiseriesCount = items.reduce((sum, item) => {
     const p = productMap.get(item.productId);
-    const category = String(p?.category || "").toLowerCase();
+    const category = categoryText(p?.category);
     return category.includes("viennoiser") ? sum + (item.quantity || 0) : sum;
   }, 0);
 
   const patisseriesCount = items.reduce((sum, item) => {
     const p = productMap.get(item.productId);
-    const category = String(p?.category || "").toLowerCase();
+    const category = categoryText(p?.category);
     const isPatisserie = p?.productionType === "patisserie" || category.includes("patisser");
     return isPatisserie ? sum + (item.quantity || 0) : sum;
   }, 0);
@@ -51,7 +56,7 @@ async function computeTaxAmount(items: { productId: number; quantity: number; am
 
   return items.reduce((sum, item) => {
     const p = productMap.get(item.productId);
-    const category = String(p?.category || "").toLowerCase();
+    const category = categoryText(p?.category);
     const isViennoiserie = category.includes("viennoiser");
     const isPatisserie = p?.productionType === "patisserie" || category.includes("patisser");
     const isBakedGood = isViennoiserie || isPatisserie;
@@ -231,6 +236,50 @@ export const createOrder = async (
       balancePaid = false;
     }
 
+    // Billing privileges (only when authenticated AND email matches the order email)
+    let billingKind: "standard" | "representant" | "gouvernement" | undefined;
+    let billingOrganization: string | undefined;
+    let paymentDueDate: Date | undefined;
+
+    if (req.user) {
+      const orderEmail = (orderData.clientInfo?.email || "").trim().toLowerCase();
+      const sessionEmail = (req.user.email || "").trim().toLowerCase();
+      if (orderEmail && sessionEmail) {
+        const actingUser = await User.findOne({ email: sessionEmail })
+          .select("role")
+          .lean();
+        const actingRole = (actingUser as any)?.role || "user";
+        const isStaffOrder =
+          actingRole !== "user" && actingRole !== "pro";
+
+        // If the order is created by staff/admin, apply billing rules from the target client email.
+        // If the order is created by a client, only apply when they are ordering for themselves.
+        const billingEmail = isStaffOrder ? orderEmail : sessionEmail === orderEmail ? orderEmail : "";
+
+        if (billingEmail) {
+          const billingUser = await User.findOne({ email: billingEmail })
+            .select("billing")
+            .lean();
+          const billing = (billingUser as any)?.billing;
+          billingKind = billing?.kind || "standard";
+          billingOrganization = billing?.organization || undefined;
+
+          const allowUnpaidOrders = !!billing?.allowUnpaidOrders;
+          const termsDays = Number.isFinite(billing?.paymentTermsDays)
+            ? Number(billing.paymentTermsDays)
+            : 0;
+
+          // If the client is allowed to order without paying, keep payment status as "unpaid"
+          // and track a due date when not paid yet.
+          if (allowUnpaidOrders && !depositPaid) {
+            const due = new Date();
+            due.setDate(due.getDate() + Math.max(0, termsDays));
+            paymentDueDate = due;
+          }
+        }
+      }
+    }
+
     // Create order
     const order = new Order({
       userId: req.user?.id,
@@ -257,6 +306,9 @@ export const createOrder = async (
       paymentLinkChannel: orderData.paymentLinkChannel || "email",
       depositPaid,
       balancePaid,
+      billingKind,
+      billingOrganization,
+      paymentDueDate,
       squarePaymentId: orderData.squarePaymentId,
       notes: orderData.notes,
     });
@@ -561,16 +613,27 @@ export const getProductionList = async (
 
     // Filter by pickup/delivery date if provided
     if (date) {
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+      // Treat YYYY-MM-DD as a local calendar day (avoid UTC shift with `new Date(date)`).
+      const startOfDay = new Date(`${date}T00:00:00.000`);
+      const endOfDay = new Date(`${date}T23:59:59.999`);
 
       query.$or = [
         { pickupDate: { $gte: startOfDay, $lte: endOfDay } },
         { deliveryDate: date },
-        // Also include orders created on this day if no pickup/delivery date set
-        { orderDate: { $gte: startOfDay, $lte: endOfDay } },
+        // Fallback: only include orders created this day when no scheduled date exists.
+        {
+          $and: [
+            { $or: [{ pickupDate: { $exists: false } }, { pickupDate: null }] },
+            {
+              $or: [
+                { deliveryDate: { $exists: false } },
+                { deliveryDate: null },
+                { deliveryDate: "" },
+              ],
+            },
+            { orderDate: { $gte: startOfDay, $lte: endOfDay } },
+          ],
+        },
       ];
     }
 
@@ -629,6 +692,7 @@ export const getProductionList = async (
           pickupLocation: order.pickupLocation,
           orderStatus: order.status,
           notes: item.notes || order.notes || "",
+          selectedOptions: (item as any).selectedOptions || undefined,
           done: false,
         };
       })

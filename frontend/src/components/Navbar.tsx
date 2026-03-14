@@ -49,6 +49,42 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
     }
   }, [session]);
 
+  // Keep staff/admin sessions alive to avoid disruptive 401s in production.
+  useEffect(() => {
+    if (!session?.user) return;
+    if (role === "client") return;
+
+    const ping = async () => {
+      try {
+        await authClient.getSession();
+      } catch {
+        // ignore
+      }
+    };
+
+    // Ping immediately on mount/role change
+    ping();
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        ping();
+      }
+    }, 10 * 60 * 1000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        ping();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [role, session?.user]);
+
   // Fermer le menu profil au clic extérieur
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

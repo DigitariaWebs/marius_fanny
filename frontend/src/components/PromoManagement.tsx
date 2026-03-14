@@ -34,7 +34,7 @@ export default function PromoManagement({ products }: { products: Product[] }) {
     if (!q) return products;
     return products.filter((p) => {
       const name = (p.name || "").toLowerCase();
-      const category = (p.category || "").toLowerCase();
+      const category = (Array.isArray((p as any).category) ? (p as any).category.join(", ") : String((p as any).category || "")).toLowerCase();
       return name.includes(q) || category.includes(q) || String(p.id).includes(q);
     });
   }, [products, productSearch]);
@@ -381,7 +381,7 @@ export default function PromoManagement({ products }: { products: Product[] }) {
                             {p.name}
                           </div>
                           <div className="text-xs text-stone-500">
-                            #{p.id} • {p.category}
+                            #{p.id} • {Array.isArray(p.category) ? p.category.join(", ") : String(p.category || "")}
                           </div>
                         </div>
                       </label>

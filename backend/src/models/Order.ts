@@ -14,6 +14,7 @@ export interface IOrderItem {
   unitPrice: number;
   amount: number;
   notes?: string;
+  selectedOptions?: Record<string, string>;
   productionStatus?: "pending" | "in_progress" | "ready";
 }
 
@@ -62,6 +63,19 @@ export interface IOrder extends Document {
   paymentType: "full" | "deposit"; // Payment option chosen by customer
   paymentLinkChannel?: "email" | "sms";
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
+  billingKind?: "standard" | "representant" | "gouvernement";
+  billingOrganization?: string;
+  paymentDueDate?: Date;
+  refunds?: Array<{
+    refundedAt: Date;
+    employeeName: string;
+    employeeId?: string;
+    paymentId: string;
+    refundId?: string;
+    refundStatus?: string;
+    amountCents: number;
+    reason?: string;
+  }>;
   squarePaymentId?: string; // Square payment ID for tracking
   squareInvoiceId?: string; // Square invoice ID for invoice payments
   status:
@@ -136,6 +150,10 @@ const OrderItemSchema = new Schema<IOrderItem>(
       type: String,
       trim: true,
     },
+    selectedOptions: {
+      type: Schema.Types.Mixed,
+      default: undefined,
+    },
     productionStatus: {
       type: String,
       enum: ["pending", "in_progress", "ready"],
@@ -168,6 +186,20 @@ const ClientInfoSchema = new Schema<IClientInfo>(
       required: true,
       trim: true,
     },
+  },
+  { _id: false },
+);
+
+const RefundEntrySchema = new Schema(
+  {
+    refundedAt: { type: Date, required: true },
+    employeeName: { type: String, required: true, trim: true },
+    employeeId: { type: String, trim: true },
+    paymentId: { type: String, required: true, trim: true },
+    refundId: { type: String, trim: true },
+    refundStatus: { type: String, trim: true },
+    amountCents: { type: Number, required: true, min: 0 },
+    reason: { type: String, trim: true },
   },
   { _id: false },
 );
@@ -306,6 +338,23 @@ const OrderSchema = new Schema<IOrder>(
       enum: ["unpaid", "deposit_paid", "paid"],
       default: "unpaid",
       index: true,
+    },
+    billingKind: {
+      type: String,
+      enum: ["standard", "representant", "gouvernement"],
+      default: "standard",
+    },
+    billingOrganization: {
+      type: String,
+      trim: true,
+    },
+    paymentDueDate: {
+      type: Date,
+      index: true,
+    },
+    refunds: {
+      type: [RefundEntrySchema],
+      default: undefined,
     },
     squarePaymentId: {
       type: String,

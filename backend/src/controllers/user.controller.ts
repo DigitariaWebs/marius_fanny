@@ -190,7 +190,36 @@ export async function updateCurrentUser(req: AuthRequest, res: Response) {
 export async function updateUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { name, role, profile, firstName, lastName, phone, status, email: newEmail } = req.body;
+    const { name, role, profile, billing, firstName, lastName, phone, status, email: newEmail } = req.body;
+
+    const normalizeBilling = (input: any, existing?: any) => {
+      if (!input) return existing;
+      const kind = input.kind || existing?.kind || "standard";
+      if (kind === "representant") {
+        return {
+          kind,
+          organization: input.organization ?? existing?.organization,
+          paymentTermsDays: 0,
+          allowUnpaidOrders: true,
+        };
+      }
+      if (kind === "gouvernement") {
+        return {
+          kind,
+          organization: input.organization ?? existing?.organization,
+          paymentTermsDays: Number.isFinite(input.paymentTermsDays)
+            ? input.paymentTermsDays
+            : existing?.paymentTermsDays ?? 30,
+          allowUnpaidOrders: input.allowUnpaidOrders ?? true,
+        };
+      }
+      return {
+        kind: "standard",
+        organization: input.organization ?? existing?.organization,
+        paymentTermsDays: 0,
+        allowUnpaidOrders: false,
+      };
+    };
 
     // Get current user's role
     const currentUser = await User.findOne({ email: req.user?.email });
@@ -224,6 +253,9 @@ export async function updateUser(req: AuthRequest, res: Response) {
     if (name) updateFields.name = name;
     if (role) updateFields.role = role;
     if (profile) updateFields.profile = profile;
+    if (billing !== undefined) {
+      updateFields.billing = normalizeBilling(billing, (targetUser as any).billing);
+    }
 
     // Client-specific fields (from ClientManagement)
     if (firstName !== undefined || lastName !== undefined) {
@@ -323,7 +355,33 @@ export async function deleteUser(req: AuthRequest, res: Response) {
  */
 export async function createClient(req: AuthRequest, res: Response) {
   try {
-    const { email, firstName, lastName, phone, status } = req.body;
+    const { email, firstName, lastName, phone, status, billing } = req.body;
+
+    const normalizeBilling = (input: any) => {
+      const kind = input?.kind || "standard";
+      if (kind === "representant") {
+        return {
+          kind,
+          organization: input?.organization,
+          paymentTermsDays: 0,
+          allowUnpaidOrders: true,
+        };
+      }
+      if (kind === "gouvernement") {
+        return {
+          kind,
+          organization: input?.organization,
+          paymentTermsDays: Number.isFinite(input?.paymentTermsDays) ? input.paymentTermsDays : 30,
+          allowUnpaidOrders: true,
+        };
+      }
+      return {
+        kind: "standard",
+        organization: input?.organization,
+        paymentTermsDays: 0,
+        allowUnpaidOrders: false,
+      };
+    };
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -341,6 +399,7 @@ export async function createClient(req: AuthRequest, res: Response) {
       profile: {
         phoneNumber: phone,
       },
+      billing: normalizeBilling(billing),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -359,6 +418,7 @@ export async function createClient(req: AuthRequest, res: Response) {
         lastName,
         phone,
         status: status || "active",
+        billing: user.billing,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
@@ -420,6 +480,7 @@ export async function getAllClients(req: AuthRequest, res: Response) {
         email: user.email,
         phone: user.profile?.phoneNumber || "",
         status: (user.status || "active") as "active" | "inactive" | "placeholder",
+        billing: (user as any).billing,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         addresses: [],

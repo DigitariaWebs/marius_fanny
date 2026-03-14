@@ -827,7 +827,10 @@ export const refundOrderPayment = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: "Commande non trouvee" });
     }
 
-    const alreadyRefunded = typeof order.notes === "string" && order.notes.includes("Square Refund ID:");
+    const alreadyRefunded =
+      Array.isArray((order as any).refunds) && (order as any).refunds.length > 0
+        ? true
+        : typeof order.notes === "string" && order.notes.includes("Square Refund ID:");
     if (alreadyRefunded) {
       return res.status(400).json({
         success: false,
@@ -875,6 +878,19 @@ export const refundOrderPayment = async (req: Request, res: Response) => {
     order.balancePaid = false;
     order.balancePaidAt = undefined;
     order.notes = `${order.notes ? `${order.notes}\n` : ""}Square Refund ID: ${refund?.id || "N/A"}`;
+    (order as any).refunds = [
+      ...(((order as any).refunds as any[]) || []),
+      {
+        refundedAt: new Date(),
+        employeeName: employeeName.trim(),
+        employeeId: employeeId || undefined,
+        paymentId,
+        refundId: refund?.id || undefined,
+        refundStatus: refund?.status || undefined,
+        amountCents: Number(refundAmountInCents),
+        reason: reason || `Remboursement commande ${order.orderNumber}`,
+      },
+    ];
     order.changeHistory.push({
       changedAt: new Date(),
       changedBy: employeeId,
@@ -896,6 +912,10 @@ export const refundOrderPayment = async (req: Request, res: Response) => {
         refundStatus: refund?.status,
         refundAmountCents: Number(refundAmountInCents),
         cappedToAvailableAmount: requestedAmountInCents !== refundAmountInCents,
+        refundEntry:
+          (order as any).refunds && (order as any).refunds.length > 0
+            ? (order as any).refunds[(order as any).refunds.length - 1]
+            : undefined,
       },
       message: "Remboursement Square effectue avec succes",
     });

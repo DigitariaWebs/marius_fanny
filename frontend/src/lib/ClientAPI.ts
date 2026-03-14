@@ -1,4 +1,5 @@
 import { API_URL } from "../utils/api";
+import { authClient } from "./AuthClient";
 
 console.log("ClientAPI using base URL:", API_URL);
 
@@ -9,6 +10,12 @@ export interface Client {
   email: string;
   phone: string;
   status: "active" | "inactive" | "placeholder";
+  billing?: {
+    kind: "standard" | "representant" | "gouvernement";
+    organization?: string;
+    paymentTermsDays: number;
+    allowUnpaidOrders: boolean;
+  };
   createdAt: string;
   updatedAt: string;
   addresses: Array<{
@@ -29,6 +36,12 @@ export interface CreateClientData {
   lastName: string;
   phone: string;
   status?: "active" | "inactive" | "placeholder";
+  billing?: {
+    kind?: "standard" | "representant" | "gouvernement";
+    organization?: string;
+    paymentTermsDays?: number;
+    allowUnpaidOrders?: boolean;
+  };
 }
 
 class ClientAPI {
@@ -45,6 +58,31 @@ class ClientAPI {
     });
 
     if (response.status === 401) {
+      // Try a single session refresh before redirecting
+      try {
+        await authClient.getSession();
+        const retryResponse = await fetch(`${this.baseUrl}${endpoint}`, {
+          ...options,
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...options.headers,
+          },
+        });
+
+        if (retryResponse.status !== 401) {
+          if (!retryResponse.ok) {
+            const error = await retryResponse
+              .json()
+              .catch(() => ({ error: "Request failed" }));
+            throw new Error(error.error || error.message || "Request failed");
+          }
+          return retryResponse.json();
+        }
+      } catch {
+        // ignore - fallthrough to redirect
+      }
+
       window.location.href = "/se-connecter";
       throw new Error("AUTH_REDIRECT");
     }

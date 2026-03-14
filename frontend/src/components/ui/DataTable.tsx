@@ -169,9 +169,10 @@ export function DataTable<T extends object>({
     for (const filter of filters) {
       const filterValue = filterValues[filter.key];
       if (filterValue && filterValue !== "all") {
-        if (
-          String((item as Record<string, unknown>)[filter.key]) !== filterValue
-        ) {
+        const rawValue = (item as Record<string, unknown>)[filter.key];
+        if (Array.isArray(rawValue)) {
+          if (!rawValue.map(String).includes(filterValue)) return false;
+        } else if (String(rawValue) !== filterValue) {
           return false;
         }
       }

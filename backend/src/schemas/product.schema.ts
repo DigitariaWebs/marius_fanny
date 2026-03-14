@@ -6,7 +6,10 @@ import { z } from "zod";
 export const productSchema = z.object({
   id: z.number().int().positive(),
   name: z.string().min(1).max(100),
-  category: z.string().min(1).max(50),
+  category: z.preprocess(
+    (value) => (typeof value === "string" ? [value] : value),
+    z.array(z.string().min(1).max(50)).min(1),
+  ),
   price: z.number().positive(),
   discountPercentage: z.number().min(0).max(100).default(0),
   available: z.boolean().default(true),
@@ -45,7 +48,10 @@ export const productSchema = z.object({
  */
 export const createProductSchema = z.object({
   name: z.string().min(1).max(100),
-  category: z.string().min(1).max(50),
+  category: z.preprocess(
+    (value) => (typeof value === "string" ? [value] : value),
+    z.array(z.string().min(1).max(50)).min(1),
+  ),
   price: z.number().positive(),
   discountPercentage: z.number().min(0).max(100).optional().default(0),
   available: z.boolean().optional().default(true),
@@ -82,7 +88,12 @@ export const createProductSchema = z.object({
  */
 export const updateProductSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  category: z.string().min(1).max(50).optional(),
+  category: z
+    .preprocess(
+      (value) => (typeof value === "string" ? [value] : value),
+      z.array(z.string().min(1).max(50)).min(1),
+    )
+    .optional(),
   price: z.number().positive().optional(),
   discountPercentage: z.number().min(0).max(100).optional(),
   available: z.boolean().optional(),

@@ -1,4 +1,5 @@
 import type { Product } from '../types';
+import { authClient } from "./AuthClient";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -7,7 +8,7 @@ const normalizedApiUrl = API_URL.startsWith('http') ? API_URL : `https://${API_U
 
 export interface CreateProductData {
   name: string;
-  category: string;
+  category: string[];
   price: number;
   discountPercentage?: number;
   available?: boolean;
@@ -32,7 +33,7 @@ export interface CreateProductData {
 
 export interface UpdateProductData {
   name?: string;
-  category?: string;
+  category?: string[];
   price?: number;
   discountPercentage?: number;
   available?: boolean;
@@ -79,7 +80,8 @@ class ProductAPI {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOn401 = true,
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
@@ -93,6 +95,15 @@ class ProductAPI {
     });
 
     if (response.status === 401) {
+      if (retryOn401) {
+        try {
+          await authClient.getSession();
+        } catch {
+          // ignore - fallthrough to redirect
+        }
+        return this.request<T>(endpoint, options, false);
+      }
+
       window.location.href = "/se-connecter";
       throw new Error("AUTH_REDIRECT");
     }
