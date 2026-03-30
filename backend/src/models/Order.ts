@@ -88,6 +88,11 @@ export interface IOrder extends Document {
     | "cancelled"
     | "delivered";
   deliveryStatus?: "pending" | "in_transit" | "arrived" | "delivered";
+  assignedDriver?: {
+    id: string;
+    name: string;
+    assignedAt: Date;
+  };
   notes?: string;
   changeHistory: IOrderChange[]; // Track all changes to the order
   createdAt: Date;
@@ -387,6 +392,11 @@ const OrderSchema = new Schema<IOrder>(
       type: String,
       enum: ["pending", "in_transit", "arrived", "delivered"],
       default: "pending",
+    },
+    assignedDriver: {
+      id: { type: String },
+      name: { type: String },
+      assignedAt: { type: Date },
     },
     notes: {
       type: String,

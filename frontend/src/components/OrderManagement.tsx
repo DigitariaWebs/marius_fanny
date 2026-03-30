@@ -2345,6 +2345,7 @@ export function OrderManagement() {
                   formData.paymentMethod === "in_store" ? ("full" as const) : ("deposit" as const),
                 depositPaid: formData.paymentMethod === "in_store",
                 paymentLinkChannel: formData.paymentLinkChannel,
+                billingKind: formData.billingKind || "standard",
               };
 
               if (formData.date) {
@@ -2422,9 +2423,9 @@ export function OrderManagement() {
                 deliveryFee: saved?.deliveryFee ?? formData.deliveryFee,
                 total: saved?.total ?? formData.total,
                 depositAmount: saved?.depositAmount ?? formData.depositAmount,
-                depositPaid: false,
-                balancePaid: false,
-                paymentStatus: "unpaid",
+                depositPaid: formData.paymentMethod === "in_store",
+                balancePaid: formData.paymentMethod === "in_store",
+                paymentStatus: formData.paymentMethod === "in_store" ? "paid" : "unpaid",
                 status: "pending",
                 source: "in_store",
                 paymentMethod: formData.paymentMethod || "payment_link",

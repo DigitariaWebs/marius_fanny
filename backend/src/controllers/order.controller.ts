@@ -19,6 +19,7 @@ import {
 } from "../utils/deliveryZones.js";
 import { sendOrderReceipt } from "../utils/emailService.js";
 import { sendOrderBalanceEmail } from "../utils/mail.js";
+import { sendSms } from "../utils/smsService.js";
 import {
   calculatePromoDiscount,
   isPromoCurrentlyValid,
@@ -301,6 +302,7 @@ export const createOrder = async (
     const depositAmount = orderData.paymentType === "full" ? total : total * 0.5;
 
     // Determine payment status based on payment type and depositPaid flag
+    const paidInStore = orderData.paymentType === "full" && orderData.depositPaid === true;
     let depositPaid = false;
     let balancePaid = false;
 
@@ -334,7 +336,7 @@ export const createOrder = async (
       console.log("📋 [BILLING] Billing info:", JSON.stringify(billing));
       
       if (billing) {
-        billingKind = billing?.kind || "standard";
+        billingKind = billing?.kind || orderData.billingKind || "standard";
         billingOrganization = billing?.organization || undefined;
         console.log("📋 [BILLING] Setting billingKind:", billingKind);
 
@@ -348,7 +350,7 @@ export const createOrder = async (
         let effectiveTermsDays: number;
         if (billingKind === "gouvernement") {
           // Always default to 60 days for government, unless explicitly set otherwise
-          effectiveTermsDays = termsDays > 0 && termsDays !== 180 ? termsDays : 60;
+          effectiveTermsDays = termsDays > 0 ? termsDays : 180;
         } else if (billingKind === "representant") {
           effectiveTermsDays = termsDays;
         } else {
@@ -378,6 +380,53 @@ export const createOrder = async (
           console.log("📋 [BILLING] Setting paymentDueDate to:", paymentDueDate);
         } else {
           console.log("📋 [BILLING] NOT setting paymentDueDate");
+        }
+      }
+    }
+
+    // If no billing info found from DB, use the billingKind from the request body
+    if (!billingKind && orderData.billingKind) {
+      billingKind = orderData.billingKind;
+      if (billingKind === "gouvernement") {
+        depositPaid = false;
+        balancePaid = false;
+        const due = new Date();
+        due.setDate(due.getDate() + 180);
+        paymentDueDate = due;
+      } else if (billingKind === "representant") {
+        depositPaid = false;
+        balancePaid = false;
+      }
+
+      // Create or update the client in DB with the billing info
+      if (orderEmail) {
+        try {
+          const existingUser = await User.findOne({ email: orderEmail });
+          if (!existingUser) {
+            await User.create({
+              email: orderEmail,
+              name: `${orderData.clientInfo.firstName} ${orderData.clientInfo.lastName}`.trim(),
+              role: "user",
+              status: "placeholder",
+              emailVerified: false,
+              billing: {
+                kind: billingKind,
+                allowUnpaidOrders: billingKind !== "standard",
+                paymentTermsDays: billingKind === "gouvernement" ? 180 : 0,
+              },
+            });
+            console.log(`✅ New client created: ${orderEmail} (${billingKind})`);
+          } else if (!existingUser.billing?.kind || existingUser.billing.kind === "standard") {
+            existingUser.billing = {
+              kind: billingKind,
+              allowUnpaidOrders: billingKind !== "standard",
+              paymentTermsDays: billingKind === "gouvernement" ? 180 : 0,
+            };
+            await existingUser.save();
+            console.log(`✅ Client billing updated: ${orderEmail} (${billingKind})`);
+          }
+        } catch (userErr: any) {
+          console.error(`⚠️ Failed to create/update client:`, userErr.message);
         }
       }
     }
@@ -676,10 +725,14 @@ export const createOrder = async (
     try {
       const customerName = `${orderData.clientInfo.firstName} ${orderData.clientInfo.lastName}`;
 
+      // If paid in store, send full receipt (thank you + summary)
+      // If payment link, send invoice mode
       const receiptMode =
-        (orderData.paymentType || "full") === "full" && !orderData.squarePaymentId
-          ? "invoice"
-          : (orderData.paymentType || "full");
+        paidInStore
+          ? "full"
+          : (orderData.paymentType || "full") === "full" && !orderData.squarePaymentId
+            ? "invoice"
+            : (orderData.paymentType || "full");
 
       await sendOrderReceipt(receiptMode as "full" | "deposit" | "invoice", {
         email: orderData.clientInfo.email,
@@ -1340,6 +1393,26 @@ export const updateOrder = async (
       });
     }
 
+    // Track and update assigned driver
+    if (updateData.assignedDriver) {
+      const oldDriver = order.assignedDriver;
+      order.assignedDriver = {
+        id: updateData.assignedDriver.id,
+        name: updateData.assignedDriver.name,
+        assignedAt: new Date(updateData.assignedDriver.assignedAt),
+      };
+      order.markModified("assignedDriver");
+      changes.push({
+        changedAt: new Date(),
+        changedBy: userId,
+        field: "assignedDriver",
+        oldValue: oldDriver?.name || null,
+        newValue: updateData.assignedDriver.name,
+        changeType: "updated",
+        notes: `Driver assigned: ${updateData.assignedDriver.name}`,
+      });
+    }
+
     // Track payment updates
     if (updateData.depositPaid !== undefined && updateData.depositPaid !== order.depositPaid) {
       const oldDepositPaid = order.depositPaid;
@@ -1699,9 +1772,39 @@ export const updateDeliveryStatus = async (
 
     await order.save();
 
-    // TODO: Send notification to customer
-    // This is where you would integrate with a notification service
-    // to send push notifications or SMS to the customer
+    // Send SMS notification to customer for delivery updates
+    let smsSent: string | null = null;
+    const customerPhone = order.clientInfo?.phone;
+    const shortNumber = order.orderNumber.split("-").pop() || order.orderNumber;
+
+    if (customerPhone && (deliveryStatus === "in_transit" || deliveryStatus === "arrived")) {
+      const smsMessages: Record<string, string> = {
+        in_transit: `Marius et Fanny: Votre livreur est en route pour la commande #${shortNumber}. Bonne dégustation!`,
+        arrived: `Marius et Fanny: Votre livreur est arrivé pour la commande #${shortNumber}. Bon appétit!`,
+      };
+
+      const statusLabel = deliveryStatus === "in_transit" ? "EN ROUTE" : "ARRIVÉ";
+      console.log(`\n📱 ============ SMS LIVRAISON ============`);
+      console.log(`📱 Commande: #${shortNumber}`);
+      console.log(`📱 Client: ${order.clientInfo?.firstName} ${order.clientInfo?.lastName}`);
+      console.log(`📱 Téléphone: ${customerPhone}`);
+      console.log(`📱 Statut: ${statusLabel}`);
+      console.log(`📱 Message: ${smsMessages[deliveryStatus]}`);
+
+      try {
+        const smsResult = await sendSms({ to: customerPhone, body: smsMessages[deliveryStatus] });
+        smsSent = smsMessages[deliveryStatus];
+        console.log(`📱 Résultat: ✅ SMS ENVOYÉ AVEC SUCCÈS`);
+        console.log(`📱 SID: ${(smsResult as any)?.sid || (smsResult as any)?.dryRun ? "DRY-RUN" : "N/A"}`);
+        console.log(`📱 =========================================\n`);
+      } catch (smsErr: any) {
+        console.log(`📱 Résultat: ❌ ÉCHEC ENVOI SMS`);
+        console.log(`📱 Erreur: ${smsErr?.message || smsErr}`);
+        console.log(`📱 =========================================\n`);
+      }
+    } else if (deliveryStatus === "in_transit" || deliveryStatus === "arrived") {
+      console.log(`⚠️ SMS non envoyé pour commande #${shortNumber}: pas de téléphone client`);
+    }
 
     res.json({
       success: true,
@@ -1711,6 +1814,7 @@ export const updateDeliveryStatus = async (
         orderNumber: order.orderNumber,
         status: order.status,
         deliveryStatus: order.deliveryStatus,
+        smsSent,
         updatedAt: new Date(),
       },
     });

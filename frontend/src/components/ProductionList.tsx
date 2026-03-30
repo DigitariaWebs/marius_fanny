@@ -135,7 +135,11 @@ const getFulfillmentAccent = (item: Pick<ProductionItem, "deliveryType" | "picku
   return null;
 };
 
-const ProductionList: React.FC = () => {
+interface ProductionListProps {
+  filterByType?: "patisserie" | "cuisinier" | "four";
+}
+
+const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) => {
   const [productionItems, setProductionItems] = useState<ProductionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -172,12 +176,16 @@ const ProductionList: React.FC = () => {
       const apiItems = result.data?.items || [];
 
 
-      const items: ProductionItem[] = apiItems.map((item: any) => ({
+      let items: ProductionItem[] = apiItems.map((item: any) => ({
         ...item,
-        // Extraire les allergies depuis un champ dédié, des options, ou des notes
         allergies: extractAllergies(item),
         done: !!item.done,
       }));
+
+      // Filter by production type if specified
+      if (filterByType) {
+        items = items.filter((item: any) => item.productionType === filterByType);
+      }
 
       setProductionItems(items);
     } catch (err: any) {

@@ -73,6 +73,7 @@ export const createOrderSchema = z
     paymentLinkChannel: z.enum(["email", "sms"]).optional(),
     depositPaid: z.boolean().optional().default(false),
     squarePaymentId: z.string().optional(),
+    billingKind: z.enum(["standard", "representant", "gouvernement"]).optional(),
   })
   .refine(
     (data) => {
@@ -114,6 +115,11 @@ export const updateOrderSchema = z.object({
   squarePaymentId: z.string().optional(),
   squareInvoiceId: z.string().optional(),
   paymentLinkChannel: z.enum(["email", "sms"]).optional(),
+  assignedDriver: z.object({
+    id: z.string(),
+    name: z.string(),
+    assignedAt: z.string(),
+  }).optional(),
   notes: z.string().optional(),
 });
 

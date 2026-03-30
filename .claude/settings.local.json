@@ -7,7 +7,13 @@
       "Bash(xargs grep:*)",
       "Bash(node scripts/fix-categories.js)",
       "Bash(mv \"c:/Users/Hp/marius_fanny/backend/scripts/fix-categories.js\" \"c:/Users/Hp/marius_fanny/backend/scripts/fix-categories.cjs\")",
-      "Bash(node scripts/fix-categories.cjs)"
+      "Bash(node scripts/fix-categories.cjs)",
+      "Bash(node -e \"require\\(''dotenv''\\).config\\(\\); console.log\\(''MONGODB_URI:'', process.env.MONGODB_URI ? ''SET'' : ''NOT SET''\\); console.log\\(''PORT:'', process.env.PORT\\);\")",
+      "Bash(bun -e \"import path from ''path''; import { fileURLToPath } from ''url''; const __filename = fileURLToPath\\(import.meta.url\\); const __dirname = path.dirname\\(__filename\\); console.log\\(''__dirname:'', __dirname\\); console.log\\(''env path:'', path.join\\(__dirname, ''..'', ''.env''\\)\\);\")",
+      "Bash(nslookup ac-3xfxnde-shard-00-00.vupyl88.mongodb.net)",
+      "Bash(node -e \":*)",
+      "Bash(curl -s \"http://localhost:3000/api/orders?deliveryType=delivery&limit=10\" -H \"Content-Type: application/json\")",
+      "Bash(curl -s \"http://localhost:3000/api/orders?limit=50&deliveryType=delivery\" -b \"\")"
     ]
   }
 }

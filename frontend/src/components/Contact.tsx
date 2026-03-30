@@ -121,9 +121,7 @@ const Contact: React.FC = () => {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#337957]/10 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5 text-[#337957]" />
-                  </div>
+               
                   <div>
                     <p className="text-xs font-bold text-[#337957] uppercase">Boutiques</p>
                     <p className="text-[#2D2A26] font-medium">{settings.address}</p>

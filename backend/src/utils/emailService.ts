@@ -121,9 +121,6 @@ export async function sendOrderReceipt(
   try {
     switch (paymentType) {
       case "full":
-        if (!orderData.paymentId) {
-          throw new Error("Payment ID is required for full payment receipt");
-        }
         await sendFullPaymentReceipt(
           orderData.email,
           orderData.name,
@@ -133,7 +130,7 @@ export async function sendOrderReceipt(
           orderData.taxAmount,
           orderData.deliveryFee,
           orderData.total,
-          orderData.paymentId,
+          orderData.paymentId || "in_store",
           orderData.orderDate,
           orderData.pickupDate,
           orderData.pickupTimeSlot,

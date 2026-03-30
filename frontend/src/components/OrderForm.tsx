@@ -86,6 +86,7 @@ interface OrderFormData {
   balance: number;
   paymentMethod: "in_store" | "payment_link";
   paymentLinkChannel: "email" | "sms";
+  billingKind?: "standard" | "representant" | "gouvernement";
 }
 
 interface OrderFormItem {
@@ -160,6 +161,7 @@ export default function OrderForm({
       balance: 0,
       paymentMethod: initialData?.paymentMethod || "in_store",
       paymentLinkChannel: initialData?.paymentLinkChannel || "email",
+      billingKind: initialData?.billingKind || "standard",
     };
   });
 
@@ -1040,6 +1042,37 @@ export default function OrderForm({
           {!selectedClient && emailSearch && (
             <div className="text-xs bg-blue-50 text-blue-700 p-2 rounded-md">
               Nouveau client
+            </div>
+          )}
+          {!selectedClient && emailSearch && (
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs text-gray-600">TYPE DE CLIENT</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: "standard", label: "Standard" },
+                  { value: "representant", label: "Représentant" },
+                  { value: "gouvernement", label: "Gouvernement" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleInputChange("billingKind", opt.value)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                      formData.billingKind === opt.value
+                        ? "bg-[#C5A065] text-white border-[#C5A065]"
+                        : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {formData.billingKind === "representant" && (
+                <p className="text-[11px] text-amber-600">Paiement au jour de ramassage</p>
+              )}
+              {formData.billingKind === "gouvernement" && (
+                <p className="text-[11px] text-blue-600">Paiement dans 6 mois</p>
+              )}
             </div>
           )}
         </div>

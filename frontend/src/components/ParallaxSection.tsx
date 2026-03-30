@@ -194,9 +194,7 @@ const WholesaleSection = () => {
 
                 <div className="space-y-6 pt-6 border-t border-gray-100">
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-[#F9F7F2] rounded-full">
-                      <Mail className="text-[#337957]" size={20} />
-                    </div>
+                   
                      
                   </div>
 

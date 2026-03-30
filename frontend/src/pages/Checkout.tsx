@@ -836,7 +836,7 @@ const Checkout: React.FC = () => {
               }}
             >
               {currentStep === "contact" && "Informations client"}
-              {currentStep === "delivery" && state.deliveryType === "delivery" ? "Créneau de livraison" : "Date de ramassage"}
+              {currentStep === "delivery" && (state.deliveryType === "delivery" ? "Créneau de livraison" : "Date de ramassage")}
               {currentStep === "payment" && "Paiement sécurisé"}
             </h1>
             <p className="text-stone-600">

@@ -236,6 +236,7 @@ const DeliveryDashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [smsNotification, setSmsNotification] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -324,12 +325,17 @@ const DeliveryDashboard: React.FC = () => {
     }
 
     try {
-      await fetch(`${normalizedApiUrl}/api/orders/${orderId}/delivery-status`, {
+      const res = await fetch(`${normalizedApiUrl}/api/orders/${orderId}/delivery-status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ deliveryStatus: newStatus }),
       });
+      const data = await res.json();
+      if (data?.data?.smsSent) {
+        setSmsNotification(data.data.smsSent);
+        setTimeout(() => setSmsNotification(null), 4000);
+      }
     } catch (error) {
       console.log("Backend sync failed:", error);
     }
@@ -421,6 +427,16 @@ const DeliveryDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* SMS Notification Toast */}
+      {smsNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-fade-in max-w-sm">
+          <span className="text-lg">SMS</span>
+          <div>
+            <p className="text-sm font-bold">SMS envoyé au client</p>
+            <p className="text-xs opacity-90 mt-0.5">{smsNotification}</p>
+          </div>
+        </div>
+      )}
       {/* SIDEBAR */}
       <aside className="w-64 bg-white border-r border-gray-200 fixed h-full hidden md:block shadow-sm">
         <div className="p-6">

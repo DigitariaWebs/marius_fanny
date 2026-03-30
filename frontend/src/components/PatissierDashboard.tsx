@@ -22,6 +22,7 @@ import {
 import { authClient } from "../lib/AuthClient";
 import { dailyInventoryAPI, type DailyInventoryEntry } from "../lib/DailyInventoryAPI";
 import GoldenBackground from "./GoldenBackground";
+import ProductionList from "./ProductionList";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -440,8 +441,12 @@ const PatissierDashboard: React.FC = () => {
         </div>
 
         {activeModule === "production" && (
+          <ProductionList filterByType="patisserie" />
+        )}
+
+        {false && (
           <div className="p-4 md:p-8">
-          {/* Header */}
+          {/* Old production - replaced by ProductionList */}
           <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-sm p-6 mb-6 border border-stone-200/50">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
