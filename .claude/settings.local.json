@@ -13,7 +13,8 @@
       "Bash(nslookup ac-3xfxnde-shard-00-00.vupyl88.mongodb.net)",
       "Bash(node -e \":*)",
       "Bash(curl -s \"http://localhost:3000/api/orders?deliveryType=delivery&limit=10\" -H \"Content-Type: application/json\")",
-      "Bash(curl -s \"http://localhost:3000/api/orders?limit=50&deliveryType=delivery\" -b \"\")"
+      "Bash(curl -s \"http://localhost:3000/api/orders?limit=50&deliveryType=delivery\" -b \"\")",
+      "Bash(npm install:*)"
     ]
   }
 }

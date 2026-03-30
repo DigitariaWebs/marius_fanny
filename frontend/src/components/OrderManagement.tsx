@@ -23,6 +23,8 @@ import {
   Bell,
   RefreshCw,
   AlertTriangle,
+  Download,
+  Tag,
 } from "lucide-react";
 import { DataTable } from "./ui/DataTable";
 import { Modal } from "./ui/modal";
@@ -1020,6 +1022,102 @@ export function OrderManagement() {
     }
   };
 
+  // Export orders to Excel (.xlsx)
+  const exportOrdersToExcel = async () => {
+    const XLSX = await import("xlsx");
+    const data = filteredOrders.map((o) => ({
+      "Commande": formatOrderNumber(o.orderNumber),
+      "Date": new Date(o.orderDate).toLocaleDateString("fr-CA"),
+      "Client": `${o.client.firstName} ${o.client.lastName}`,
+      "Email": o.client.email,
+      "Téléphone": o.client.phone,
+      "Type": o.deliveryType === "delivery" ? "Livraison" : `Ramassage ${o.pickupLocation}`,
+      "Statut": o.status,
+      "Paiement": o.paymentStatus,
+      "Sous-total": o.subtotal,
+      "Taxes": o.taxAmount,
+      "Livraison": o.deliveryFee,
+      "Total": o.total,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Commandes");
+    XLSX.writeFile(wb, `commandes_${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  // Print MUNBYN 4x6 thermal label for an order
+  const printLabel = (order: OrderWithPacking) => {
+    const shortNumber = formatOrderNumber(order.orderNumber);
+    const date = new Date(order.pickupDate || order.orderDate).toLocaleDateString("fr-CA", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+    const clientName = `${order.client.firstName} ${order.client.lastName}`;
+    const items = order.items.map((item) => {
+      const name = item.product?.name || `Produit #${item.productId}`;
+      const options = item.selectedOptions
+        ? Object.entries(item.selectedOptions).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join(", ")
+        : "";
+      const notes = item.notes || "";
+      return `<tr>
+        <td style="padding:4px 0;font-size:14px;border-bottom:1px dashed #ccc;">${name} <strong>x${item.quantity}</strong></td>
+      </tr>
+      ${options ? `<tr><td style="padding:2px 0 4px 10px;font-size:12px;color:#555;">${options}</td></tr>` : ""}
+      ${notes ? `<tr><td style="padding:2px 0 4px 10px;font-size:12px;color:#c00;font-weight:bold;">${notes}</td></tr>` : ""}`;
+    }).join("");
+
+    // Check allergies
+    const allergies = order.items
+      .map((item: any) => {
+        const fromOptions = Object.entries(item.selectedOptions || {})
+          .filter(([k]) => k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("allerg"))
+          .map(([, v]) => String(v).trim())
+          .filter(Boolean);
+        return fromOptions.length > 0 ? fromOptions.join(", ") : (item.allergies || "");
+      })
+      .filter(Boolean);
+    const allergyHtml = allergies.length > 0
+      ? `<div style="margin-top:8px;padding:6px;background:#fee;border:2px solid #c00;border-radius:4px;font-size:14px;font-weight:bold;color:#c00;text-align:center;">ALLERGIE: ${allergies.join(", ")}</div>`
+      : "";
+
+    const logoUrl = "https://res.cloudinary.com/deyjooxbi/image/upload/f_png/v1773330080/branding/marius_fanny_logo";
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Étiquette ${shortNumber}</title>
+      <style>
+        @page { size: 4in 6in; margin: 0; }
+        body { font-family: Arial, sans-serif; width: 4in; height: 6in; margin: 0; padding: 12px; box-sizing: border-box; position: relative; }
+        @media print { body { padding: 8px; } }
+      </style></head><body>
+        <div style="text-align:center;margin-bottom:10px;">
+          <img src="${logoUrl}" alt="Marius & Fanny" style="max-width:80px;margin-bottom:4px;" />
+        </div>
+        <div style="font-size:18px;font-weight:bold;margin-bottom:4px;">${date}</div>
+        <div style="font-size:20px;font-weight:bold;margin-bottom:6px;">
+          ${clientName}
+        </div>
+        ${order.deliveryType === "delivery" && order.deliveryAddress ? `
+          <div style="font-size:12px;margin-bottom:8px;color:#555;">
+            ${order.deliveryAddress.street}, ${order.deliveryAddress.city} ${order.deliveryAddress.postalCode}
+          </div>
+        ` : `
+          <div style="font-size:12px;margin-bottom:8px;color:#555;">
+            Ramassage: ${order.pickupLocation || ""}
+          </div>
+        `}
+        <table style="width:100%;">
+          ${items}
+        </table>
+        ${allergyHtml}
+        <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;">
+          <div style="font-size:32px;font-weight:900;letter-spacing:2px;">${shortNumber}</div>
+        </div>
+      </body></html>
+    `);
+    win.document.close();
+    win.print();
+  };
+
   const canRefundOrder = (order: OrderWithPacking) => {
     const hasSquareReference = Boolean(order.squarePaymentId || order.squareInvoiceId);
     return hasSquareReference && order.status !== "cancelled";
@@ -1227,6 +1325,10 @@ export function OrderManagement() {
             <DropdownMenuItem onClick={() => handleEdit(order)}>
               <Edit className="h-4 w-4 mr-2" />
               Modifier
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => printLabel(order)}>
+              <Tag className="h-4 w-4 mr-2" />
+              Imprimer étiquette
             </DropdownMenuItem>
             {order.status !== "cancelled" && order.status !== "completed" && (
               <>
@@ -1445,6 +1547,13 @@ export function OrderManagement() {
                 <Bell size={20} />
               )}
               <span>{isProcessingReminders ? "Traitement..." : "Rappels"}</span>
+            </button>
+            <button
+              onClick={exportOrdersToExcel}
+              className="flex items-center gap-2 bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 text-sm md:text-base whitespace-nowrap"
+            >
+              <Download size={20} />
+              <span className="hidden md:inline">Exporter</span>
             </button>
             <button
               onClick={() => setIsCreateModalOpen(true)}

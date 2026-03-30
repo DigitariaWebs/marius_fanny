@@ -16,6 +16,7 @@ import {
   Package,
   DollarSign,
   Edit2,
+  Download,
 } from "lucide-react";
 import { DataTable } from "./ui/DataTable";
 import { Modal } from "./ui/modal";
@@ -513,6 +514,28 @@ function ClientManagement() {
               Gérer les clients et les placeholders
             </p>
           </div>
+          <button
+            onClick={async () => {
+              const XLSX = await import("xlsx");
+              const data = clients.map((c) => ({
+                "Nom": c.lastName,
+                "Prénom": c.firstName,
+                "Email": c.email,
+                "Téléphone": c.phone,
+                "Statut": c.status,
+                "Type": c.billing?.kind || "standard",
+                "Date création": new Date(c.createdAt).toLocaleDateString("fr-CA"),
+              }));
+              const ws = XLSX.utils.json_to_sheet(data);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "Clients");
+              XLSX.writeFile(wb, `clients_${new Date().toISOString().split("T")[0]}.xlsx`);
+            }}
+            className="flex items-center gap-2 bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 text-sm md:text-base whitespace-nowrap"
+          >
+            <Download size={20} />
+            <span className="hidden md:inline">Exporter</span>
+          </button>
           <button
             onClick={() => {
               resetForm();
