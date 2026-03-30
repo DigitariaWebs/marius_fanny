@@ -680,14 +680,28 @@ export const createOrder = async (
         inventory = new DailyInventory({ date: inventoryDate, entries: [] });
       }
 
+      // Normalize for fuzzy matching: lowercase, remove accents, extra spaces
+      const normalize = (s: string) =>
+        s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
       // Update client quantities and recalculate totals
       let updatedCount = 0;
       let createdCount = 0;
       for (const [productName, quantity] of Object.entries(productQuantities)) {
-        const entryIndex = inventory.entries.findIndex(e => e.productName === productName);
-        
+        const normalizedName = normalize(productName);
+        // Try exact match first, then fuzzy (normalized) match, then "includes" match
+        let entryIndex = inventory.entries.findIndex(e => e.productName === productName);
+        if (entryIndex < 0) {
+          entryIndex = inventory.entries.findIndex(e => normalize(e.productName) === normalizedName);
+        }
+        if (entryIndex < 0) {
+          entryIndex = inventory.entries.findIndex(e =>
+            normalize(e.productName).includes(normalizedName) || normalizedName.includes(normalize(e.productName))
+          );
+        }
+
         console.log(`📦 [INVENTORY] Looking for "${productName}" - found at index: ${entryIndex}`);
-        
+
         if (entryIndex >= 0) {
           // Product exists - add to client quantity and recalculate total
           const oldClient = inventory.entries[entryIndex].client;
@@ -696,7 +710,7 @@ export const createOrder = async (
             inventory.entries[entryIndex].stdo + inventory.entries[entryIndex].client;
           console.log(`📦 [INVENTORY] Updated "${productName}": client ${oldClient} -> ${inventory.entries[entryIndex].client}, total: ${inventory.entries[entryIndex].total}`);
           updatedCount++;
-        } else if (KNOWN_INVENTORY_PRODUCTS.includes(productName)) {
+        } else if (KNOWN_INVENTORY_PRODUCTS.some(k => normalize(k) === normalizedName || normalize(k).includes(normalizedName) || normalizedName.includes(normalize(k)))) {
           // Product is in known list but not in inventory - create new entry
           inventory.entries.push({
             productId: productName,

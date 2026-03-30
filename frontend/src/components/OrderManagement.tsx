@@ -1047,28 +1047,19 @@ export function OrderManagement() {
   };
 
   // Print MUNBYN 4x6 thermal label for an order
-  const logoUrl = "https://res.cloudinary.com/deyjooxbi/image/upload/f_png/v1773330080/branding/marius_fanny_logo";
-  const [labelLogoBase64, setLabelLogoBase64] = useState<string>("");
-
-  // Preload logo as base64 for instant printing
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.getContext("2d")?.drawImage(img, 0, 0);
-      setLabelLogoBase64(canvas.toDataURL("image/png"));
-    };
-    img.src = logoUrl;
-  }, []);
+  // Cloudinary URL with grayscale + high contrast for thermal printing
+  // Cloudinary: grayscale + blackpoint to force pure black
+  const labelLogoUrl = "https://res.cloudinary.com/deyjooxbi/image/upload/e_grayscale/e_contrast:100/e_brightness:-20/f_png/v1773330080/branding/marius_fanny_logo";
 
   const buildLabelHtml = (order: OrderWithPacking) => {
-    const imgSrc = labelLogoBase64 || logoUrl;
+    const imgSrc = labelLogoUrl;
     const shortNumber = formatOrderNumber(order.orderNumber);
-    const date = new Date(order.pickupDate || order.orderDate).toLocaleDateString("fr-CA", {
+    const pickupDateObj = new Date(order.pickupDate || order.orderDate);
+    const date = pickupDateObj.toLocaleDateString("fr-CA", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+    const time = order.deliveryTimeSlot || pickupDateObj.toLocaleTimeString("fr-CA", {
+      hour: "2-digit", minute: "2-digit", hour12: false,
     });
     const clientName = `${order.client.firstName} ${order.client.lastName}`;
     const items = order.items.map((item) => {
@@ -1078,10 +1069,10 @@ export function OrderManagement() {
         : "";
       const notes = item.notes || "";
       return `<tr>
-        <td style="padding:4px 0;font-size:14px;border-bottom:1px dashed #ccc;">${name} <strong>x${item.quantity}</strong></td>
+        <td style="padding:5px 0;font-size:16px;border-bottom:1px dashed #ccc;">${name} <strong>x${item.quantity}</strong></td>
       </tr>
-      ${options ? `<tr><td style="padding:2px 0 4px 10px;font-size:12px;color:#555;">${options}</td></tr>` : ""}
-      ${notes ? `<tr><td style="padding:2px 0 4px 10px;font-size:12px;color:#c00;font-weight:bold;">${notes}</td></tr>` : ""}`;
+      ${options ? `<tr><td style="padding:2px 0 5px 10px;font-size:14px;color:#333;">${options}</td></tr>` : ""}
+      ${notes ? `<tr><td style="padding:2px 0 5px 10px;font-size:14px;color:#000;font-weight:bold;">${notes}</td></tr>` : ""}`;
     }).join("");
 
     const allergies = order.items
@@ -1094,29 +1085,29 @@ export function OrderManagement() {
       })
       .filter(Boolean);
     const allergyHtml = allergies.length > 0
-      ? `<div style="margin-top:8px;padding:6px;background:#fee;border:2px solid #c00;border-radius:4px;font-size:14px;font-weight:bold;color:#c00;text-align:center;">ALLERGIE: ${allergies.join(", ")}</div>`
+      ? `<div style="margin-top:10px;padding:8px;border:3px solid #000;font-size:16px;font-weight:900;text-align:center;">ALLERGIE: ${allergies.join(", ")}</div>`
       : "";
 
     return `
       <div class="label">
-        <div style="text-align:center;margin-bottom:10px;">
-          <img src="${imgSrc}" alt="Marius & Fanny" style="max-width:80px;margin-bottom:4px;" />
+        <div style="text-align:center;margin-bottom:8px;">
+          <img src="${imgSrc}" alt="Marius & Fanny" style="max-width:100px;" />
         </div>
-        <div style="font-size:18px;font-weight:bold;margin-bottom:4px;">${date}</div>
-        <div style="font-size:20px;font-weight:bold;margin-bottom:6px;">${clientName}</div>
+        <div style="font-size:20px;font-weight:bold;margin-bottom:4px;">${date} — ${time}</div>
+        <div style="font-size:22px;font-weight:900;margin-bottom:6px;">${clientName}</div>
         ${order.deliveryType === "delivery" && order.deliveryAddress ? `
-          <div style="font-size:12px;margin-bottom:8px;color:#555;">
+          <div style="font-size:14px;margin-bottom:8px;">
             ${order.deliveryAddress.street}, ${order.deliveryAddress.city} ${order.deliveryAddress.postalCode}
           </div>
         ` : `
-          <div style="font-size:12px;margin-bottom:8px;color:#555;">
+          <div style="font-size:14px;margin-bottom:8px;">
             Ramassage: ${order.pickupLocation || ""}
           </div>
         `}
         <table style="width:100%;">${items}</table>
         ${allergyHtml}
-        <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;">
-          <div style="font-size:32px;font-weight:900;letter-spacing:2px;">${shortNumber}</div>
+        <div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;">
+          <div style="font-size:42px;font-weight:900;letter-spacing:3px;">${shortNumber}</div>
         </div>
       </div>`;
   };
