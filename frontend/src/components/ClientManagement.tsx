@@ -514,6 +514,7 @@ function ClientManagement() {
               Gérer les clients et les placeholders
             </p>
           </div>
+          <div className="flex items-center gap-3">
           <button
             onClick={async () => {
               const XLSX = await import("xlsx");
@@ -546,6 +547,7 @@ function ClientManagement() {
             <Plus size={20} />
             <span>Nouveau Client</span>
           </button>
+          </div>
         </div>
       </header>
 

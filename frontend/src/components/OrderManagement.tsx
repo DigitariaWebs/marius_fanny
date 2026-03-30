@@ -327,13 +327,14 @@ export function OrderManagement() {
 
     if (selectedDate) {
       next = next.filter((order) => {
-        const raw =
-          (order.pickupDate ||
-            order.deliveryDate ||
+        const raw = String(
+          order.pickupDate ||
+            (order as any).deliveryDate ||
             order.orderDate ||
             order.createdAt ||
-            "") as string;
-        const dateKey = raw.includes("T") ? raw.split("T")[0] : raw;
+            ""
+        );
+        const dateKey = raw.includes("T") ? raw.split("T")[0] : raw.slice(0, 10);
         return dateKey === selectedDate;
       });
     }
@@ -1046,7 +1047,25 @@ export function OrderManagement() {
   };
 
   // Print MUNBYN 4x6 thermal label for an order
-  const printLabel = (order: OrderWithPacking) => {
+  const logoUrl = "https://res.cloudinary.com/deyjooxbi/image/upload/f_png/v1773330080/branding/marius_fanny_logo";
+  const [labelLogoBase64, setLabelLogoBase64] = useState<string>("");
+
+  // Preload logo as base64 for instant printing
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext("2d")?.drawImage(img, 0, 0);
+      setLabelLogoBase64(canvas.toDataURL("image/png"));
+    };
+    img.src = logoUrl;
+  }, []);
+
+  const buildLabelHtml = (order: OrderWithPacking) => {
+    const imgSrc = labelLogoBase64 || logoUrl;
     const shortNumber = formatOrderNumber(order.orderNumber);
     const date = new Date(order.pickupDate || order.orderDate).toLocaleDateString("fr-CA", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -1065,7 +1084,6 @@ export function OrderManagement() {
       ${notes ? `<tr><td style="padding:2px 0 4px 10px;font-size:12px;color:#c00;font-weight:bold;">${notes}</td></tr>` : ""}`;
     }).join("");
 
-    // Check allergies
     const allergies = order.items
       .map((item: any) => {
         const fromOptions = Object.entries(item.selectedOptions || {})
@@ -1079,23 +1097,13 @@ export function OrderManagement() {
       ? `<div style="margin-top:8px;padding:6px;background:#fee;border:2px solid #c00;border-radius:4px;font-size:14px;font-weight:bold;color:#c00;text-align:center;">ALLERGIE: ${allergies.join(", ")}</div>`
       : "";
 
-    const logoUrl = "https://res.cloudinary.com/deyjooxbi/image/upload/f_png/v1773330080/branding/marius_fanny_logo";
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(`
-      <html><head><title>Étiquette ${shortNumber}</title>
-      <style>
-        @page { size: 4in 6in; margin: 0; }
-        body { font-family: Arial, sans-serif; width: 4in; height: 6in; margin: 0; padding: 12px; box-sizing: border-box; position: relative; }
-        @media print { body { padding: 8px; } }
-      </style></head><body>
+    return `
+      <div class="label">
         <div style="text-align:center;margin-bottom:10px;">
-          <img src="${logoUrl}" alt="Marius & Fanny" style="max-width:80px;margin-bottom:4px;" />
+          <img src="${imgSrc}" alt="Marius & Fanny" style="max-width:80px;margin-bottom:4px;" />
         </div>
         <div style="font-size:18px;font-weight:bold;margin-bottom:4px;">${date}</div>
-        <div style="font-size:20px;font-weight:bold;margin-bottom:6px;">
-          ${clientName}
-        </div>
+        <div style="font-size:20px;font-weight:bold;margin-bottom:6px;">${clientName}</div>
         ${order.deliveryType === "delivery" && order.deliveryAddress ? `
           <div style="font-size:12px;margin-bottom:8px;color:#555;">
             ${order.deliveryAddress.street}, ${order.deliveryAddress.city} ${order.deliveryAddress.postalCode}
@@ -1105,14 +1113,44 @@ export function OrderManagement() {
             Ramassage: ${order.pickupLocation || ""}
           </div>
         `}
-        <table style="width:100%;">
-          ${items}
-        </table>
+        <table style="width:100%;">${items}</table>
         ${allergyHtml}
         <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;">
           <div style="font-size:32px;font-weight:900;letter-spacing:2px;">${shortNumber}</div>
         </div>
-      </body></html>
+      </div>`;
+  };
+
+  const printLabel = (order: OrderWithPacking) => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Étiquette ${formatOrderNumber(order.orderNumber)}</title>
+      <style>
+        @page { size: 4in 6in; margin: 0; }
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        .label { width: 4in; height: 6in; padding: 12px; box-sizing: border-box; position: relative; }
+        @media print { .label { padding: 8px; } }
+      </style></head><body>${buildLabelHtml(order)}</body></html>
+    `);
+    win.document.close();
+    win.print();
+  };
+
+  const printAllLabels = () => {
+    if (filteredOrders.length === 0) return;
+    const allLabels = filteredOrders.map((order) => buildLabelHtml(order)).join("");
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Étiquettes — ${filteredOrders.length} commandes</title>
+      <style>
+        @page { size: 4in 6in; margin: 0; }
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        .label { width: 4in; height: 6in; padding: 12px; box-sizing: border-box; position: relative; page-break-after: always; }
+        .label:last-child { page-break-after: auto; }
+        @media print { .label { padding: 8px; } }
+      </style></head><body>${allLabels}</body></html>
     `);
     win.document.close();
     win.print();
@@ -1547,6 +1585,14 @@ export function OrderManagement() {
                 <Bell size={20} />
               )}
               <span>{isProcessingReminders ? "Traitement..." : "Rappels"}</span>
+            </button>
+            <button
+              onClick={printAllLabels}
+              disabled={filteredOrders.length === 0}
+              className="flex items-center gap-2 bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 text-sm md:text-base whitespace-nowrap disabled:opacity-50"
+            >
+              <Printer size={20} />
+              <span className="hidden md:inline">Étiquettes ({filteredOrders.length})</span>
             </button>
             <button
               onClick={exportOrdersToExcel}
