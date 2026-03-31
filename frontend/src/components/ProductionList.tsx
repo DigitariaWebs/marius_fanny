@@ -168,6 +168,10 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
         }
       );
 
+      if (response.status === 401) {
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }

@@ -1238,7 +1238,7 @@ export function ProductManagement() {
                 >
                   <option value="patisserie">Pâtisserie</option>
                   <option value="cuisinier">Cuisinier</option>
-                  <option value="four">Four</option>
+                  <option value="four">Autre</option>
                 </select>
               </div>
 
@@ -1790,7 +1790,7 @@ export function ProductManagement() {
                 >
                   <option value="patisserie">Pâtisserie</option>
                   <option value="cuisinier">Cuisinier</option>
-                  <option value="four">Four</option>
+                  <option value="four">Autre</option>
                 </select>
               </div>
 

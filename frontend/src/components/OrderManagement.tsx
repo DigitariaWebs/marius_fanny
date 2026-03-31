@@ -480,11 +480,13 @@ export function OrderManagement() {
                 o.paymentType === "deposit" ? "payment_link" : "payment_link",
               paymentLinkChannel: o.paymentLinkChannel || "email",
               notes: o.notes,
+              changeHistory: o.changeHistory,
+              amountPaid: o.amountPaid ?? 0,
               createdAt: o.createdAt,
               updatedAt: o.updatedAt,
             };
           });
-          
+
           setOrders(mapped);
           setFilteredOrders(applyOrderFilters(mapped));
         }
