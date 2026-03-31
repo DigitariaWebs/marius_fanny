@@ -64,6 +64,7 @@ export interface IOrder extends Document {
   paymentType: "full" | "deposit"; // Payment option chosen by customer
   paymentLinkChannel?: "email" | "sms";
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
+  amountPaid: number; // Actual amount collected from client
   billingKind?: "standard" | "representant" | "gouvernement";
   billingOrganization?: string;
   paymentDueDate?: Date;
@@ -348,6 +349,10 @@ const OrderSchema = new Schema<IOrder>(
       enum: ["unpaid", "deposit_paid", "paid"],
       default: "unpaid",
       index: true,
+    },
+    amountPaid: {
+      type: Number,
+      default: 0,
     },
     billingKind: {
       type: String,

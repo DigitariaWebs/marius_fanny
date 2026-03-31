@@ -10,6 +10,7 @@ import {
   listPayments,
   refundPayment,
   refundOrderPayment,
+  refundBalance,
   getSquareConfig,
   createInvoice,
   getInvoice,
@@ -54,6 +55,14 @@ router.post(
   requireAdmin,
   validateBody(refundOrderSchema),
   refundOrderPayment,
+);
+
+// Partial refund for balance difference
+router.post(
+  "/refund-balance",
+  requireAuth,
+  requireAdmin,
+  refundBalance,
 );
 
 /**

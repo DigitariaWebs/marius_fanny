@@ -478,6 +478,7 @@ export const createOrder = async (
       paymentLinkChannel: orderData.paymentLinkChannel || "email",
       depositPaid,
       balancePaid,
+      amountPaid: balancePaid ? total : depositPaid ? depositAmount : 0,
       billingKind,
       billingOrganization,
       paymentDueDate,
@@ -1462,6 +1463,15 @@ export const updateOrder = async (
       });
     }
 
+    // Update amountPaid when payment status changes
+    if (updateData.depositPaid || updateData.balancePaid) {
+      if (order.depositPaid && order.balancePaid) {
+        order.amountPaid = order.total;
+      } else if (order.depositPaid) {
+        order.amountPaid = order.depositAmount;
+      }
+    }
+
     if (updateData.squarePaymentId && updateData.squarePaymentId !== order.squarePaymentId) {
       const oldPaymentId = order.squarePaymentId;
       order.squarePaymentId = updateData.squarePaymentId;
@@ -1502,33 +1512,23 @@ export const updateOrder = async (
     // Send balance email to client if items were modified, client already paid, and there's a balance
     if (updateData.items && order.clientInfo?.email) {
       const itemsChange = changes.find((c) => c.changeType === "items_modified");
-      const paymentChange = changes.find((c) => c.field === "paymentStatus");
       if (itemsChange) {
-        const oldTotal = parseFloat(itemsChange.notes?.match(/Total: ([\d.]+)\$/)?.[1] || "0");
-        // Figure out how much the client had paid BEFORE this edit
-        const previousPaymentStatus = paymentChange ? paymentChange.oldValue : order.paymentStatus;
-        const paidBeforeEdit =
-          previousPaymentStatus === "paid"
-            ? oldTotal
-            : previousPaymentStatus === "deposit_paid"
-              ? oldTotal * 0.5
-              : 0;
+        const paidAmount = order.amountPaid || 0;
 
         // Only send email if the client has already paid something
-        if (paidBeforeEdit > 0.01) {
-          const balance = order.total - paidBeforeEdit;
+        if (paidAmount > 0.01) {
+          const balance = order.total - paidAmount;
 
           if (Math.abs(balance) > 0.01) {
-            // Extract short order number (e.g. "0028" from "MF-20260326-0028")
             const shortNumber = order.orderNumber.split("-").pop() || order.orderNumber;
             try {
               await sendOrderBalanceEmail({
                 clientName: `${order.clientInfo.firstName} ${order.clientInfo.lastName}`,
                 clientEmail: order.clientInfo.email,
                 orderNumber: shortNumber,
-                oldTotal,
+                oldTotal: paidAmount,
                 newTotal: order.total,
-                amountPaid: paidBeforeEdit,
+                amountPaid: paidAmount,
                 balance,
                 items: order.items.map((item: any) => ({
                   name: item.productName || `Produit #${item.productId}`,

@@ -938,6 +938,125 @@ export const refundOrderPayment = async (req: Request, res: Response) => {
 };
 
 /**
+ * Partial refund for balance difference (order modification)
+ * POST /api/payments/refund-balance
+ */
+export const refundBalance = async (req: Request, res: Response) => {
+  try {
+    const { orderId, amount, employeeName } = req.body as {
+      orderId: string;
+      amount: number;
+      employeeName: string;
+    };
+
+    if (!employeeName?.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Le nom de l'employé est obligatoire",
+      });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Le montant du remboursement doit être positif",
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Commande non trouvée" });
+    }
+
+    const paymentId = await findSquarePaymentIdForOrder(order);
+    if (!paymentId) {
+      return res.status(400).json({
+        success: false,
+        error: "Aucun paiement Square trouvé pour cette commande. Remboursement manuel requis.",
+      });
+    }
+
+    const refundAmountInCents = BigInt(Math.round(amount * 100));
+    const refundableAmountInCents = await getRefundableAmountCents(paymentId);
+
+    if (refundableAmountInCents <= 0n) {
+      return res.status(400).json({
+        success: false,
+        error: "Ce paiement est déjà totalement remboursé",
+      });
+    }
+
+    const actualRefundCents = refundAmountInCents > refundableAmountInCents
+      ? refundableAmountInCents
+      : refundAmountInCents;
+
+    const employeeId = req.user?.id;
+    const refundResponse = await squareClient.refunds.refundPayment({
+      idempotencyKey: randomUUID(),
+      paymentId,
+      amountMoney: {
+        amount: actualRefundCents,
+        currency: "CAD",
+      },
+      reason: `Remboursement partiel (modification commande ${order.orderNumber}) par ${employeeName.trim()}`,
+    });
+
+    const refund = refundResponse?.refund;
+
+    // Update amountPaid to match new total
+    order.amountPaid = order.total;
+
+    // Add refund to history
+    (order as any).refunds = [
+      ...(((order as any).refunds as any[]) || []),
+      {
+        refundedAt: new Date(),
+        employeeName: employeeName.trim(),
+        employeeId: employeeId || undefined,
+        paymentId,
+        refundId: refund?.id || undefined,
+        refundStatus: refund?.status || undefined,
+        amountCents: Number(actualRefundCents),
+        reason: `Remboursement partiel (modification commande)`,
+      },
+    ];
+
+    order.changeHistory.push({
+      changedAt: new Date(),
+      changedBy: employeeId,
+      field: "paymentStatus",
+      oldValue: order.paymentStatus,
+      newValue: order.paymentStatus,
+      changeType: "payment_updated",
+      notes: `Partial refund of ${(Number(actualRefundCents) / 100).toFixed(2)}$ by ${employeeName.trim()} (refundId: ${refund?.id || "N/A"})`,
+    } as any);
+
+    await order.save();
+
+    console.log(`✅ Partial refund of ${(Number(actualRefundCents) / 100).toFixed(2)}$ for order ${order.orderNumber}`);
+
+    return res.json({
+      success: true,
+      data: {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        refundId: refund?.id,
+        refundStatus: refund?.status,
+        refundAmountCents: Number(actualRefundCents),
+        amountPaid: order.amountPaid,
+      },
+      message: "Remboursement partiel effectué avec succès",
+    });
+  } catch (error: any) {
+    console.error("❌ [REFUND-BALANCE] Error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Erreur lors du remboursement partiel",
+    });
+  }
+};
+
+/**
  * Get a Square invoice by ID
  * GET /api/payments/invoice/:invoiceId
  */

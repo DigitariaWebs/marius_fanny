@@ -299,8 +299,12 @@ export function OrderManagement() {
   const [orderToDelete, setOrderToDelete] = useState<OrderWithPacking | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<OrderWithPacking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editNotification, setEditNotification] = useState<{ type: "balance" | "refund" | "nochange"; amount: number; clientName: string } | null>(null);
   const [viewMode, setViewMode] = useState<"simple" | "complete">("simple");
   const [refundEmployeeName, setRefundEmployeeName] = useState<string>("");
+  const [balanceRefundOrder, setBalanceRefundOrder] = useState<OrderWithPacking | null>(null);
+  const [balanceRefundEmployee, setBalanceRefundEmployee] = useState("");
+  const [isBalanceRefundModalOpen, setIsBalanceRefundModalOpen] = useState(false);
   const [isProcessingReminders, setIsProcessingReminders] = useState(false);
   const [reminderResult, setReminderResult] = useState<{
     success: boolean;
@@ -1441,6 +1445,26 @@ export function OrderManagement() {
                 Marquer payé
               </DropdownMenuItem>
             )}
+            {(() => {
+              const paidAmount = (order as any).amountPaid || 0;
+              const refundAmount = paidAmount - order.total;
+              if (refundAmount > 0.01) {
+                return (
+                  <DropdownMenuItem
+                    className="text-green-700 font-medium"
+                    onClick={() => {
+                      setBalanceRefundOrder(order);
+                      setBalanceRefundEmployee("");
+                      setIsBalanceRefundModalOpen(true);
+                    }}
+                  >
+                    <Undo2 className="h-4 w-4 mr-2" />
+                    Rembourser {formatCurrency(refundAmount)}
+                  </DropdownMenuItem>
+                );
+              }
+              return null;
+            })()}
             <DropdownMenuItem
               onClick={() => handleDeleteClick(order)}
               className="text-red-600"
@@ -1506,6 +1530,34 @@ export function OrderManagement() {
 
   return (
     <>
+      {/* NOTIFICATION AFTER ORDER EDIT */}
+      {editNotification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md animate-fade-in">
+          {editNotification.type === "balance" && (
+            <div className="bg-orange-600 text-white px-5 py-4 rounded-xl shadow-xl">
+              <p className="font-bold text-sm">Balance à payer: {formatCurrency(editNotification.amount)}</p>
+              <p className="text-xs opacity-90 mt-1">
+                {editNotification.clientName} va recevoir un email avec le montant restant à payer.
+              </p>
+            </div>
+          )}
+          {editNotification.type === "refund" && (
+            <div className="bg-green-600 text-white px-5 py-4 rounded-xl shadow-xl">
+              <p className="font-bold text-sm">Remboursement: {formatCurrency(editNotification.amount)}</p>
+              <p className="text-xs opacity-90 mt-1">
+                {editNotification.clientName} va recevoir un email. Un crédit de {formatCurrency(editNotification.amount)} lui est dû.
+              </p>
+            </div>
+          )}
+          {editNotification.type === "nochange" && (
+            <div className="bg-blue-600 text-white px-5 py-4 rounded-xl shadow-xl">
+              <p className="font-bold text-sm">Commande modifiée</p>
+              <p className="text-xs opacity-90 mt-1">Aucun changement de montant.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ALERT FOR OVERDUE PAYMENTS - AT TOP CENTER */}
       {(() => {
         const overdueOrders = orders.filter((order) => {
@@ -2302,12 +2354,7 @@ export function OrderManagement() {
 
                   {/* Balance after modification */}
                   {(() => {
-                    const paidAmount =
-                      selectedOrder.paymentStatus === "paid"
-                        ? selectedOrder.total
-                        : selectedOrder.depositPaid
-                          ? selectedOrder.depositAmount
-                          : 0;
+                    const paidAmount = (selectedOrder as any).amountPaid || 0;
                     const balance = selectedOrder.total - paidAmount;
                     if (Math.abs(balance) < 0.01 || paidAmount < 0.01) return null;
                     const isRefund = balance < 0;
@@ -2765,7 +2812,19 @@ export function OrderManagement() {
                 depositAmount: saved?.depositAmount ?? formData.depositAmount,
                 notes: formData.notes || undefined,
                 updatedAt: saved?.updatedAt || new Date().toISOString(),
-              };
+                amountPaid: saved?.amountPaid ?? (selectedOrder as any).amountPaid ?? 0,
+              } as any;
+
+              // Calculate balance notification
+              const newTotal = saved?.total ?? formData.total;
+              const paidAmount = saved?.amountPaid ?? (selectedOrder as any).amountPaid ?? 0;
+
+              // Update payment status if overpaid (refund case)
+              if (paidAmount > 0.01 && newTotal < paidAmount) {
+                updatedOrder.paymentStatus = "paid";
+                updatedOrder.depositPaid = true;
+                updatedOrder.balancePaid = true;
+              }
 
               setOrders((prev) => {
                 const next = prev.map((order) =>
@@ -2774,6 +2833,23 @@ export function OrderManagement() {
                 setFilteredOrders(applyOrderFilters(next));
                 return next;
               });
+
+              // Show balance notification if client already paid
+              if (paidAmount > 0.01) {
+                const diff = newTotal - paidAmount;
+                const clientName = `${formData.firstName} ${formData.lastName}`;
+                if (Math.abs(diff) > 0.01) {
+                  setEditNotification({
+                    type: diff > 0 ? "balance" : "refund",
+                    amount: Math.abs(diff),
+                    clientName,
+                  });
+                  setTimeout(() => setEditNotification(null), 8000);
+                } else {
+                  setEditNotification({ type: "nochange", amount: 0, clientName });
+                  setTimeout(() => setEditNotification(null), 4000);
+                }
+              }
 
               setIsEditModalOpen(false);
               setSelectedOrder(null);
@@ -2966,6 +3042,109 @@ export function OrderManagement() {
             </p>
           </div>
         )}
+      </Modal>
+
+      {/* Balance Refund Modal */}
+      <Modal
+        open={isBalanceRefundModalOpen}
+        onOpenChange={setIsBalanceRefundModalOpen}
+        type="form"
+        title="Remboursement de balance"
+        description={balanceRefundOrder ? `Commande ${formatOrderNumber(balanceRefundOrder.orderNumber)}` : ""}
+        icon={<Undo2 className="h-6 w-6 text-green-600" />}
+        actions={{
+          primary: {
+            label: isSubmitting ? "Remboursement en cours..." : "Confirmer le remboursement",
+            disabled: !balanceRefundEmployee.trim() || isSubmitting,
+            loading: isSubmitting,
+            onClick: async () => {
+              if (!balanceRefundOrder || !balanceRefundEmployee.trim()) return;
+              const paidAmount = (balanceRefundOrder as any).amountPaid || 0;
+              const refundAmount = paidAmount - balanceRefundOrder.total;
+
+              setIsSubmitting(true);
+              try {
+                // Call real Square partial refund
+                const response = await fetch(`${normalizedApiUrl}/api/payments/refund-balance`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    orderId: balanceRefundOrder.id,
+                    amount: refundAmount,
+                    employeeName: balanceRefundEmployee.trim(),
+                  }),
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                  throw new Error(result.error || "Échec du remboursement");
+                }
+
+                // Update locally
+                setOrders((prev) => {
+                  const next = prev.map((o) =>
+                    o.id === balanceRefundOrder.id
+                      ? { ...o, amountPaid: o.total } as any
+                      : o
+                  );
+                  setFilteredOrders(applyOrderFilters(next));
+                  return next;
+                });
+
+                setEditNotification({
+                  type: "refund",
+                  amount: refundAmount,
+                  clientName: `${balanceRefundOrder.client.firstName} ${balanceRefundOrder.client.lastName}`,
+                });
+                setTimeout(() => setEditNotification(null), 6000);
+
+                setIsBalanceRefundModalOpen(false);
+                setBalanceRefundOrder(null);
+              } catch (err: any) {
+                alert(err?.message || "Erreur lors du remboursement");
+              } finally {
+                setIsSubmitting(false);
+              }
+            },
+          },
+          secondary: {
+            label: "Annuler",
+            onClick: () => {
+              setIsBalanceRefundModalOpen(false);
+              setBalanceRefundOrder(null);
+            },
+          },
+        }}
+      >
+        {balanceRefundOrder && (() => {
+          const paidAmount = (balanceRefundOrder as any).amountPaid || 0;
+          const refundAmount = paidAmount - balanceRefundOrder.total;
+          return (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                <p className="text-sm text-green-600 mb-1">Montant à rembourser</p>
+                <p className="text-3xl font-black text-green-700">{formatCurrency(refundAmount)}</p>
+                <p className="text-xs text-green-500 mt-1">
+                  Payé: {formatCurrency(paidAmount)} — Nouveau total: {formatCurrency(balanceRefundOrder.total)}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                  Nom de la personne qui rembourse *
+                </label>
+                <input
+                  type="text"
+                  value={balanceRefundEmployee}
+                  onChange={(e) => setBalanceRefundEmployee(e.target.value)}
+                  placeholder="Entrez votre nom"
+                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
+                  autoFocus
+                />
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
     </>
   );
