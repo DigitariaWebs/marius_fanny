@@ -1446,7 +1446,14 @@ export function OrderManagement() {
               </DropdownMenuItem>
             )}
             {(() => {
-              const paidAmount = (order as any).amountPaid || 0;
+              const storedPaid = (order as any).amountPaid;
+              const paidAmount = storedPaid > 0
+                ? storedPaid
+                : order.paymentStatus === "paid"
+                  ? (order.depositAmount > order.total ? order.depositAmount : 0)
+                  : order.depositPaid
+                    ? order.depositAmount
+                    : 0;
               const refundAmount = paidAmount - order.total;
               if (refundAmount > 0.01) {
                 return (
