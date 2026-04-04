@@ -38,6 +38,7 @@ import {
   DELIVERY_ZONES,
 } from "../utils/deliveryZones";
 import { calculatePriceWithOptions } from "../utils/customOptions";
+import { getImageUrl } from "../utils/api";
 
 interface OrderFormProps {
   onSubmit: (formData: OrderFormData) => void;
@@ -185,7 +186,7 @@ export default function OrderForm({
 
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
-  const [productSearch, setProductSearch] = useState<Record<string, string>>({}); // Search term per item
+  const [activePosCategory, setActivePosCategory] = useState<string>("all");
   const [expandedTextOptionInputs, setExpandedTextOptionInputs] = useState<
     Record<string, Record<string, boolean>>
   >({});
@@ -389,49 +390,6 @@ export default function OrderForm({
     }));
   };
 
-  const handleProductSelect = (itemId: string, productId: number) => {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-
-    const initialOptions: Record<string, string> = {};
-    for (const option of product.customOptions || []) {
-      if (option.type === "text") {
-        initialOptions[option.name] = "";
-      } else {
-        initialOptions[option.name] = option.choices?.[0] || "";
-      }
-    }
-
-    const initialUnitPrice = calculatePriceWithOptions(
-      product.price,
-      product.customOptions || [],
-      initialOptions,
-    );
-
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.map((item) => {
-        if (item.id === itemId) {
-          const quantity = Math.max(product.minOrderQuantity, 1);
-          return {
-            ...item,
-            productId: product.id,
-            productName: product.name,
-            quantity,
-            unitPrice: initialUnitPrice,
-            amount: quantity * initialUnitPrice,
-            taxable: undefined,
-            selectedOptions: initialOptions,
-            isPacked: false,
-          };
-        }
-        return item;
-      }),
-    }));
-    // Clear search when product is selected
-    setProductSearch(prev => ({ ...prev, [itemId]: "" }));
-  };
-
   const handleClearProduct = (itemId: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -450,35 +408,90 @@ export default function OrderForm({
         };
       }),
     }));
-    setProductSearch((prev) => ({ ...prev, [itemId]: "" }));
   };
 
-  const handleProductSearchChange = (itemId: string, search: string) => {
-    setProductSearch(prev => ({ ...prev, [itemId]: search }));
-  };
-
-  const getAvailableProducts = (currentItemId: string, searchTerm: string = ""): Product[] => {
-    const selectedProductIds = formData.items
-      .filter((item) => item.id !== currentItemId && item.productId)
-      .map((item) => item.productId);
-
-    let filtered = products.filter(
-      (product) =>
-        product.available && !selectedProductIds.includes(product.id),
-    );
-
-    // Filter by search term if provided
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(search) ||
-        (Array.isArray((p as any).category)
-          ? (p as any).category.some((c: string) => String(c).toLowerCase().includes(search))
-          : String((p as any).category || "").toLowerCase().includes(search))
-      );
+  const getProductCategories = (product: Product): string[] => {
+    if (Array.isArray((product as any).category)) {
+      return (product as any).category
+        .map((c: unknown) => String(c || "").trim())
+        .filter(Boolean);
     }
 
-    return filtered;
+    const singleCategory = String((product as any).category || "").trim();
+    return singleCategory ? [singleCategory] : [];
+  };
+
+  const posCategories = useMemo(() => {
+    const categoryCounter = new Map<string, number>();
+
+    products
+      .filter((p) => p.available)
+      .forEach((product) => {
+        const cats = getProductCategories(product);
+        cats.forEach((category) => {
+          categoryCounter.set(category, (categoryCounter.get(category) || 0) + 1);
+        });
+      });
+
+    return Array.from(categoryCounter.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], "fr", { sensitivity: "base" }))
+      .map(([name, count]) => ({ name, count }));
+  }, [products]);
+
+  const posProducts = useMemo(() => {
+    return products.filter((product) => {
+      if (!product.available) return false;
+      if (activePosCategory === "all") return true;
+      return getProductCategories(product).includes(activePosCategory);
+    });
+  }, [products, activePosCategory]);
+
+  const addProductFromPos = (product: Product) => {
+    const existing = formData.items.find(
+      (item) => !item.isCustom && item.productId === product.id,
+    );
+
+    if (existing) {
+      const maxQuantity = product.maxOrderQuantity || Number.MAX_SAFE_INTEGER;
+      const nextQuantity = Math.min(existing.quantity + 1, maxQuantity);
+      handleItemChange(existing.id, "quantity", nextQuantity);
+      return;
+    }
+
+    const initialOptions: Record<string, string> = {};
+    for (const option of product.customOptions || []) {
+      if (option.type === "text") {
+        initialOptions[option.name] = "";
+      } else {
+        initialOptions[option.name] = option.choices?.[0] || "";
+      }
+    }
+
+    const initialUnitPrice = calculatePriceWithOptions(
+      product.price,
+      product.customOptions || [],
+      initialOptions,
+    );
+    const initialQuantity = Math.max(product.minOrderQuantity || 1, 1);
+
+    const newItem: OrderFormItem = {
+      id: Date.now().toString(),
+      productId: product.id,
+      productName: product.name,
+      quantity: initialQuantity,
+      unitPrice: initialUnitPrice,
+      amount: initialUnitPrice * initialQuantity,
+      taxable: undefined,
+      notes: "",
+      selectedOptions: initialOptions,
+      isPacked: false,
+      isCustom: false,
+    };
+
+    setFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, newItem],
+    }));
   };
 
   const getProductById = (productId: number | null): Product | null => {
@@ -513,25 +526,6 @@ export default function OrderForm({
     } else {
       return `Ce produit nécessite ${product.preparationTimeHours} heure${product.preparationTimeHours > 1 ? "s" : ""} de préparation.`;
     }
-  };
-
-  const addItem = () => {
-    const newItem: OrderFormItem = {
-      id: Date.now().toString(),
-      productId: null,
-      productName: "",
-      quantity: 1,
-      unitPrice: 0,
-      amount: 0,
-      taxable: undefined,
-      notes: "",
-      isPacked: false,
-      isCustom: false,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      items: [...prev.items, newItem],
-    }));
   };
 
   const addCustomItem = () => {
@@ -606,6 +600,10 @@ export default function OrderForm({
 
   const getSerializedItemNotes = (item: OrderFormItem) => {
     const lines: string[] = [];
+
+    if (item.notes && item.notes.trim().length > 0) {
+      lines.push(`Note client: ${item.notes.trim()}`);
+    }
 
     if (item.isCustom) {
       if (item.customDescription && item.customDescription.trim().length > 0) {
@@ -1600,16 +1598,6 @@ export default function OrderForm({
           <div className="flex gap-2">
             <Button
               type="button"
-              onClick={addItem}
-              variant="ghost"
-              size="sm"
-              className="text-xs text-amber-600 hover:text-amber-700"
-            >
-              <Plus className="w-4 h-4" />
-              Ajouter
-            </Button>
-            <Button
-              type="button"
               onClick={addCustomItem}
               variant="ghost"
               size="sm"
@@ -1625,6 +1613,84 @@ export default function OrderForm({
         {errors.items && (
           <p className="text-xs text-red-500 mb-2">{errors.items}</p>
         )}
+
+        <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+          <div className="text-xs font-semibold text-gray-700 uppercase">Sélection rapide (style POS)</div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant={activePosCategory === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActivePosCategory("all")}
+              className="h-8 text-xs"
+            >
+              Toutes ({products.filter((p) => p.available).length})
+            </Button>
+            {posCategories.map((cat) => (
+              <Button
+                key={cat.name}
+                type="button"
+                variant={activePosCategory === cat.name ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActivePosCategory(cat.name)}
+                className="h-8 text-xs"
+              >
+                {cat.name} ({cat.count})
+              </Button>
+            ))}
+          </div>
+
+          {productsLoading ? (
+            <p className="text-xs text-gray-500">Chargement des produits...</p>
+          ) : posProducts.length === 0 ? (
+            <p className="text-xs text-gray-500">Aucun produit disponible dans cette catégorie.</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2 max-h-64 overflow-y-auto pr-1">
+              {posProducts.map((product) => {
+                const selectedItem = formData.items.find(
+                  (item) => !item.isCustom && item.productId === product.id,
+                );
+
+                return (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => addProductFromPos(product)}
+                    className={`rounded-md border bg-white overflow-hidden text-left hover:border-amber-400 hover:shadow-sm transition ${
+                      selectedItem ? "border-green-400 ring-1 ring-green-300" : "border-gray-200"
+                    }`}
+                  >
+                    <div className="h-20 bg-gray-100">
+                      {product.image ? (
+                        <img
+                          src={getImageUrl(product.image)}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">
+                          Sans image
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <div className="text-[11px] font-semibold text-gray-900 line-clamp-2 min-h-[30px]">
+                        {product.name}
+                      </div>
+                      <div className="mt-1 text-[11px] text-gray-600">{product.price.toFixed(2)} $</div>
+                      {selectedItem && (
+                        <div className="mt-1 text-[10px] font-semibold text-green-700">
+                          Dans la commande: x{selectedItem.quantity}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className="border border-gray-300 rounded-md overflow-hidden">
           <Table>
@@ -1643,8 +1709,6 @@ export default function OrderForm({
                 const product = item.productId
                   ? getProductById(item.productId)
                   : null;
-                const searchValue = productSearch[item.id] || "";
-                const availableProducts = getAvailableProducts(item.id, searchValue);
                 const quantityError = errors[`item_${index}_quantity`];
                 const preparationError = errors[`item_${index}_preparation`];
                 const nameError = errors[`item_${index}_name`];
@@ -1691,20 +1755,6 @@ export default function OrderForm({
                           </div>
                         ) : (
                         <div className="space-y-1">
-                          {!item.productId && (
-                            <>
-                              {/* Search input for products */}
-                              <Input
-                                type="text"
-                                placeholder="Rechercher un produit..."
-                                value={searchValue}
-                                onChange={(e) =>
-                                  handleProductSearchChange(item.id, e.target.value)
-                                }
-                                className="h-7 text-sm"
-                              />
-                            </>
-                          )}
                           {item.productId && product && (
                             <div className="flex items-start justify-between gap-2 rounded-md border border-green-200 bg-green-50 px-2 py-1.5">
                               <div className="min-w-0">
@@ -1726,30 +1776,14 @@ export default function OrderForm({
                               </Button>
                             </div>
                           )}
+                          {!item.productId && (
+                            <div className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                              Sélectionnez un produit dans la grille POS ci-dessus.
+                            </div>
+                          )}
                           {(livePreparationWarning || preparationError) && (
                             <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                               ⚠️ {livePreparationWarning || preparationError}
-                            </div>
-                          )}
-                          {!item.productId && searchValue.trim().length > 0 && (
-                            <div className="max-h-32 overflow-y-auto rounded border border-gray-200 bg-white">
-                              {availableProducts.length === 0 ? (
-                                <div className="p-2 text-xs text-gray-500 text-center">
-                                  Aucun produit trouve
-                                </div>
-                              ) : (
-                                availableProducts.map((p) => (
-                                  <button
-                                    key={p.id}
-                                    type="button"
-                                    onClick={() => handleProductSelect(item.id, p.id)}
-                                    className="w-full text-left px-2 py-1.5 text-xs hover:bg-amber-50 border-b last:border-b-0"
-                                  >
-                                    <span className="font-medium text-gray-900">{p.name}</span>
-                                    <span className="text-gray-500"> - ${p.price.toFixed(2)}</span>
-                                  </button>
-                                ))
-                              )}
                             </div>
                           )}
                         </div>
@@ -1958,6 +1992,20 @@ export default function OrderForm({
                                 ))}
                               </div>
                             )}
+
+                            <div>
+                              <Label className="text-[11px] text-gray-600">
+                                Note client (allergie/commentaire)
+                              </Label>
+                              <Input
+                                value={item.notes || ""}
+                                onChange={(e) =>
+                                  handleItemChange(item.id, "notes", e.target.value)
+                                }
+                                placeholder="Ex: sans noix, sans oignons, message spécial..."
+                                className="h-8 text-xs"
+                              />
+                            </div>
 
                           </div>
                         </TableCell>

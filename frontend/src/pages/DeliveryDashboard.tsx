@@ -16,6 +16,8 @@ import {
 import { authClient, normalizedApiUrl } from "../lib/AuthClient";
 import { Modal } from "@/components/ui/modal";
 
+const ENABLE_DELIVERY_MOCKS = import.meta.env.VITE_ENABLE_DELIVERY_MOCKS === "true";
+
 // Types
 interface DeliveryOrder {
   id: string;
@@ -41,6 +43,12 @@ interface DeliveryOrder {
   totalAmount: number;
   estimatedDeliveryTime?: string;
   createdAt: string;
+  paymentStatus?: "unpaid" | "deposit_paid" | "paid";
+  assignedDriver?: {
+    id: string;
+    name: string;
+    assignedAt?: string;
+  };
 }
 
 // Mock Data - MIS À JOUR POUR 2026
@@ -218,7 +226,7 @@ const MOCK_DELIVERY_ORDERS: DeliveryOrder[] = [
 ];
 
 interface DeliveryDriver {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -237,6 +245,7 @@ const DeliveryDashboard: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [smsNotification, setSmsNotification] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -250,7 +259,7 @@ const DeliveryDashboard: React.FC = () => {
         if (userRole !== "deliveryDriver") return;
 
         const driverData: DeliveryDriver = {
-          id: Number(user.id),
+          id: String(user.id),
           firstName: user.user_metadata?.firstName || user.name?.split(" ")[0] || "Livreur",
           lastName: user.user_metadata?.lastName || user.name?.split(" ")[1] || "",
           email: user.email,
@@ -269,27 +278,132 @@ const DeliveryDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const normalizeDeliveryStatus = (order: any): DeliveryOrder["status"] => {
+      if (order.deliveryStatus === "in_transit" || order.deliveryStatus === "arrived") {
+        return order.deliveryStatus;
+      }
+      if (order.deliveryStatus === "delivered" || order.status === "delivered") {
+        return "delivered";
+      }
+      return "pending";
+    };
+
+    const normalizeOrder = (order: any): DeliveryOrder | null => {
+      if (order.deliveryType !== "delivery") return null;
+      if (["cancelled", "completed"].includes(order.status)) return null;
+
+      const mappedStatus = normalizeDeliveryStatus(order);
+      if (!["pending", "in_transit", "arrived", "delivered"].includes(mappedStatus)) {
+        return null;
+      }
+
+      const client = order.clientInfo || order.client || {};
+      const rawItems = Array.isArray(order.items) ? order.items : [];
+      const items = rawItems.map((item: any) => ({
+        productName:
+          item.productName ||
+          item.product?.name ||
+          (item.productId ? `Produit #${item.productId}` : "Produit"),
+        quantity: Number(item.quantity || 0),
+        price: Number(item.unitPrice || item.price || 0),
+      }));
+
+      const estimatedDeliveryTime =
+        order.deliverySlot ||
+        order.deliveryTimeSlot ||
+        (order.pickupDate ? new Date(order.pickupDate).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" }) : undefined);
+
+      return {
+        id: String(order._id || order.id),
+        orderNumber: String(order.orderNumber || ""),
+        clientInfo: {
+          firstName: String(client.firstName || ""),
+          lastName: String(client.lastName || ""),
+          phone: String(client.phone || ""),
+          email: String(client.email || ""),
+        },
+        deliveryAddress: {
+          street: String(order.deliveryAddress?.street || ""),
+          city: String(order.deliveryAddress?.city || ""),
+          postalCode: String(order.deliveryAddress?.postalCode || ""),
+          province: String(order.deliveryAddress?.province || ""),
+        },
+        status: mappedStatus,
+        items,
+        totalAmount: Number(order.total || 0),
+        estimatedDeliveryTime,
+        createdAt: String(order.deliveryDate || order.pickupDate || order.createdAt || new Date().toISOString()),
+        paymentStatus: order.paymentStatus,
+        assignedDriver: order.assignedDriver
+          ? {
+              id: String(order.assignedDriver.id || ""),
+              name: String(order.assignedDriver.name || "Livreur"),
+              assignedAt: order.assignedDriver.assignedAt,
+            }
+          : undefined,
+      };
+    };
+
     const loadOrders = async () => {
       try {
-        const response = await fetch(
-          `${normalizedApiUrl}/api/orders?deliveryStatus=ready_for_delivery`,
-          { credentials: "include" }
-        );
+        setLoadError(null);
+        const limit = 100;
+        let page = 1;
+        let hasMore = true;
+        const collected: any[] = [];
 
-        if (response.ok) {
-          const result = await response.json();
-          const deliveryOrders = result.data.filter(
-            (order: any) =>
-              order.deliveryType === "delivery" &&
-              ["pending", "in_transit", "arrived", "delivered"].includes(order.status)
+        while (hasMore) {
+          const response = await fetch(
+            `${normalizedApiUrl}/api/orders?limit=${limit}&page=${page}`,
+            {
+              credentials: "include",
+            },
           );
+
+          if (!response.ok) {
+            throw new Error(`API orders failed with status ${response.status}`);
+          }
+
+          const result = await response.json();
+          const pageItems = result?.data?.items || [];
+          const totalPages = Number(result?.data?.pagination?.totalPages || 0);
+
+          if (Array.isArray(pageItems) && pageItems.length > 0) {
+            collected.push(...pageItems);
+          }
+
+          if (totalPages > 0) {
+            hasMore = page < totalPages;
+          } else {
+            hasMore = Array.isArray(pageItems) && pageItems.length === limit;
+          }
+
+          page += 1;
+          if (page > 20) break;
+        }
+
+        const deliveryOrders = collected
+          .map(normalizeOrder)
+          .filter((order): order is DeliveryOrder => Boolean(order));
+
+        if (deliveryOrders.length > 0 || !ENABLE_DELIVERY_MOCKS) {
           setOrders(deliveryOrders);
         } else {
-          setOrders(MOCK_DELIVERY_ORDERS);
+          if (ENABLE_DELIVERY_MOCKS) {
+            setOrders(MOCK_DELIVERY_ORDERS);
+          } else {
+            setOrders([]);
+            setLoadError("Impossible de charger les livraisons (API indisponible).");
+          }
         }
       } catch (error) {
-        console.error("Failed to load orders, using mock data:", error);
-        setOrders(MOCK_DELIVERY_ORDERS);
+        console.error("Failed to load delivery orders:", error);
+        if (ENABLE_DELIVERY_MOCKS) {
+          setOrders(MOCK_DELIVERY_ORDERS);
+        } else {
+          setOrders([]);
+          setLoadError("Erreur de connexion au serveur de livraisons.");
+        }
       }
     };
 
@@ -348,6 +462,26 @@ const DeliveryDashboard: React.FC = () => {
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const formatOrderNumber = (orderNumber: string) => {
+    const trimmed = String(orderNumber || "").trim();
+    const mfMatch = trimmed.match(/^(MF-\d{8}-)(\d{1,4})$/i);
+    if (mfMatch) {
+      return mfMatch[2].padStart(4, "0");
+    }
+
+    if (/^\d+$/.test(trimmed)) {
+      return String(Number(trimmed)).padStart(4, "0");
+    }
+
+    const parts = trimmed.split("-");
+    const lastPart = parts[parts.length - 1] || trimmed;
+    if (/^\d+$/.test(lastPart)) {
+      return String(Number(lastPart)).padStart(4, "0");
+    }
+
+    return trimmed;
   };
 
   const formatDayName = (dateString: string) => {
@@ -608,6 +742,12 @@ const DeliveryDashboard: React.FC = () => {
                   {/* Filtre par statut */}
                   <div>
                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+
+                  {loadError && (
+                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                      {loadError}
+                    </div>
+                  )}
                       Statut de livraison
                     </h4>
                     <div className="flex flex-wrap items-center gap-2">
@@ -768,7 +908,7 @@ const DeliveryDashboard: React.FC = () => {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="font-medium text-gray-900">
-                            {order.orderNumber}
+                            {formatOrderNumber(order.orderNumber)}
                           </div>
                           <div className="text-xs text-gray-500">
                             {order.estimatedDeliveryTime}
@@ -853,7 +993,7 @@ const DeliveryDashboard: React.FC = () => {
         open={!!selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}
         type="details"
-        title={`Commande ${selectedOrder?.orderNumber}`}
+        title={`Commande ${formatOrderNumber(selectedOrder?.orderNumber || "")}`}
         description={`Client: ${selectedOrder?.clientInfo.firstName} ${selectedOrder?.clientInfo.lastName}`}
         size="lg"
         closable={true}

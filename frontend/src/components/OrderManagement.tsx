@@ -25,6 +25,8 @@ import {
   AlertTriangle,
   Download,
   Tag,
+  Monitor,
+  Home,
 } from "lucide-react";
 import { DataTable } from "./ui/DataTable";
 import { Modal } from "./ui/modal";
@@ -388,6 +390,22 @@ export function OrderManagement() {
           }
           
           const mapped: OrderWithPacking[] = items.map((o: any) => {
+            const mappedSource: OrderWithPacking["source"] =
+              o.source === "online" || o.source === "phone" || o.source === "in_store"
+                ? o.source
+                : "in_store";
+
+            const mappedPaymentMethod: NonNullable<OrderWithPacking["paymentMethod"]> =
+              o.paymentMethod === "in_store" || o.paymentMethod === "payment_link"
+                ? o.paymentMethod
+                : o.paymentType === "full"
+                  ? "in_store"
+                  : o.paymentType === "deposit"
+                    ? "payment_link"
+                    : o.squarePaymentId || o.squareInvoiceId
+                      ? "payment_link"
+                      : "in_store";
+
             // S'assurer que les items ont des produits avec des noms
             const orderItems = (o.items || []).map((item: any, idx: number) => {
               let productName = `Produit #${item.productId}`; // Nom par defaut
@@ -475,9 +493,8 @@ export function OrderManagement() {
               billingOrganization: o.billingOrganization,
               paymentDueDate: o.paymentDueDate,
               status: o.status || "pending",
-              source: "in_store" as const,
-              paymentMethod:
-                o.paymentType === "deposit" ? "payment_link" : "payment_link",
+              source: mappedSource,
+              paymentMethod: mappedPaymentMethod,
               paymentLinkChannel: o.paymentLinkChannel || "email",
               notes: o.notes,
               changeHistory: o.changeHistory,
@@ -577,6 +594,47 @@ export function OrderManagement() {
         className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}
       >
         {config.label}
+      </span>
+    );
+  };
+
+  const getPaymentChannelIcon = (order: OrderWithPacking) => {
+    const isPaidOrder = order.paymentStatus !== "unpaid";
+    if (!isPaidOrder) return null;
+
+    const paidViaBoutique = order.source === "online";
+    if (paidViaBoutique) {
+      return (
+        <span
+          title="Payé via boutique"
+          className="inline-flex items-center justify-center rounded-full bg-emerald-200 text-emerald-900 p-1"
+        >
+          <Home className="h-4 w-4" />
+        </span>
+      );
+    }
+
+    const paidViaSquareLink =
+      order.paymentMethod === "payment_link" ||
+      Boolean(order.squarePaymentId || order.squareInvoiceId);
+
+    if (paidViaSquareLink) {
+      return (
+        <span
+          title="Payé via lien Square"
+          className="inline-flex items-center justify-center rounded-full bg-blue-100 text-blue-700 p-1"
+        >
+          <Monitor className="h-3.5 w-3.5" />
+        </span>
+      );
+    }
+
+    return (
+      <span
+        title="Payé via boutique"
+        className="inline-flex items-center justify-center rounded-full bg-emerald-200 text-emerald-900 p-1"
+      >
+        <Home className="h-4 w-4" />
       </span>
     );
   };
@@ -1154,8 +1212,12 @@ export function OrderManagement() {
   };
 
   const canRefundOrder = (order: OrderWithPacking) => {
-    const hasSquareReference = Boolean(order.squarePaymentId || order.squareInvoiceId);
-    return hasSquareReference && order.status !== "cancelled";
+    const isPaid = order.paymentStatus === "paid";
+    const isSquareChannel =
+      order.paymentMethod === "payment_link" ||
+      Boolean(order.squarePaymentId || order.squareInvoiceId);
+
+    return isPaid && isSquareChannel && order.status !== "cancelled";
   };
 
   const sendPaymentLink = async (order: OrderWithPacking) => {
@@ -1312,6 +1374,7 @@ export function OrderManagement() {
       sortable: true,
       render: (order: OrderWithPacking) => (
         <div className="flex items-center gap-2">
+          {getPaymentChannelIcon(order)}
           {getPaymentBadge(order.paymentStatus)}
           {isGovernmentLate(order) && (
             <span className="px-2 py-1 rounded-full text-[10px] font-black bg-red-600 text-white">

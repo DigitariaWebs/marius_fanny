@@ -1024,9 +1024,15 @@ export const getOrders = async (
       if (toDate) query.orderDate.$lte = new Date(toDate);
     }
 
-    // If user is authenticated and not admin/vendeur, only show their orders
-    if (req.user && req.user.role !== "admin" && req.user.role !== "vendeur") {
-      query.userId = req.user.id;
+    // Access rules by role
+    if (req.user) {
+      if (req.user.role === "deliveryDriver") {
+        // Delivery drivers need access to delivery orders dashboard data.
+        query.deliveryType = "delivery";
+      } else if (req.user.role !== "admin" && req.user.role !== "vendeur") {
+        // Regular users only see their own orders.
+        query.userId = req.user.id;
+      }
     }
 
     // Execute query with pagination

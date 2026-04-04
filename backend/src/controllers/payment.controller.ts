@@ -11,6 +11,19 @@ import Order from "../models/Order.js";
 import { sendSms } from "../utils/smsService.js";
 import { sendInvoiceOrderConfirmation } from "../utils/mail.js";
 
+const isSquareUnauthorizedError = (statusCode?: number, errors?: any[]) => {
+  if (statusCode === 401) return true;
+  if (!Array.isArray(errors)) return false;
+  return errors.some(
+    (e) =>
+      String(e?.code || "").toUpperCase() === "UNAUTHORIZED" ||
+      String(e?.category || "").toUpperCase() === "AUTHENTICATION_ERROR",
+  );
+};
+
+const squareUnauthorizedHint =
+  "Square non autorise: verifier que SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID et SQUARE_ENVIRONMENT correspondent au MEME compte Square (sandbox vs production).";
+
 const safeStringify = (value: unknown) =>
   JSON.stringify(value, (_, currentValue) =>
     typeof currentValue === "bigint" ? currentValue.toString() : currentValue,
@@ -171,6 +184,14 @@ export const createPayment = async (req: Request, res: Response) => {
 
       const squareErrors = (error.body as any)?.errors;
       if (squareErrors && Array.isArray(squareErrors)) {
+        if (isSquareUnauthorizedError(error.statusCode, squareErrors)) {
+          return res.status(401).json({
+            success: false,
+            error: squareUnauthorizedHint,
+            details: squareErrors,
+          });
+        }
+
         const errorMessages = squareErrors
           .map(
             (e: any) =>
@@ -205,6 +226,14 @@ export const createPayment = async (req: Request, res: Response) => {
 
     const squareErrors = error?.body?.errors || error?.errors;
     if (squareErrors && Array.isArray(squareErrors)) {
+      if (isSquareUnauthorizedError(error?.statusCode, squareErrors)) {
+        return res.status(401).json({
+          success: false,
+          error: squareUnauthorizedHint,
+          details: squareErrors,
+        });
+      }
+
       console.error(
         `🚨 [PAYMENT] Square API errors:`,
         JSON.stringify(squareErrors, null, 2),
@@ -759,10 +788,19 @@ export const createInvoice = async (req: Request, res: Response) => {
 
     if (error instanceof SquareError) {
       console.error(`🚨 [INVOICE] SquareError:`, error.body);
+      const squareErrors = (error.body as any)?.errors;
+      if (isSquareUnauthorizedError(error.statusCode, squareErrors)) {
+        return res.status(401).json({
+          success: false,
+          error: squareUnauthorizedHint,
+          details: squareErrors,
+        });
+      }
+
       return res.status(error.statusCode || 400).json({
         success: false,
         error: error.message || "Failed to create invoice",
-        details: (error.body as any)?.errors,
+        details: squareErrors,
       });
     }
 
