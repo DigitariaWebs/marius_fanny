@@ -176,7 +176,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
                     <div className="max-w-lg rounded-xl border border-[#337957]/20 bg-white/70 backdrop-blur-[2px] p-4 md:p-5 shadow-lg">
 
                       <h3 className="mt-2 text-3xl md:text-4xl font-semibold leading-tight" style={{ fontFamily: styles.fontScript, color: styles.emerald }}>
-                        {banner.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
+                        {banner.name.charAt(0).toUpperCase() + banner.name.slice(1).toLowerCase()}
                       </h3>
                       <p className="mt-2 text-sm leading-relaxed line-clamp-2" style={{ color: styles.emerald }}>
                         {banner.description || 'Découvrez notre sélection exclusive pour vos moments marquants.'}
