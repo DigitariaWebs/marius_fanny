@@ -451,15 +451,20 @@ export default function OrderForm({
   }, [products, activePosCategory]);
 
   const addProductFromPos = (product: Product) => {
-    const existing = formData.items.find(
-      (item) => !item.isCustom && item.productId === product.id,
-    );
+    // Products with custom options always get a new line (different options = different item)
+    const hasCustomOptions = product.customOptions && product.customOptions.length > 0;
 
-    if (existing) {
-      const maxQuantity = product.maxOrderQuantity || Number.MAX_SAFE_INTEGER;
-      const nextQuantity = Math.min(existing.quantity + 1, maxQuantity);
-      handleItemChange(existing.id, "quantity", nextQuantity);
-      return;
+    if (!hasCustomOptions) {
+      const existing = formData.items.find(
+        (item) => !item.isCustom && item.productId === product.id,
+      );
+
+      if (existing) {
+        const maxQuantity = product.maxOrderQuantity || Number.MAX_SAFE_INTEGER;
+        const nextQuantity = Math.min(existing.quantity + 1, maxQuantity);
+        handleItemChange(existing.id, "quantity", nextQuantity);
+        return;
+      }
     }
 
     const initialOptions: Record<string, string> = {};

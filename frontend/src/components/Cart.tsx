@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -13,13 +13,6 @@ import {
   Tag,
   Check,
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import {
   calculateDeliveryFee,
   DELIVERY_ZONES,
@@ -62,6 +55,17 @@ const CartDrawer: React.FC<CartProps> = ({
 }) => {
   const navigate = useNavigate();
   const [selectedPostalCode, setSelectedPostalCode] = useState<string>("");
+  const [showPostalSuggestions, setShowPostalSuggestions] = useState(false);
+  const postalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (postalRef.current && !postalRef.current.contains(e.target as Node)) {
+        setShowPostalSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [deliveryType, setDeliveryType] = useState<"pickup" | "delivery">(
     "pickup",
   );
@@ -764,31 +768,59 @@ const CartDrawer: React.FC<CartProps> = ({
                   </>
                 ) : (
                   <>
-                    <Select
-                      value={selectedPostalCode}
-                      onValueChange={handlePostalCodeChange}
-                    >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Sélectionnez votre code postal" />
-                  </SelectTrigger>
-                  <SelectContent
-                    className="z-300 max-h-60"
-                    side="bottom"
-                    align="start"
-                  >
-                    {DELIVERY_ZONES.flatMap((zone) =>
-                      zone.postalCodes.map((postalCode) => (
-                        <SelectItem
-                          key={`${zone.name}-${postalCode}`}
-                          value={postalCode}
-                        >
-                          {postalCode} ({zone.deliveryFee.toFixed(2)}$
-                          livraison, min. {zone.minimumOrder.toFixed(2)}$)
-                        </SelectItem>
-                      )),
-                    )}
-                  </SelectContent>
-                </Select>
+                    <div className="relative" ref={postalRef}>
+                      <input
+                        type="text"
+                        value={selectedPostalCode}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 3);
+                          setSelectedPostalCode(val);
+                          if (val.length >= 2) {
+                            setShowPostalSuggestions(true);
+                          }
+                          if (val.length === 3) {
+                            handlePostalCodeChange(val);
+                          } else {
+                            // Reset delivery info if incomplete
+                            setDeliveryZoneInfo(null);
+                          }
+                        }}
+                        onFocus={() => {
+                          if (selectedPostalCode.length >= 2) setShowPostalSuggestions(true);
+                        }}
+                        placeholder="Entrez les 3 premières lettres (ex: H7X)"
+                        className="w-full px-4 py-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#337957]/50"
+                        maxLength={3}
+                      />
+                      {showPostalSuggestions && selectedPostalCode.length >= 2 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {DELIVERY_ZONES.flatMap((zone) =>
+                            zone.postalCodes
+                              .filter((pc) => pc.startsWith(selectedPostalCode))
+                              .map((pc) => (
+                                <button
+                                  key={`${zone.name}-${pc}`}
+                                  type="button"
+                                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-stone-50 transition-colors ${
+                                    selectedPostalCode === pc ? "bg-[#337957]/10 text-[#337957] font-semibold" : "text-stone-700"
+                                  }`}
+                                  onClick={() => {
+                                    handlePostalCodeChange(pc);
+                                    setShowPostalSuggestions(false);
+                                  }}
+                                >
+                                  {pc} ({zone.deliveryFee.toFixed(2)}$ livraison, min. {zone.minimumOrder.toFixed(2)}$)
+                                </button>
+                              ))
+                          )}
+                          {DELIVERY_ZONES.flatMap((zone) =>
+                            zone.postalCodes.filter((pc) => pc.startsWith(selectedPostalCode))
+                          ).length === 0 && (
+                            <div className="px-4 py-3 text-sm text-stone-400">Aucun code postal trouvé</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                 {deliveryZoneInfo && (
                   <div
                     className={`mt-2 p-2 rounded text-xs ${
