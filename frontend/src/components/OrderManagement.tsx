@@ -2694,11 +2694,19 @@ export function OrderManagement() {
               const newTotal = saved?.total ?? formData.total;
               const paidAmount = saved?.amountPaid ?? (selectedOrder as any).amountPaid ?? 0;
 
-              // Update payment status if overpaid (refund case)
-              if (paidAmount > 0.01 && newTotal < paidAmount) {
-                updatedOrder.paymentStatus = "paid";
-                updatedOrder.depositPaid = true;
-                updatedOrder.balancePaid = true;
+              // Update payment status based on paid vs new total
+              if (paidAmount > 0.01) {
+                if (newTotal <= paidAmount) {
+                  // Fully paid or overpaid (refund case)
+                  updatedOrder.paymentStatus = "paid";
+                  updatedOrder.depositPaid = true;
+                  updatedOrder.balancePaid = true;
+                } else {
+                  // Balance remaining — not fully paid
+                  updatedOrder.paymentStatus = "deposit_paid";
+                  updatedOrder.depositPaid = true;
+                  updatedOrder.balancePaid = false;
+                }
               }
 
               setOrders((prev) => {
@@ -2743,11 +2751,14 @@ export function OrderManagement() {
             selectedOrder
               ? {
                   date: (selectedOrder.pickupDate || selectedOrder.orderDate).split("T")[0],
-                  pickupTime: new Date(selectedOrder.pickupDate).toLocaleTimeString("fr-CA", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  }),
+                  pickupTime: (() => {
+                    const d = new Date(selectedOrder.pickupDate);
+                    const h = d.getHours().toString().padStart(2, "0");
+                    const mins = d.getMinutes();
+                    const m = mins < 15 ? "00" : mins < 45 ? "30" : "00";
+                    const finalH = mins >= 45 ? (d.getHours() + 1).toString().padStart(2, "0") : h;
+                    return `${finalH}:${m}`;
+                  })(),
                   clientId: selectedOrder.clientId,
                   firstName: selectedOrder.client.firstName,
                   lastName: selectedOrder.client.lastName,

@@ -1288,8 +1288,9 @@ export const updateOrder = async (
       const total = Math.max(0, subtotal - promoDiscountAmount) + taxAmount + deliveryFee;
       const depositAmount = order.paymentType === "full" ? total : total * 0.5;
 
-      const estimatedPaidAmount =
-        oldPaymentStatus === "paid"
+      const estimatedPaidAmount = order.amountPaid > 0
+        ? order.amountPaid
+        : oldPaymentStatus === "paid"
           ? oldTotal
           : oldPaymentStatus === "deposit_paid"
             ? oldDepositAmount
