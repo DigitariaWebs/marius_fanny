@@ -260,8 +260,8 @@ const AuthPage: React.FC = () => {
         >
           <ArrowLeft size={18} className="text-[#337957]" /> Retour au site
         </button>
-        <div className="relative z-10 w-full max-w-md px-6 text-center">
-          <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
+        <div className="relative z-10 w-full max-w-md px-4 sm:px-6 text-center">
+          <div className="bg-white/80 backdrop-blur-xl p-6 sm:p-10 rounded-3xl shadow-2xl border border-white/40">
             <div className="w-20 h-20 bg-[#337957]/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Mail className="text-[#337957]" size={40} />
             </div>
@@ -346,8 +346,8 @@ const AuthPage: React.FC = () => {
       >
         <ArrowLeft size={18} className="text-[#337957]" /> Retour au site
       </button>
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white/40">
+      <div className="relative z-10 w-full max-w-md px-4 sm:px-6">
+        <div className="bg-white/80 backdrop-blur-xl p-6 sm:p-10 rounded-3xl shadow-2xl border border-white/40">
           <div className="text-center mb-8">
             <h2 className="text-5xl mb-2" style={{ fontFamily: styles.fontScript, color: styles.gold }}>
               Marius & Fanny

@@ -933,7 +933,7 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
       </div>
 
       {/* Statistiques simplifiées */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
           <p className="text-xs text-amber-600 font-bold">Non Fait</p>
           <p className="text-2xl font-bold text-amber-700">

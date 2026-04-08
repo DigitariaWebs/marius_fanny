@@ -638,7 +638,7 @@ const Dashboard: React.FC = () => {
 
                 {/* Infos Commande */}
                 <div className="space-y-4 mb-6">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs font-bold opacity-50 uppercase tracking-widest mb-1">
                         ID Commande

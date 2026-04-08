@@ -90,201 +90,7 @@ const buildOrderItemsUpdatePayload = (items: OrderItemWithPacking[]) =>
   }));
 
 export function OrderManagement() {
-  const [orders, setOrders] = useState<OrderWithPacking[]>([
-    {
-      id: "1",
-      orderNumber: "ORD-2024-001",
-      clientId: 1,
-      client: {
-        id: 1,
-        firstName: "Marie",
-        lastName: "Dubois",
-        email: "marie.dubois@email.com",
-        phone: "514-555-0101",
-        status: "active",
-        createdAt: "2024-01-15T10:00:00Z",
-        updatedAt: "2024-01-15T10:00:00Z",
-        addresses: [],
-        orders: [],
-      },
-      orderDate: "2024-01-20T10:30:00Z",
-      pickupDate: "2024-01-25T15:00:00Z",
-      pickupLocation: "Montreal",
-      deliveryType: "pickup",
-      items: [
-        {
-          id: 1,
-          productId: 101,
-          product: { id: 101, name: "Gateau au chocolat", price: 35.00 },
-          quantity: 2,
-          unitPrice: 35.00,
-          subtotal: 70.00,
-          productionStatus: "pending",
-          isPacked: false
-        },
-        {
-          id: 2,
-          productId: 102,
-          product: { id: 102, name: "Tarte aux pommes", price: 25.00 },
-          quantity: 1,
-          unitPrice: 25.00,
-          subtotal: 25.00,
-          productionStatus: "pending",
-          isPacked: false
-        }
-      ],
-      subtotal: 95.0,
-      taxAmount: 14.21,
-      deliveryFee: 0,
-      total: 109.21,
-      depositAmount: 54.61,
-      depositPaid: true,
-      depositPaidAt: "2024-01-20T10:35:00Z",
-      balancePaid: false,
-      paymentStatus: "deposit_paid",
-      status: "in_production",
-      source: "phone",
-      createdAt: "2024-01-20T10:30:00Z",
-      updatedAt: "2024-01-22T14:20:00Z",
-    },
-    {
-      id: "2",
-      orderNumber: "ORD-2024-002",
-      clientId: 2,
-      client: {
-        id: 2,
-        firstName: "Jean",
-        lastName: "Tremblay",
-        email: "jean.tremblay@email.com",
-        phone: "450-555-0202",
-        status: "active",
-        createdAt: "2024-01-10T09:00:00Z",
-        updatedAt: "2024-01-10T09:00:00Z",
-        addresses: [],
-        orders: [],
-      },
-      orderDate: "2024-01-21T14:15:00Z",
-      pickupDate: "2024-01-26T10:00:00Z",
-      pickupLocation: "Laval",
-      deliveryType: "delivery",
-      deliveryAddress: {
-        id: 1,
-        type: "shipping",
-        street: "123 Rue Principale",
-        city: "Laval",
-        province: "QC",
-        postalCode: "H7A 1A1",
-        isDefault: true,
-      },
-      deliverySlot: "10:00-12:00",
-      items: [
-        {
-          id: 3,
-          productId: 103,
-          product: { id: 103, name: "Croissants (x6)", price: 12.00 },
-          quantity: 3,
-          unitPrice: 12.00,
-          subtotal: 36.00,
-          productionStatus: "ready",
-          isPacked: true
-        }
-      ],
-      subtotal: 125.0,
-      taxAmount: 18.69,
-      deliveryFee: 15.0,
-      total: 158.69,
-      depositAmount: 79.35,
-      depositPaid: true,
-      depositPaidAt: "2024-01-21T14:20:00Z",
-      balancePaid: true,
-      balancePaidAt: "2024-01-25T09:00:00Z",
-      paymentStatus: "paid",
-      status: "ready",
-      source: "online",
-      createdAt: "2024-01-21T14:15:00Z",
-      updatedAt: "2024-01-25T09:00:00Z",
-    },
-    {
-      id: "3",
-      orderNumber: "ORD-2024-003",
-      clientId: 3,
-      client: {
-        id: 3,
-        firstName: "Sophie",
-        lastName: "Gagnon",
-        email: "sophie.gagnon@email.com",
-        phone: "514-555-0303",
-        status: "active",
-        createdAt: "2024-01-18T11:00:00Z",
-        updatedAt: "2024-01-18T11:00:00Z",
-        addresses: [],
-        orders: [],
-      },
-      orderDate: "2024-01-22T09:00:00Z",
-      pickupDate: "2024-01-27T16:00:00Z",
-      pickupLocation: "Montreal",
-      deliveryType: "pickup",
-      items: [],
-      subtotal: 65.0,
-      taxAmount: 9.72,
-      deliveryFee: 0,
-      total: 74.72,
-      depositAmount: 37.36,
-      depositPaid: false,
-      balancePaid: false,
-      paymentStatus: "unpaid",
-      status: "pending",
-      source: "in_store",
-      createdAt: "2024-01-22T09:00:00Z",
-      updatedAt: "2024-01-22T09:00:00Z",
-    },
-    {
-      id: "4",
-      orderNumber: "ORD-2024-004",
-      clientId: 4,
-      client: {
-        id: 4,
-        firstName: "Pierre",
-        lastName: "Lavoie",
-        email: "pierre.lavoie@email.com",
-        phone: "450-555-0404",
-        status: "active",
-        createdAt: "2024-01-15T10:00:00Z",
-        updatedAt: "2024-01-15T10:00:00Z",
-        addresses: [],
-        orders: [],
-      },
-      orderDate: "2024-01-23T11:30:00Z",
-      pickupDate: "2024-01-28T14:00:00Z",
-      pickupLocation: "Laval",
-      deliveryType: "pickup",
-      items: [
-        {
-          id: 4,
-          productId: 104,
-          product: { id: 104, name: "Pain au levain", price: 8.00 },
-          quantity: 2,
-          unitPrice: 8.00,
-          subtotal: 16.00,
-          productionStatus: "in_progress",
-          isPacked: false
-        }
-      ],
-      subtotal: 95.0,
-      taxAmount: 14.21,
-      deliveryFee: 0,
-      total: 109.21,
-      depositAmount: 54.61,
-      depositPaid: true,
-      depositPaidAt: "2024-01-23T11:35:00Z",
-      balancePaid: false,
-      paymentStatus: "deposit_paid",
-      status: "confirmed",
-      source: "phone",
-      createdAt: "2024-01-23T11:30:00Z",
-      updatedAt: "2024-01-23T11:35:00Z",
-    },
-  ]);
+  const [orders, setOrders] = useState<OrderWithPacking[]>([]);
 
   const [filteredOrders, setFilteredOrders] = useState<OrderWithPacking[]>(orders);
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -1965,7 +1771,7 @@ export function OrderManagement() {
         {selectedOrder && (
           <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-white rounded-lg border border-gray-200 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -2037,7 +1843,7 @@ export function OrderManagement() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div>
                       <h4 className="font-semibold text-(--bakery-text) mb-3">
                         Informations client

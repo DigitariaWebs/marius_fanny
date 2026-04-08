@@ -38,7 +38,7 @@ export function StaffLayout({ children, user, onLogout }: StaffLayoutProps) {
       {/* Sidebar */}
       <aside
         className={`
-        fixed inset-y-0 left-0 z-50 w-72 md:w-56 lg:w-72 bg-linear-to-b from-[#2D2A26] to-[#1a1816] text-white flex flex-col shadow-2xl
+        fixed inset-y-0 left-0 z-50 w-64 md:w-56 lg:w-72 max-w-[75vw] bg-linear-to-b from-[#2D2A26] to-[#1a1816] text-white flex flex-col shadow-2xl
         transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
       `}
@@ -100,14 +100,14 @@ export function StaffLayout({ children, user, onLogout }: StaffLayoutProps) {
 ww
       {/* Main Content */}
       <main className="flex-1 overflow-auto flex flex-col">
-        <div className="md:hidden bg-white border-b border-gray-100 p-4 flex items-center gap-4 sticky top-0 z-30">
-          <button onClick={() => setIsMobileMenuOpen(true)}>
-            <Menu className="text-[#2D2A26]" />
+        <div className="md:hidden bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-4 sticky top-0 z-30">
+          <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2">
+            <Menu size={28} className="text-[#2D2A26]" />
           </button>
-          <span className="font-serif font-bold text-[#2D2A26]">Staff Dashboard</span>
+          <span className="font-serif font-bold text-lg text-[#2D2A26]">Staff Dashboard</span>
         </div>
-        
-        <div className="flex-1 p-4 md:p-8">
+
+        <div className="flex-1 p-3 sm:p-4 md:p-8">
             {children}
         </div>
       </main>

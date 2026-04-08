@@ -774,7 +774,7 @@ export function ProductManagement() {
             </div>
 
             {showCategoryFilter && (
-              <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 min-w-[250px] overflow-hidden">
+              <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 min-w-[200px] sm:min-w-[250px] max-w-[90vw] overflow-hidden">
                 {expandedParent === null ? (
                   <>
                     <div className="px-4 py-2.5 bg-stone-50 border-b text-xs font-bold uppercase tracking-wider text-stone-400">

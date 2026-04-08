@@ -346,7 +346,8 @@ const PatissierDashboard: React.FC = () => {
       {/* Sidebar */}
       <aside
         className={`
-        w-72 md:w-56 lg:w-72 bg-white/80 backdrop-blur-md text-stone-800 flex flex-col shadow-2xl border-r border-stone-200/50 relative z-20
+        fixed md:relative inset-y-0 left-0 z-50 md:z-20
+        w-64 md:w-56 lg:w-72 max-w-[75vw] bg-white/80 backdrop-blur-md text-stone-800 flex flex-col shadow-2xl border-r border-stone-200/50
         transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
@@ -424,15 +425,15 @@ const PatissierDashboard: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-auto relative z-10">
         {/* Mobile Header */}
-        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-stone-200 p-4 flex items-center justify-between sticky top-0 z-30">
+        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-stone-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="text-stone-600 hover:text-[#C5A065]"
+            className="text-stone-600 hover:text-[#C5A065] p-2 -ml-2"
           >
-            <Menu size={24} />
+            <Menu size={28} />
           </button>
           <h1
-            className="text-xl"
+            className="text-2xl"
             style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
           >
             Marius & Fanny
@@ -784,16 +785,16 @@ const PatissierDashboard: React.FC = () => {
                       {source.savedBy ? `  -  par ${source.savedBy}` : ""}
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left min-w-225">
+                      <table className="w-full text-left min-w-[450px]">
                         <thead className="bg-stone-50 border-b border-stone-200">
                           <tr className="text-[10px] uppercase tracking-widest text-stone-500">
-                            <th className="px-6 py-3">Produit</th>
-                            <th className="px-4 py-3 text-center">ST-do</th>
-                            <th className="px-4 py-3 text-center">Comm. St-do</th>
-                            <th className="px-4 py-3 text-center">BERRI</th>
-                            <th className="px-4 py-3 text-center">Comm Berri</th>
-                            <th className="px-4 py-3 text-center">Comm CLIENT</th>
-                            <th className="px-4 py-3 text-center">Total</th>
+                            <th className="px-2 md:px-6 py-3">Produit</th>
+                            <th className="px-2 md:px-4 py-3 text-center">ST-do</th>
+                            <th className="px-2 md:px-4 py-3 text-center">Comm. St-do</th>
+                            <th className="px-2 md:px-4 py-3 text-center">BERRI</th>
+                            <th className="px-2 md:px-4 py-3 text-center">Comm Berri</th>
+                            <th className="px-2 md:px-4 py-3 text-center">Comm CLIENT</th>
+                            <th className="px-2 md:px-4 py-3 text-center">Total</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100">

@@ -929,7 +929,7 @@ export default function OrderForm({
       </div>
 
       {/* SECTION 2: Informations client */}
-      <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-gray-200">
         <div>
           <Label htmlFor="email" className="text-xs text-gray-600">
             EMAIL:
@@ -1049,7 +1049,7 @@ export default function OrderForm({
           {!selectedClient && emailSearch && (
             <div className="space-y-2 pt-2">
               <Label className="text-xs text-gray-600">TYPE DE CLIENT</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {([
                   { value: "standard", label: "Standard" },
                   { value: "representant", label: "Représentant" },
@@ -1180,7 +1180,7 @@ export default function OrderForm({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="street" className="text-xs text-gray-600">
                 RUE:
@@ -1442,7 +1442,7 @@ export default function OrderForm({
           )}
 
         {!formData.billingAddress?.sameAsDelivery && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="billingStreet" className="text-xs text-gray-600">
                 RUE:
@@ -2041,7 +2041,7 @@ export default function OrderForm({
         <RadioGroup
           value={formData.paymentMethod}
           onValueChange={(value) => handleInputChange("paymentMethod", value)}
-          className="grid grid-cols-2 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
         >
           <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-[#C5A065] transition-colors">
             <RadioGroupItem value="in_store" id="in_store" />
@@ -2065,7 +2065,7 @@ export default function OrderForm({
               onValueChange={(value) =>
                 handleInputChange("paymentLinkChannel", value)
               }
-              className="grid grid-cols-2 gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
             >
               <div className="flex items-center space-x-2 border rounded-lg p-3 cursor-pointer hover:border-[#C5A065] transition-colors">
                 <RadioGroupItem value="email" id="link_email" />

@@ -160,7 +160,8 @@ export default function AdminDashboard() {
       {/* --- SIDEBAR --- */}
       <aside
         className={`
-        w-72 md:w-56 lg:w-72 bg-white/80 backdrop-blur-md text-stone-800 flex flex-col shadow-2xl border-r border-stone-200/50 relative z-20
+        fixed md:relative inset-y-0 left-0 z-50 md:z-20
+        w-64 md:w-56 lg:w-72 max-w-[75vw] bg-white/80 backdrop-blur-md text-stone-800 flex flex-col shadow-2xl border-r border-stone-200/50
         transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
@@ -353,28 +354,28 @@ export default function AdminDashboard() {
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 overflow-auto relative z-10">
         {/* Mobile Header with Hamburger */}
-        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-stone-200 p-4 flex items-center justify-between sticky top-0 z-30">
+        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-stone-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="text-stone-600 hover:text-[#C5A065]"
+            className="text-stone-600 hover:text-[#C5A065] p-2 -ml-2"
           >
-            <Menu size={24} />
+            <Menu size={28} />
           </button>
           <h1
-            className="text-xl"
+            className="text-2xl"
             style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
           >
             Marius & Fanny
           </h1>
-          <div className="w-6" /> {/* Spacer for centering */}
+          <div className="w-8" />
         </div>
 
         {/* VUE D'ENSEMBLE */}
         {viewMode === "overview" && (
           <>
-            <header className="p-4 md:p-8">
+            <header className="p-5 md:p-8">
               <h2
-                className="text-4xl md:text-5xl mb-2"
+                className="text-3xl sm:text-4xl md:text-5xl mb-2"
                 style={{
                   fontFamily: '"Great Vibes", cursive',
                   color: "#C5A065",
@@ -382,14 +383,14 @@ export default function AdminDashboard() {
               >
                 Vue d'ensemble
               </h2>
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
+              <p className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-stone-500">
                 Tableau de bord administrateur
               </p>
             </header>
 
-            <div className="p-4 md:p-8">
+            <div className="p-3 sm:p-4 md:p-8">
               {/* Stats Grid - Responsive */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 md:mb-8">
                 <StatCard
                   title="Produits"
                   value={statistics.totalProducts}
@@ -422,9 +423,9 @@ export default function AdminDashboard() {
               {/* Top Products & Charts - Responsive Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Top Products */}
-                <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white p-6 md:p-8 hover:shadow-2xl transition-all duration-300">
+                <div className="bg-white/70 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white p-4 sm:p-6 md:p-8 hover:shadow-2xl transition-all duration-300">
                   <div className="flex items-center justify-between mb-4 md:mb-6">
-                    <h3 className="text-xl md:text-2xl font-bold text-stone-800">
+                    <h3 className="text-base sm:text-xl md:text-2xl font-bold text-stone-800">
                       Produits les plus vendus
                     </h3>
                     <BarChart3 className="text-[#C5A065]" size={24} />
@@ -620,14 +621,14 @@ function StatCard({ title, value, change, icon, color, alert }: StatCardProps) {
 
   return (
     <div
-      className={`bg-white/70 backdrop-blur-md rounded-2xl border border-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 p-5 md:p-6 ${alert ? "ring-2 ring-red-300" : ""}`}
+      className={`bg-white/70 backdrop-blur-md rounded-2xl border border-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 p-4 sm:p-5 md:p-6 ${alert ? "ring-2 ring-red-300" : ""}`}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-bold opacity-60 uppercase tracking-widest mb-1">
+          <p className="text-[10px] sm:text-xs font-bold opacity-60 uppercase tracking-widest mb-1">
             {title}
           </p>
-          <h3 className="text-2xl md:text-3xl font-bold text-stone-800">
+          <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-stone-800">
             {value}
           </h3>
           {change !== undefined && (

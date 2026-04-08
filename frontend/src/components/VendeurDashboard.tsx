@@ -69,7 +69,8 @@ export default function VendeurDashboard() {
 
       <aside
         className={`
-        w-72 md:w-56 lg:w-72 bg-white text-stone-800 flex flex-col shadow-2xl border-r border-stone-200 relative z-20
+        fixed md:relative inset-y-0 left-0 z-50 md:z-20
+        w-64 md:w-56 lg:w-72 max-w-[75vw] bg-white text-stone-800 flex flex-col shadow-2xl border-r border-stone-200
         transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
@@ -142,14 +143,14 @@ export default function VendeurDashboard() {
       </aside>
 
       <main className="flex-1 overflow-auto relative z-10">
-        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-stone-200 p-4 flex items-center justify-between sticky top-0 z-30">
-          <button onClick={() => setIsMobileMenuOpen(true)} className="text-stone-600 hover:text-[#337957]">
-            <Menu size={24} />
+        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-stone-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+          <button onClick={() => setIsMobileMenuOpen(true)} className="text-stone-600 hover:text-[#337957] p-2 -ml-2">
+            <Menu size={28} />
           </button>
-          <h1 className="text-xl" style={{ fontFamily: '"Great Vibes", cursive', color: "#337957" }}>
+          <h1 className="text-2xl" style={{ fontFamily: '"Great Vibes", cursive', color: "#337957" }}>
             Espace Vendeur
           </h1>
-          <div className="w-6" />
+          <div className="w-8" />
         </div>
 
         {viewMode === "orders" && <OrderManagement />}
