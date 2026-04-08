@@ -461,7 +461,7 @@ export default function InventaireJournalier() {
               <p className="text-sm">Aucun produit dans la liste.</p>
             </div>
           ) : (
-            <table id="inventaire-journalier-table" className="w-full min-w-[700px] text-sm">
+            <table id="inventaire-journalier-table" className="w-full min-w-[500px] text-sm">
               <thead>
                 <tr className="bg-stone-50 border-b border-stone-100">
                   <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-stone-400 w-64">

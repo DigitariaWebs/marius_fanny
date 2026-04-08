@@ -160,7 +160,7 @@ export default function AdminDashboard() {
       {/* --- SIDEBAR --- */}
       <aside
         className={`
-        w-72 bg-white/80 backdrop-blur-md text-stone-800 flex flex-col shadow-2xl border-r border-stone-200/50 relative z-20
+        w-72 md:w-56 lg:w-72 bg-white/80 backdrop-blur-md text-stone-800 flex flex-col shadow-2xl border-r border-stone-200/50 relative z-20
         transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
@@ -420,7 +420,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Top Products & Charts - Responsive Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Top Products */}
                 <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white p-6 md:p-8 hover:shadow-2xl transition-all duration-300">
                   <div className="flex items-center justify-between mb-4 md:mb-6">

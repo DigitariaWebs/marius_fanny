@@ -36,7 +36,6 @@ async function initializeAuth() {
         defaultCookieAttributes: {
           sameSite: isProduction ? "none" : "lax",
           secure: isProduction,
-          partitioned: isProduction,
         },
       },
       user: {
@@ -78,7 +77,9 @@ async function initializeAuth() {
       ],
       trustedOrigins: [
         process.env.FRONTEND_URL || "http://localhost:5173",
-        // Add production frontend URLs if different
+        "https://marius-fanny-xi.vercel.app",
+        "https://www.mariusetfanny.com",
+        "https://mariusetfanny.com",
       ],
       secret:
         process.env.BETTER_AUTH_SECRET ||

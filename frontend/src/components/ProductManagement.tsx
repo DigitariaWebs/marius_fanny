@@ -1166,7 +1166,7 @@ export function ProductManagement() {
                 }
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="Description du produit..."
-                rows={3}
+                rows={6}
               />
             </div>
 
@@ -1718,7 +1718,7 @@ export function ProductManagement() {
                 }
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#337957]/50 outline-none"
                 placeholder="Description du produit..."
-                rows={3}
+                rows={6}
               />
             </div>
 
@@ -2118,7 +2118,7 @@ export function ProductManagement() {
                   <label className="text-sm font-medium text-gray-500">
                     Description
                   </label>
-                  <p className="text-base text-[#2D2A26] mt-1">
+                  <p className="text-base text-[#2D2A26] mt-1 whitespace-pre-line">
                     {selectedProduct.description}
                   </p>
                 </div>

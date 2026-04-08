@@ -2360,9 +2360,7 @@ export function OrderManagement() {
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="font-semibold text-gray-900">
-                          {selectedOrder.paymentMethod === "in_store"
-                            ? "Paiement total (100%)"
-                            : "Depot (50%)"}
+                          Paiement total (100%)
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
                           {formatCurrency(selectedOrder.depositAmount)}
@@ -2606,8 +2604,7 @@ export function OrderManagement() {
                 deliveryType: formData.deliveryType,
                 items: apiItems,
                 notes: formData.notes || undefined,
-                paymentType:
-                  formData.paymentMethod === "in_store" ? ("full" as const) : ("deposit" as const),
+                paymentType: "full" as const,
                 depositPaid: formData.paymentMethod === "in_store",
                 paymentLinkChannel: formData.paymentLinkChannel,
                 billingKind: formData.billingKind || "standard",

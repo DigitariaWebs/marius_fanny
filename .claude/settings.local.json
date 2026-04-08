@@ -14,7 +14,13 @@
       "Bash(node -e \":*)",
       "Bash(curl -s \"http://localhost:3000/api/orders?deliveryType=delivery&limit=10\" -H \"Content-Type: application/json\")",
       "Bash(curl -s \"http://localhost:3000/api/orders?limit=50&deliveryType=delivery\" -b \"\")",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -H \"Authorization: Bearer EAAAl8sU6NDcr4VdX6OYSs2yLMujQZcHUNo9uyeXQEv8S8VpK8TF5B2ED7zW7z8_\" -H \"Content-Type: application/json\" \"https://connect.squareup.com/v2/locations/L9F70ZEK3J6ZN\")",
+      "Bash(curl -s -H \"Authorization: Bearer EAAAl8sU6NDcr4VdX6OYSs2yLMujQZcHUNo9uyeXQEv8S8VpK8TF5B2ED7zW7z8_\" -H \"Content-Type: application/json\" \"https://connect.squareup.com/v2/locations/L9F70ZEK3J6ZN\")",
+      "Bash(curl -s -H \"Authorization: Bearer EAAAl8sU6NDcr4VdX6OYSs2yLMujQZcHUNo9uyeXQEv8S8VpK8TF5B2ED7zW7z8_\" -H \"Content-Type: application/json\" \"https://connect.squareup.com/v2/locations\")",
+      "Bash(curl -s -H \"Authorization: Bearer EAAAl8sU6NDcr4VdX6OYSs2yLMujQZcHUNo9uyeXQEv8S8VpK8TF5B2ED7zW7z8_\" \"https://connect.squareup.com/v2/merchants/MLG7KFTE7J3A0\")",
+      "Bash(curl -s -X POST -H \"Authorization: Bearer EAAAl8sU6NDcr4VdX6OYSs2yLMujQZcHUNo9uyeXQEv8S8VpK8TF5B2ED7zW7z8_\" -H \"Content-Type: application/json\" -H \"Square-Version: 2026-01-22\" -d '{\"source_id\":\"cnon:card-nonce-ok\",\"idempotency_key\":\"test-123-unique-key\",\"amount_money\":{\"amount\":100,\"currency\":\"CAD\"},\"location_id\":\"L9F70ZEK3J6ZN\"}' \"https://connect.squareup.com/v2/payments\")"
     ]
   }
 }

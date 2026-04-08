@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Phone, Instagram, Send, MapPin, Mail, Paperclip, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Phone, Instagram, Send, MapPin, Paperclip, X, Loader2 } from 'lucide-react';
 import GoldenBackground from './GoldenBackground';
 import { useSettings } from '../lib/SettingsContext';
 
@@ -114,11 +114,6 @@ const Contact: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#337957]/10 flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5 text-[#337957]" />
-                  </div>
-                </div>
 
                 <div className="flex items-start gap-4">
                

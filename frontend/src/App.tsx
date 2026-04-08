@@ -50,6 +50,7 @@ interface CartItem {
   category?: string;
   productionType?: string;
   preparationTimeHours?: number;
+  minOrderQuantity?: number;
 }
 
 interface HomePageProps {
@@ -177,7 +178,8 @@ const App: React.FC = () => {
     setCartItems((prev) =>
       prev.map((item) => {
         if ((item.cartItemKey || buildCartItemKey(item)) === cartItemKey) {
-          const newQty = Math.max(1, item.quantity + delta);
+          const minQty = item.minOrderQuantity || 1;
+          const newQty = Math.max(minQty, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
         return item;

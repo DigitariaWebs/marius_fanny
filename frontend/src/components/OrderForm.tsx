@@ -286,12 +286,14 @@ export default function OrderForm({
       if (item.isCustom) {
         return sum + (item.taxable === false ? 0 : item.amount);
       }
-      return sum + item.amount;
+      // For regular products, check the product's hasTaxes flag
+      const product = products.find((p) => p.id === item.productId);
+      const hasTaxes = product?.hasTaxes !== undefined ? product.hasTaxes : true;
+      return sum + (hasTaxes ? item.amount : 0);
     }, 0);
     const taxAmount = taxableSubtotal * TAX_RATE;
     const total = subtotal + taxAmount + formData.deliveryFee;
-    const depositAmount =
-      formData.paymentMethod === "in_store" ? total : total * 0.5;
+    const depositAmount = total;
     const balance = total - depositAmount;
 
     setFormData((prev) => ({
@@ -322,8 +324,10 @@ export default function OrderForm({
   }, [
     formData.items,
     formData.deliveryFee,
+    formData.paymentMethod,
     deliveryZoneInfo,
     formData.deliveryType,
+    products,
   ]);
 
   const handleInputChange = (field: keyof OrderFormData, value: any) => {

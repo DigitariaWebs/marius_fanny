@@ -294,7 +294,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
     // Réinitialiser toutes les options
-    setQuantity(1);
+    setQuantity(Math.max(product.minOrderQuantity || 1, 1));
     setSelectedBread("Baguette");
     setIsSliced(false);
     setSelectedOptions({});
@@ -750,7 +750,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                   </>
                 )}
 
-                <p className="text-stone-600 mb-6 font-light leading-relaxed text-sm md:text-base">
+                <p className="text-stone-600 mb-6 font-light leading-relaxed text-sm md:text-base whitespace-pre-line">
                   {selectedProduct.description}
                 </p>
 
@@ -845,7 +845,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 <div className="flex gap-4">
                   <div className="flex items-center border border-stone-200 rounded-lg h-14 shrink-0">
                     <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      onClick={() => setQuantity(Math.max(selectedProduct?.minOrderQuantity || 1, quantity - 1))}
                       className="px-4 h-full hover:bg-stone-50 text-xl text-stone-500 transition-colors"
                     >
                       -

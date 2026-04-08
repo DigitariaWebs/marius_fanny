@@ -183,22 +183,18 @@ const Checkout: React.FC = () => {
     tomorrow.setDate(now.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
 
-    // Calculate when products will be ready based on prep time
-    const readyTime = new Date();
-    readyTime.setHours(now.getHours() + maxPreparationHours);
+    // Convert preparation hours to full days (round up)
+    // e.g. 48h = 2 days, meaning customer must wait 2 full days
+    const prepDays = Math.ceil(maxPreparationHours / 24);
 
-    const readyDate = new Date(readyTime);
+    // The minimum date is today + prepDays (at least tomorrow)
+    const readyDate = new Date(now);
+    readyDate.setDate(now.getDate() + Math.max(prepDays, 1));
     readyDate.setHours(0, 0, 0, 0);
-
-    // If products won't be ready until late in the day (after 6 PM),
-    // push delivery to next day since we can't deliver late at night
-    if (readyTime.getHours() >= 18) {
-      readyDate.setDate(readyDate.getDate() + 1);
-    }
 
     // Business rule: Must order before noon for next day pickup
     // After noon, minimum date is day after tomorrow
-    if (now.getHours() >= 12) {
+    if (now.getHours() >= 12 && prepDays <= 1) {
       const dayAfterTomorrow = new Date(now);
       dayAfterTomorrow.setDate(now.getDate() + 2);
       dayAfterTomorrow.setHours(0, 0, 0, 0);

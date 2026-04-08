@@ -4,12 +4,12 @@ const styles = {
   container: {
     backgroundColor: '#F9F7F2',
     color: '#1a1a1a',
-    fontFamily: '"Inter", sans-serif',
+    fontFamily: '"Century Gothic", sans-serif',
     position: 'relative' as const,
     overflow: 'hidden'
   },
   title: { fontFamily: '"Great Vibes", cursive', color: '#337957' },
-  serif: { fontFamily: '"Playfair Display", serif' },
+  serif: { fontFamily: '"Century Gothic", sans-serif' },
   accent: { backgroundColor: '#337957' },
   border: { borderColor: '#337957' }
 };

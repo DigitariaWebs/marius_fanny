@@ -45,10 +45,22 @@ const initializeApp = async () => {
       console.error("❌ ERREUR CONNEXION MONGOOSE:", err);
     }
 
-    // CORS
+    // CORS — allow multiple origins for Safari/iPad compatibility
+    const allowedOrigins = [
+      FRONTEND_URL,
+      "https://marius-fanny-xi.vercel.app",
+      "https://www.mariusetfanny.com",
+      "https://mariusetfanny.com",
+    ];
     app.use(
       cors({
-        origin: FRONTEND_URL,
+        origin: (origin, callback) => {
+          if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            callback(null, false);
+          }
+        },
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         credentials: true,
       }),

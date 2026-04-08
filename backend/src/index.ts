@@ -80,14 +80,20 @@ mongoose
 // Removed request logger for production cleanliness
 
 // CORS configuration - accepte localhost sur n'importe quel port en développement
+const allowedOrigins = [
+  FRONTEND_URL,
+  "https://marius-fanny-xi.vercel.app",
+  "https://www.mariusetfanny.com",
+  "https://mariusetfanny.com",
+];
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests from localhost (any port) in development
     if (process.env.NODE_ENV === "development" && origin?.includes("localhost")) {
       callback(null, true);
     }
-    // Allow from FRONTEND_URL
-    else if (origin === FRONTEND_URL) {
+    // Allow from known origins
+    else if (origin && allowedOrigins.includes(origin)) {
       callback(null, true);
     }
     // Allow requests with no origin (like mobile apps or curl requests)
