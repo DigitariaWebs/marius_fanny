@@ -48,11 +48,13 @@ class ClientAPI {
   private baseUrl = `${API_URL}/api/users`;
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const token = localStorage.getItem("bearer_token");
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });
@@ -60,11 +62,13 @@ class ClientAPI {
     if (response.status === 401) {
       try {
         await authClient.getSession();
+        const retryToken = localStorage.getItem("bearer_token");
         const retryResponse = await fetch(`${this.baseUrl}${endpoint}`, {
           ...options,
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            ...(retryToken ? { Authorization: `Bearer ${retryToken}` } : {}),
             ...options.headers,
           },
         });

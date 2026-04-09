@@ -32,10 +32,12 @@ class DailyInventoryAPI {
     retryOn401 = true,
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem("bearer_token");
     const response = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
       credentials: "include",
