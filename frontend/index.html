@@ -9,6 +9,24 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Patch fetch BEFORE any module loads — injects bearer token for auth
+      (function() {
+        var _f = window.fetch.bind(window);
+        window.fetch = function(input, init) {
+          var url = typeof input === 'string' ? input : (input && input.url) || '';
+          if (url.indexOf('vercel.app') !== -1) {
+            var t = localStorage.getItem('bearer_token');
+            if (t) {
+              var h = new Headers(init && init.headers);
+              if (!h.has('Authorization')) h.set('Authorization', 'Bearer ' + t);
+              init = Object.assign({}, init, { headers: h });
+            }
+          }
+          return _f(input, init);
+        };
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
