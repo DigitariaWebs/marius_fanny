@@ -7,8 +7,8 @@ import './index.css'
 const originalFetch = window.fetch;
 window.fetch = function (input, init) {
   const url = typeof input === 'string' ? input : input instanceof Request ? input.url : '';
-  const apiUrl = import.meta.env.VITE_API_URL || '';
-  if (apiUrl && url.startsWith(apiUrl)) {
+  // Match any request to the backend
+  if (url.includes('marius-fanny-backend') || url.includes(import.meta.env.VITE_API_URL || '__none__')) {
     const token = localStorage.getItem('bearer_token');
     if (token) {
       const headers = new Headers(init?.headers);

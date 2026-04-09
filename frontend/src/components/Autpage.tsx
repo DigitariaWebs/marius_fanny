@@ -147,8 +147,13 @@ const AuthPage: React.FC = () => {
         }
 
         // Store session token for cross-domain compatibility
-        if (signInData?.token) {
-          localStorage.setItem("bearer_token", signInData.token);
+        console.log("🔑 [AUTH] SignIn response:", JSON.stringify(signInData));
+        const token = signInData?.token;
+        if (token) {
+          localStorage.setItem("bearer_token", token);
+          console.log("✅ [AUTH] Bearer token stored in localStorage");
+        } else {
+          console.warn("⚠️ [AUTH] No token in signIn response");
         }
 
         await handleRoleBasedRedirect(signInData);
