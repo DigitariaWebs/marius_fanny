@@ -34,7 +34,7 @@ const AuthPage: React.FC = () => {
   const navigate = useNavigate();
 
   // --- LOGIQUE DE REDIRECTION CENTRALISÉE ---
-  const handleRoleBasedRedirect = async () => {
+  const handleRoleBasedRedirect = async (signInData?: any) => {
     try {
       const checkoutIntent = localStorage.getItem("checkout_intent");
       if (checkoutIntent) {
@@ -45,17 +45,30 @@ const AuthPage: React.FC = () => {
         return;
       }
 
-      const session = await authClient.getSession({
-        query: { disableCookieCache: true },
-      });
-      
-      const user = session?.data?.user as UserWithRole; 
-      
+      let user: UserWithRole | null = null;
+
+      // Use session data from signIn response if available (avoids cookie dependency)
+      if (signInData?.user) {
+        user = signInData.user as UserWithRole;
+      } else {
+        // Fallback: try to get session from cookie
+        const session = await authClient.getSession({
+          query: { disableCookieCache: true },
+        });
+        user = session?.data?.user as UserWithRole;
+      }
+
+      if (!user) {
+        console.warn("⚠️ [AUTH] No user found after login, redirecting to home");
+        navigate("/");
+        return;
+      }
+
       const role = user?.user_metadata?.role || user?.role || "client";
       console.log("👤 [AUTH] Role detected:", role);
 
       const destination = getRedirectPath(role);
-      
+
       navigate(destination, { replace: true });
 
     } catch (e) {
@@ -113,7 +126,7 @@ const AuthPage: React.FC = () => {
 
     try {
       if (view === "login") {
-        const { error: signInError } = await authClient.signIn.email({
+        const { data: signInData, error: signInError } = await authClient.signIn.email({
           email,
           password,
         });
@@ -133,7 +146,12 @@ const AuthPage: React.FC = () => {
           throw new Error(signInError.message || "Connexion échouée");
         }
 
-        await handleRoleBasedRedirect();
+        // Store session token for cross-domain compatibility
+        if (signInData?.token) {
+          localStorage.setItem("bearer_token", signInData.token);
+        }
+
+        await handleRoleBasedRedirect(signInData);
 
       } else if (view === "signup") {
         const { error: signUpError } = await authClient.signUp.email({
@@ -191,7 +209,7 @@ const AuthPage: React.FC = () => {
         if (pendingSignIn) {
           // Complete the pending sign-in
           console.log("🔐 [AUTH] Completing pending sign-in...");
-          const { error: signInError } = await authClient.signIn.email({
+          const { data: signInData, error: signInError } = await authClient.signIn.email({
             email: pendingSignIn.email,
             password: pendingSignIn.password,
           });
@@ -200,9 +218,14 @@ const AuthPage: React.FC = () => {
             throw new Error(signInError.message || "Erreur lors de la connexion");
           }
 
+          // Store session token for cross-domain compatibility
+          if (signInData?.token) {
+            localStorage.setItem("bearer_token", signInData.token);
+          }
+
           setPendingSignIn(null);
-          
-          await handleRoleBasedRedirect();
+
+          await handleRoleBasedRedirect(signInData);
 
         } else {
           setSuccessMessage("Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.");

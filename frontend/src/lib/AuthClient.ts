@@ -9,7 +9,25 @@ export const normalizedApiUrl = API_URL.startsWith('http') ? API_URL : `https://
 export const authClient = createAuthClient({
   baseURL: normalizedApiUrl,
   fetchOptions: {
-    credentials: 'include', // Important: Send cookies with cross-origin requests
+    credentials: 'include',
+    onRequest(context) {
+      // Send bearer token from localStorage for cross-domain compatibility
+      const token = localStorage.getItem("bearer_token");
+      if (token) {
+        context.headers.set("Authorization", `Bearer ${token}`);
+      }
+    },
+    onSuccess(context) {
+      // Store token from response if available
+      const token = context.response.headers.get("set-auth-token");
+      if (token) {
+        localStorage.setItem("bearer_token", token);
+      }
+      // Clear token on signOut
+      if (context.response.url?.includes("/sign-out")) {
+        localStorage.removeItem("bearer_token");
+      }
+    },
   },
   plugins: [emailOTPClient()],
   user: {

@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, bearer } from "better-auth/plugins";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import bcrypt from "bcryptjs";
 import { connectMongoDB } from "./db.js";
@@ -74,6 +74,7 @@ async function initializeAuth() {
             }
           },
         }),
+        bearer(),
       ],
       trustedOrigins: [
         process.env.FRONTEND_URL || "http://localhost:5173",
