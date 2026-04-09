@@ -21,6 +21,29 @@ export interface AuthRequest extends Request {
 }
 
 /**
+ * Resolve session from cookies OR bearer token.
+ * The bearer plugin hooks only run on better-auth routes,
+ * so for custom API routes we manually convert the token.
+ */
+async function resolveSession(req: Request) {
+  // 1. Try cookie-based session first
+  let session = await auth.api.getSession({ headers: req.headers as any });
+  if (session) return session;
+
+  // 2. Fallback: bearer token → convert to session via better-auth
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    // Create a fake cookie header so better-auth can resolve the session
+    const fakeHeaders = new Headers(req.headers as any);
+    fakeHeaders.set("cookie", `better-auth.session_token=${token}`);
+    session = await auth.api.getSession({ headers: fakeHeaders });
+  }
+
+  return session;
+}
+
+/**
  * Middleware to verify user authentication using Better Auth
  * Attaches user and session to request if authenticated
  */
@@ -30,9 +53,7 @@ export async function requireAuth(
   next: NextFunction,
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers as any,
-    });
+    const session = await resolveSession(req);
 
     if (!session) {
       return res.status(401).json({
@@ -67,9 +88,7 @@ export async function optionalAuth(
   next: NextFunction,
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers as any,
-    });
+    const session = await resolveSession(req);
 
     if (session) {
       (req as AuthRequest).user = session.user;
