@@ -11,9 +11,10 @@ export async function getSessionUniversal(): Promise<{ user: any; session?: any 
 
   if (token) {
     try {
+      // IMPORTANT: do NOT send cookies — they may be stale and override the bearer token
       const response = await fetch(`${normalizedApiUrl}/api/auth/get-session`, {
         headers: { Authorization: `Bearer ${token}` },
-        credentials: "include",
+        credentials: "omit",
       });
       console.log("[getSession] bearer fetch status:", response.status);
       if (response.ok) {
