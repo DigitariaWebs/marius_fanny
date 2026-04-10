@@ -553,12 +553,28 @@ const DeliveryDashboard: React.FC = () => {
     return filtered;
   };
 
-  if (loading || !driver) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#C5A065] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!driver) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center max-w-md p-8">
+          <p className="text-base text-gray-700 mb-4">Session expirée ou non autorisée.</p>
+          <button
+            onClick={() => navigate("/se-connecter")}
+            className="px-6 py-2 bg-[#C5A065] text-white rounded-lg hover:bg-[#b8935a]"
+          >
+            Se reconnecter
+          </button>
         </div>
       </div>
     );

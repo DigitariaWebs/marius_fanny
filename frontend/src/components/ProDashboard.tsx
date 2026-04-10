@@ -133,15 +133,21 @@ export default function ProDashboard({
     const init = async () => {
       try {
         const session = await getSessionUniversal();
-        if (!session?.user) return;
+        if (!session?.user) {
+          setLoading(false);
+          return;
+        }
         const user: any = session.user;
         const role = user.role || user.user_metadata?.role;
-        if (role !== "pro") return;
+        if (role !== "pro") {
+          setLoading(false);
+          return;
+        }
         setUserName(user.name || "Partenaire");
 
         await fetchData();
       } catch {
-        // silently ignore auth errors
+        setLoading(false);
       }
     };
     init();

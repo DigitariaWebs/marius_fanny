@@ -6,24 +6,32 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 // Ensure API_URL has protocol
 export const normalizedApiUrl = API_URL.startsWith('http') ? API_URL : `https://${API_URL}`;
 
+// Custom fetch implementation that ALWAYS injects bearer token
+const authFetch: typeof fetch = (input, init) => {
+  const token = localStorage.getItem("bearer_token");
+  const headers = new Headers(init?.headers);
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  return window.fetch(input, { ...init, headers, credentials: "include" });
+};
+
 export const authClient = createAuthClient({
   baseURL: normalizedApiUrl,
   fetchOptions: {
     credentials: 'include',
+    customFetchImpl: authFetch as any,
     onRequest(context) {
-      // Send bearer token from localStorage for cross-domain compatibility
       const token = localStorage.getItem("bearer_token");
       if (token) {
         context.headers.set("Authorization", `Bearer ${token}`);
       }
     },
     onSuccess(context) {
-      // Store token from response if available
       const token = context.response.headers.get("set-auth-token");
       if (token) {
         localStorage.setItem("bearer_token", token);
       }
-      // Clear token on signOut
       if (context.response.url?.includes("/sign-out")) {
         localStorage.removeItem("bearer_token");
       }
