@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { authClient } from "../lib/AuthClient";
+import { getSessionUniversal } from "../utils/getSession";
 
 interface RoleBasedRedirectProps {
   children: React.ReactNode;
@@ -19,10 +20,10 @@ export function RoleBasedRedirect({ children }: RoleBasedRedirectProps) {
   useEffect(() => {
     const checkRole = async () => {
       try {
-        const session = await authClient.getSession();
+        const session = await getSessionUniversal();
 
-        if (session?.data?.user) {
-          const user: any = session.data.user;
+        if (session?.user) {
+          const user: any = session.user;
           const userRole = user.user_metadata?.role || user.role;
 
           // If user is a delivery driver and NOT on their designated route

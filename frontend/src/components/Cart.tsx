@@ -18,6 +18,7 @@ import {
   DELIVERY_ZONES,
 } from "../utils/deliveryZones";
 import { authClient } from "../lib/AuthClient";
+import { getSessionUniversal } from "../utils/getSession";
 import { promoAPI } from "../lib/PromoAPI";
 import { TAX_RATE } from "../data";
 import { getImageUrl } from "../utils/api";
@@ -118,8 +119,8 @@ const CartDrawer: React.FC<CartProps> = ({
     // Get user email for promo code validation
     let userEmail: string | undefined;
     try {
-      const session = await authClient.getSession();
-      userEmail = session?.data?.user?.email;
+      const session = await getSessionUniversal();
+      userEmail = session?.user?.email;
     } catch (e) {
       // Not logged in, that's ok
     }
@@ -273,8 +274,8 @@ const CartDrawer: React.FC<CartProps> = ({
   useEffect(() => {
     const loadRole = async () => {
       try {
-        const session = await authClient.getSession();
-        const user: any = session?.data?.user;
+        const session = await getSessionUniversal();
+        const user: any = session?.user;
         const role = user?.role || user?.user_metadata?.role;
         setIsProUser(role === "pro");
       } catch {
@@ -329,8 +330,8 @@ const CartDrawer: React.FC<CartProps> = ({
     
     // Stocker dans l'état et ouvrir le modal
     try {
-      const session = await authClient.getSession();
-      if (session?.data?.user) {
+      const session = await getSessionUniversal();
+      if (session?.user) {
         navigate("/checkout", {
           state: {
             ...newOrderData,

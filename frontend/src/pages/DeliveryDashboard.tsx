@@ -14,6 +14,7 @@ import {
   Filter,
 } from "lucide-react";
 import { authClient, normalizedApiUrl } from "../lib/AuthClient";
+import { getSessionUniversal } from "../utils/getSession";
 import { Modal } from "@/components/ui/modal";
 
 const ENABLE_DELIVERY_MOCKS = import.meta.env.VITE_ENABLE_DELIVERY_MOCKS === "true";
@@ -250,13 +251,19 @@ const DeliveryDashboard: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const session = await authClient.getSession();
-        if (!session?.data) return;
+        const session = await getSessionUniversal();
+        if (!session?.user) {
+          setLoading(false);
+          return;
+        }
 
-        const user: any = session.data.user;
+        const user: any = session.user;
         const userRole = user.user_metadata?.role || user.role || "deliveryDriver";
 
-        if (userRole !== "deliveryDriver") return;
+        if (userRole !== "deliveryDriver") {
+          setLoading(false);
+          return;
+        }
 
         const driverData: DeliveryDriver = {
           id: String(user.id),
@@ -270,7 +277,7 @@ const DeliveryDashboard: React.FC = () => {
         setDriver(driverData);
         setLoading(false);
       } catch {
-        // silently ignore auth errors
+        setLoading(false);
       }
     };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authClient, normalizedApiUrl } from "../lib/AuthClient";
+import { getSessionUniversal } from "../utils/getSession";
 import { productAPI } from "../lib/ProductAPI";
 import { categoryAPI } from "../lib/CategoryAPI";
 import GoldenBackground from "./GoldenBackground";
@@ -131,9 +132,9 @@ export default function ProDashboard({
   useEffect(() => {
     const init = async () => {
       try {
-        const session = await authClient.getSession();
-        if (!session?.data?.user) return;
-        const user: any = session.data.user;
+        const session = await getSessionUniversal();
+        if (!session?.user) return;
+        const user: any = session.user;
         const role = user.role || user.user_metadata?.role;
         if (role !== "pro") return;
         setUserName(user.name || "Partenaire");

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authClient } from "../lib/AuthClient";
+import { getSessionUniversal } from "../utils/getSession";
 import GoldenBackground from "./GoldenBackground";
 import {
   User,
@@ -161,17 +162,17 @@ const Dashboard: React.FC = () => {
         setLoading(true);
 
         // Récupérer l'utilisateur
-        const session = await authClient.getSession();
-        if (session.data?.user) {
-          // Créer une copie pour éviter les propriétés readonly
+        const session = await getSessionUniversal();
+        if (session?.user) {
+          const u: any = session.user;
           const userCopy = {
-            id: session.data.user.id,
-            email: session.data.user.email,
-            name: session.data.user.name,
-            emailVerified: session.data.user.emailVerified,
-            image: session.data.user.image,
-            createdAt: session.data.user.createdAt,
-            updatedAt: session.data.user.updatedAt,
+            id: u.id,
+            email: u.email,
+            name: u.name,
+            emailVerified: u.emailVerified,
+            image: u.image,
+            createdAt: u.createdAt,
+            updatedAt: u.updatedAt,
           };
           setUserInfo(userCopy);
           console.log("✅ Utilisateur connecté:", userCopy.email);

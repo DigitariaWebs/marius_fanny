@@ -20,6 +20,7 @@ export const getRedirectPath = (role: string) => {
       return "/pro";
     case "client":
     case "user":
+      return "/mon-compte";
     default:
       return "/";
   }
