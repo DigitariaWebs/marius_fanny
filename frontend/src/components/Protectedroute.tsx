@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { authClient } from "../lib/AuthClient";
+import { authClient, normalizedApiUrl } from "../lib/AuthClient";
 
 type RoleType =
   | "admin"
@@ -39,16 +39,38 @@ export function ProtectedRoute({
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Try cookie session first
+        let user: UserWithMetadata | null = null;
         const session = await authClient.getSession();
 
-        if (!session?.data?.user) {
+        if (session?.data?.user) {
+          user = session.data.user as UserWithMetadata;
+        } else {
+          // Fallback: use bearer token directly via /api/auth/get-session
+          const token = localStorage.getItem("bearer_token");
+          if (token) {
+            try {
+              const response = await fetch(`${normalizedApiUrl}/api/auth/get-session`, {
+                headers: { Authorization: `Bearer ${token}` },
+                credentials: "include",
+              });
+              if (response.ok) {
+                const data = await response.json();
+                if (data?.user) user = data.user as UserWithMetadata;
+              }
+            } catch (e) {
+              console.error("Bearer session check failed:", e);
+            }
+          }
+        }
+
+        if (!user) {
           setIsAuthenticated(false);
           setLoading(false);
           return;
         }
 
         setIsAuthenticated(true);
-        const user = session.data.user as UserWithMetadata;
 
         // ✅ Récupération du rôle avec "client" par défaut
         const rawRole = user.user_metadata?.role || user.role || "client";

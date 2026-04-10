@@ -34,10 +34,27 @@ async function resolveSession(req: Request) {
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
-    // Create a fake cookie header so better-auth can resolve the session
-    const fakeHeaders = new Headers(req.headers as any);
-    fakeHeaders.set("cookie", `better-auth.session_token=${token}`);
-    session = await auth.api.getSession({ headers: fakeHeaders });
+    const isProduction = process.env.NODE_ENV === "production";
+    // In production, secure cookies use the __Secure- prefix
+    const cookieName = isProduction
+      ? "__Secure-better-auth.session_token"
+      : "better-auth.session_token";
+
+    // Try both cookie names to be safe
+    const tryWithCookie = async (name: string) => {
+      const fakeHeaders = new Headers(req.headers as any);
+      fakeHeaders.set("cookie", `${name}=${token}`);
+      return auth.api.getSession({ headers: fakeHeaders });
+    };
+
+    session = await tryWithCookie(cookieName);
+    if (!session) {
+      // Fallback to the other cookie name
+      const altName = isProduction
+        ? "better-auth.session_token"
+        : "__Secure-better-auth.session_token";
+      session = await tryWithCookie(altName);
+    }
   }
 
   return session;

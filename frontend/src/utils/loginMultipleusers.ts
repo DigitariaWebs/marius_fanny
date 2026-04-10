@@ -3,17 +3,23 @@ export const getRedirectPath = (role: string) => {
     case "admin":
       return "/dashboard";
     case "kitchen_staff":
-      return "/staff/production";
+    case "cuisinier":
+      return "/staff/cuisinier";
+    case "patissier":
+      return "/staff/patissier";
+    case "four":
+      return "/staff/four";
+    case "customerService":
     case "customer_service":
-      return "/staff/commandes";
+      return "/dashboard";
     case "deliveryDriver":
       return "/staff/delivery";
     case "vendeur":
-    case "four":
       return "/staff/vendeur";
     case "pro":
       return "/pro";
     case "client":
+    case "user":
     default:
       return "/";
   }
