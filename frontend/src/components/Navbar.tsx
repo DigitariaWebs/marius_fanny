@@ -4,6 +4,7 @@ import { FiMenu, FiX, FiShoppingBag } from "react-icons/fi";
 import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authClient } from "../lib/AuthClient";
+import { getSessionUniversal } from "../utils/getSession";
 
 const styles = {
   cream: "#F9F7F2",
@@ -31,9 +32,19 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
   const navigate = useNavigate();
 
   const { data: session, isPending } = authClient.useSession();
+  const [universalUser, setUniversalUser] = useState<any>(null);
+
+  // Universal session check (cookie OR bearer token)
+  useEffect(() => {
+    const checkUniversal = async () => {
+      const result = await getSessionUniversal();
+      setUniversalUser(result?.user || null);
+    };
+    checkUniversal();
+  }, [session]);
 
   useEffect(() => {
-    const user = session?.user;
+    const user = session?.user || universalUser;
     setIsLoggedIn(!!user);
 
     if (user) {
@@ -47,7 +58,7 @@ const Navbar: React.FC<NavbarProps> = ({ onCartClick, cartCount }) => {
     } else {
       setRole("client");
     }
-  }, [session]);
+  }, [session, universalUser]);
 
   // Keep staff/admin sessions alive to avoid disruptive 401s in production.
   useEffect(() => {
