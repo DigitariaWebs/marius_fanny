@@ -65,6 +65,26 @@ export const createClientSchema = z.object({
 });
 
 /**
+ * Create staff schema (admin creates staff with email/password/role)
+ */
+export const createStaffSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1).max(100),
+  password: z.string().min(6).max(128),
+  role: z.enum([
+    "admin",
+    "deliveryDriver",
+    "cuisinier",
+    "patissier",
+    "vendeur",
+    "pro",
+  ]),
+  phone: z.string().max(20).optional(),
+});
+
+export type CreateStaffInput = z.infer<typeof createStaffSchema>;
+
+/**
  * Search users query schema
  */
 export const searchUsersSchema = z.object({

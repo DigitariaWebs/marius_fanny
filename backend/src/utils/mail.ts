@@ -785,7 +785,7 @@ export async function sendFullPaymentReceipt(
                 💚 Paiement complet effectué
               </p>
               <p style="color: #555; margin: 5px 0 0 0; font-size: 14px;">
-                Votre commande est maintenant en cours de préparation. Nous vous contacterons pour la livraison ou le ramassage.
+                Votre commande est maintenant en cours de préparation.
               </p>
             </div>
 

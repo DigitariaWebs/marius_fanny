@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   Plus,
-  Edit,
   Trash2,
   Mail,
   Phone,
-  MapPin,
   Briefcase,
   MoreVertical,
   Edit2,
+  Lock,
   Eye,
+  EyeOff,
 } from "lucide-react";
 import { DataTable } from "./ui/DataTable";
 import { Modal } from "./ui/modal";
@@ -21,186 +21,230 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import type { Staff, StaffFormData } from "../types";
-import { MOCK_STAFF, LOCATIONS, DEPARTMENTS } from "../data";
+import { normalizedApiUrl } from "../lib/AuthClient";
+
+interface StaffMember {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  phone: string;
+  status: "active" | "inactive";
+  createdAt: string;
+  updatedAt?: string;
+}
+
+const ROLE_OPTIONS = [
+  { value: "admin", label: "Administrateur" },
+  { value: "deliveryDriver", label: "Livreur" },
+  { value: "cuisinier", label: "Cuisinier" },
+  { value: "patissier", label: "Pâtissier" },
+  { value: "vendeur", label: "Vendeur" },
+  { value: "pro", label: "Partenaire Pro" },
+];
+
+const getRoleLabel = (role: string) =>
+  ROLE_OPTIONS.find((r) => r.value === role)?.label || role;
 
 export default function StaffManagement() {
-  const [staff, setStaff] = useState<Staff[]>(MOCK_STAFF);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
-  const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
-  const [formData, setFormData] = useState<StaffFormData>({
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [deletingStaff, setDeletingStaff] = useState<StaffMember | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [formData, setFormData] = useState({
     email: "",
+    name: "",
+    password: "",
+    role: "vendeur",
     phone: "",
-    location: "Montreal",
-    department: "customer_service",
   });
-  const [password, setPassword] = useState("");
-  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
 
+  const fetchStaff = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${normalizedApiUrl}/api/users/staff`, {
+        credentials: "include",
+      });
+      const result = await response.json();
+      if (result.success) {
+        setStaff(result.data || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch staff:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
   const resetForm = () => {
     setFormData({
       email: "",
+      name: "",
+      password: "",
+      role: "vendeur",
       phone: "",
-      location: "Montreal",
-      department: "customer_service",
     });
-    setPassword("");
-    setPasswordConfirmation("");
     setEditingStaff(null);
+    setShowPassword(false);
   };
 
-  const handleInputChange = (field: keyof StaffFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const showError = (msg: string) => {
+    setErrorMessage(msg);
+    setIsErrorModalOpen(true);
   };
 
-  const validateForm = (includePassword = false): boolean => {
+  const validateForm = (isCreate: boolean): boolean => {
     if (!formData.email.trim() || !formData.email.includes("@")) {
-      setErrorMessage("Veuillez entrer une adresse email valide.");
-      setIsErrorModalOpen(true);
+      showError("Veuillez entrer une adresse email valide.");
       return false;
     }
-    if (!formData.phone.trim()) {
-      setErrorMessage("Veuillez entrer un numéro de téléphone.");
-      setIsErrorModalOpen(true);
+    if (!formData.name.trim()) {
+      showError("Veuillez entrer un nom complet.");
       return false;
     }
-    if (includePassword) {
-      if (!password.trim()) {
-        setErrorMessage("Veuillez entrer un mot de passe.");
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      if (password.length < 6) {
-        setErrorMessage("Le mot de passe doit contenir au moins 6 caractères.");
-        setIsErrorModalOpen(true);
-        return false;
-      }
-      if (password !== passwordConfirmation) {
-        setErrorMessage("Les mots de passe ne correspondent pas.");
-        setIsErrorModalOpen(true);
+    if (!formData.role) {
+      showError("Veuillez sélectionner un rôle.");
+      return false;
+    }
+    if (isCreate) {
+      if (!formData.password || formData.password.length < 6) {
+        showError("Le mot de passe doit contenir au moins 6 caractères.");
         return false;
       }
     }
     return true;
   };
 
-  const handleCreate = () => {
-    if (!validateForm(false)) return;
+  const handleCreate = async () => {
+    if (!validateForm(true)) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const newStaff: Staff = {
-        id: Math.max(...staff.map((s) => s.id)) + 1,
-        firstName: "Auto",
-        lastName: "Generated",
-        ...formData,
-        status: "active",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setStaff([...staff, newStaff]);
+    try {
+      const response = await fetch(`${normalizedApiUrl}/api/users/staff`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email.trim().toLowerCase(),
+          name: formData.name.trim(),
+          password: formData.password,
+          role: formData.role,
+          phone: formData.phone.trim() || undefined,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || "Erreur lors de la création");
+      }
+      await fetchStaff();
       setIsCreateModalOpen(false);
       resetForm();
+    } catch (e: any) {
+      showError(e?.message || "Erreur lors de la création du membre");
+    } finally {
       setIsSubmitting(false);
-    }, 300);
+    }
   };
 
-  const handleEditClick = (staffMember: Staff) => {
+  const handleEditClick = (staffMember: StaffMember) => {
     setEditingStaff(staffMember);
     setFormData({
       email: staffMember.email,
-      phone: staffMember.phone,
-      location: staffMember.location,
-      department: staffMember.department,
+      name: staffMember.name,
+      password: "",
+      role: staffMember.role,
+      phone: staffMember.phone || "",
     });
     setIsEditModalOpen(true);
   };
 
-  const handleEdit = () => {
-    if (!validateForm(false) || !editingStaff) return;
+  const handleEdit = async () => {
+    if (!editingStaff) return;
+    if (!validateForm(false)) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setStaff(
-        staff.map((s) =>
-          s.id === editingStaff.id
-            ? {
-                ...s,
-                ...formData,
-                updatedAt: new Date().toISOString(),
-              }
-            : s,
-        ),
+    try {
+      const response = await fetch(
+        `${normalizedApiUrl}/api/users/staff/${editingStaff.id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            role: formData.role,
+            phone: formData.phone.trim(),
+          }),
+        },
       );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || "Erreur lors de la modification");
+      }
+      await fetchStaff();
       setIsEditModalOpen(false);
       resetForm();
+    } catch (e: any) {
+      showError(e?.message || "Erreur lors de la modification");
+    } finally {
       setIsSubmitting(false);
-    }, 300);
+    }
   };
 
-  const handleDeleteClick = (staffMember: Staff) => {
+  const handleDeleteClick = (staffMember: StaffMember) => {
     setDeletingStaff(staffMember);
     setIsDeleteModalOpen(true);
   };
 
-  const getFullName = (staff: Staff) => {
-    return `${staff.firstName} ${staff.lastName}`;
-  };
-
-  const handleToggleStatus = (staffMember: Staff) => {
-    setStaff(
-      staff.map((s) =>
-        s.id === staffMember.id
-          ? {
-              ...s,
-              status: s.status === "active" ? "suspended" : "active",
-              updatedAt: new Date().toISOString(),
-            }
-          : s,
-      ),
-    );
-  };
-
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deletingStaff) return;
-
     setIsSubmitting(true);
-    setTimeout(() => {
-      setStaff(staff.filter((s) => s.id !== deletingStaff.id));
+    try {
+      const response = await fetch(
+        `${normalizedApiUrl}/api/users/staff/${deletingStaff.id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || "Erreur lors de la suppression");
+      }
+      await fetchStaff();
       setIsDeleteModalOpen(false);
       setDeletingStaff(null);
+    } catch (e: any) {
+      showError(e?.message || "Erreur lors de la suppression");
+    } finally {
       setIsSubmitting(false);
-    }, 300);
+    }
   };
 
-  const getDepartmentLabel = (dept: string) => {
-    return DEPARTMENTS.find((d) => d.value === dept)?.label || dept;
-  };
-
-  const getLocationLabel = (loc: string) => {
-    return LOCATIONS.find((l) => l.value === loc)?.label || loc;
-  };
-
-  // DataTable configuration
   const columns = [
     {
-      key: "firstName",
+      key: "name",
       label: "Nom",
       sortable: true,
-      render: (item: Staff) => (
+      render: (item: StaffMember) => (
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#C5A065] text-white flex items-center justify-center font-semibold text-sm">
-            {item.firstName.charAt(0).toUpperCase()}
+            {(item.name || "?").charAt(0).toUpperCase()}
           </div>
-          <span className="font-medium text-[#2D2A26]">
-            {getFullName(item)}
-          </span>
+          <span className="font-medium text-[#2D2A26]">{item.name}</span>
         </div>
       ),
     },
@@ -208,7 +252,7 @@ export default function StaffManagement() {
       key: "email",
       label: "Email",
       sortable: true,
-      render: (item: Staff) => (
+      render: (item: StaffMember) => (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Mail size={14} className="text-gray-400" />
           {item.email}
@@ -219,34 +263,21 @@ export default function StaffManagement() {
       key: "phone",
       label: "Téléphone",
       sortable: false,
-      render: (item: Staff) => (
+      render: (item: StaffMember) => (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Phone size={14} className="text-gray-400" />
-          {item.phone}
+          {item.phone || "—"}
         </div>
       ),
     },
     {
-      key: "location",
-      label: "Emplacement",
+      key: "role",
+      label: "Rôle",
       sortable: true,
-      render: (item: Staff) => (
-        <div className="flex items-center gap-2">
-          <MapPin size={14} className="text-[#C5A065]" />
-          <span className="text-sm font-medium">
-            {getLocationLabel(item.location)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "department",
-      label: "Département",
-      sortable: true,
-      render: (item: Staff) => (
+      render: (item: StaffMember) => (
         <div className="flex items-center gap-2">
           <Briefcase size={14} className="text-[#C5A065]" />
-          <span className="text-sm">{getDepartmentLabel(item.department)}</span>
+          <span className="text-sm">{getRoleLabel(item.role)}</span>
         </div>
       ),
     },
@@ -254,29 +285,22 @@ export default function StaffManagement() {
       key: "status",
       label: "Statut",
       sortable: true,
-      render: (item: Staff) => (
-        <button
-          onClick={() => handleToggleStatus(item)}
-          className="flex items-center gap-2 cursor-pointer"
-          title={`Cliquez pour ${item.status === "active" ? "suspendre" : "activer"}`}
-        >
-          {item.status === "active" ? (
-            <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-green-100 text-green-700 border-green-200">
-              Actif
-            </span>
-          ) : (
-            <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-red-100 text-red-700 border-red-200">
-              Suspendu
-            </span>
-          )}
-        </button>
-      ),
+      render: (item: StaffMember) =>
+        item.status === "active" ? (
+          <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-green-100 text-green-700 border-green-200">
+            Actif
+          </span>
+        ) : (
+          <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-red-100 text-red-700 border-red-200">
+            Inactif
+          </span>
+        ),
     },
     {
       key: "actions",
       label: "Actions",
       sortable: false,
-      render: (staff: Staff) => (
+      render: (item: StaffMember) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -284,20 +308,13 @@ export default function StaffManagement() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => handleEditClick(staff)}>
+            <DropdownMenuItem onClick={() => handleEditClick(item)}>
               <Edit2 className="w-4 h-4 mr-2" />
               Modifier
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => handleToggleStatus(staff)}
-              className="text-orange-600"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              {staff.status === "active" ? "Suspendre" : "Activer"}
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => handleDeleteClick(staff)}
+              onClick={() => handleDeleteClick(item)}
               className="text-red-600"
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -311,50 +328,23 @@ export default function StaffManagement() {
 
   const filters = [
     {
-      key: "location",
-      label: "Filtrer par localisation",
+      key: "role",
+      label: "Filtrer par rôle",
       options: [
-        { value: "all", label: "Toutes les localisations" },
-        { value: "Montreal", label: "Montreal" },
-        { value: "Laval", label: "Laval" },
-      ],
-    },
-    {
-      key: "department",
-      label: "Filtrer par département",
-      options: [
-        { value: "all", label: "Tous les départements" },
-        { value: "customer_service", label: "Service client" },
-        { value: "kitchen_staff", label: "Cuisine" },
+        { value: "all", label: "Tous les rôles" },
+        ...ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label })),
       ],
     },
     {
       key: "status",
-      label: "Filtrer par statut du compte",
+      label: "Filtrer par statut",
       options: [
         { value: "all", label: "Tous les statuts" },
-        { value: "active", label: "Comptes actifs" },
-        { value: "suspended", label: "Comptes suspendus" },
+        { value: "active", label: "Actifs" },
+        { value: "inactive", label: "Inactifs" },
       ],
     },
   ];
-
-  // Available departments based on selected location
-  const getAvailableDepartments = (location: string) => {
-    if (location === "Laval") {
-      return DEPARTMENTS;
-    }
-    return DEPARTMENTS.filter((d) => d.value === "customer_service");
-  };
-
-  // Update department if location changes and current department is not available
-  const handleLocationChange = (newLocation: string) => {
-    handleInputChange("location", newLocation);
-    const availableDepts = getAvailableDepartments(newLocation);
-    if (!availableDepts.find((d) => d.value === formData.department)) {
-      handleInputChange("department", "customer_service");
-    }
-  };
 
   return (
     <>
@@ -368,7 +358,7 @@ export default function StaffManagement() {
               Gestion du Personnel
             </h2>
             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">
-              Gérer les membres de l'équipe
+              Créer et gérer les comptes du personnel
             </p>
           </div>
           <button
@@ -385,15 +375,21 @@ export default function StaffManagement() {
       </header>
 
       <div className="p-4 md:p-8">
-        <DataTable
-          data={staff}
-          columns={columns}
-          filters={filters}
-          searchPlaceholder="Rechercher un membre du personnel..."
-          searchKeys={["firstName", "lastName", "email", "phone"]}
-          itemsPerPage={10}
-          selectable={false}
-        />
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-10 h-10 border-4 border-[#C5A065] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <DataTable
+            data={staff}
+            columns={columns}
+            filters={filters}
+            searchPlaceholder="Rechercher un membre du personnel..."
+            searchKeys={["name", "email", "phone"]}
+            itemsPerPage={10}
+            selectable={false}
+          />
+        )}
       </div>
 
       {/* Create Staff Modal */}
@@ -402,11 +398,11 @@ export default function StaffManagement() {
         onOpenChange={setIsCreateModalOpen}
         type="form"
         title="Ajouter un membre du personnel"
-        description="Remplissez les informations pour créer un nouveau membre du personnel"
+        description="Créer un compte avec email, mot de passe et rôle. Le compte sera vérifié automatiquement."
         icon={<Users className="h-6 w-6 text-[#C5A065]" />}
         actions={{
           primary: {
-            label: "Créer",
+            label: "Créer le compte",
             onClick: handleCreate,
             disabled: isSubmitting,
             loading: isSubmitting,
@@ -421,7 +417,20 @@ export default function StaffManagement() {
           },
         }}
       >
-        <div className="space-y-6">
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+              Nom complet <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
+              placeholder="Ex: Marie Dubois"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
               Email <span className="text-red-500">*</span>
@@ -431,76 +440,75 @@ export default function StaffManagement() {
               className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
               placeholder="Ex: marie.dubois@mariusetfanny.com"
               value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-              Téléphone <span className="text-red-500">*</span>
+              Mot de passe <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="w-full p-3 pr-10 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
+                placeholder="Min. 6 caractères"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-[#C5A065]"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <p className="text-xs text-stone-500 flex items-center gap-1">
+              <Lock size={11} /> Le mot de passe sera utilisé pour la connexion
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+              Rôle <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            >
+              {ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+              Téléphone
             </label>
             <input
               type="tel"
               className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
               placeholder="Ex: 514-555-0101"
               value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                Emplacement <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
-                value={formData.location}
-                onChange={(e) => handleLocationChange(e.target.value)}
-              >
-                {LOCATIONS.map((loc) => (
-                  <option key={loc.value} value={loc.value}>
-                    {loc.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                Département <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
-                value={formData.department}
-                onChange={(e) =>
-                  handleInputChange("department", e.target.value)
-                }
-              >
-                {getAvailableDepartments(formData.location).map((dept) => (
-                  <option key={dept.value} value={dept.value}>
-                    {dept.label}
-                  </option>
-                ))}
-              </select>
-              {formData.location === "Montreal" && (
-                <p className="text-xs text-stone-500">
-                  Personnel de cuisine disponible uniquement à Laval
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </Modal>
 
-      {/* Edit Staff Modal */}
+      {/* Edit Modal */}
       <Modal
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         type="form"
         title="Modifier le membre du personnel"
-        description="Modifiez les informations du membre du personnel"
-        icon={<Edit className="h-6 w-6 text-blue-500" />}
+        description="Modifier les informations du compte"
+        icon={<Edit2 className="h-6 w-6 text-blue-500" />}
         actions={{
           primary: {
             label: "Enregistrer",
@@ -516,121 +524,66 @@ export default function StaffManagement() {
             },
             disabled: isSubmitting,
           },
-          tertiary: editingStaff
-            ? {
-                label:
-                  editingStaff.status === "active" ? "Suspendre" : "Activer",
-                onClick: () => {
-                  if (editingStaff) {
-                    handleToggleStatus(editingStaff);
-                    setIsEditModalOpen(false);
-                    resetForm();
-                  }
-                },
-                variant:
-                  editingStaff.status === "active" ? "destructive" : "default",
-                disabled: isSubmitting,
-              }
-            : undefined,
         }}
       >
-        <div className="space-y-6">
-          {editingStaff && (
-            <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                    Statut actuel
-                  </p>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Utilisez le bouton ci-dessous pour changer le statut
-                  </p>
-                </div>
-                {editingStaff.status === "active" ? (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-green-100 text-green-700 border-green-200">
-                    Actif
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-red-100 text-red-700 border-red-200">
-                    Suspendu
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
+        <div className="space-y-5">
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-              Email <span className="text-red-500">*</span>
+              Nom complet
             </label>
             <input
-              type="email"
+              type="text"
               className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
-              placeholder="Ex: marie.dubois@mariusetfanny.com"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-              Téléphone <span className="text-red-500">*</span>
+              Email
+            </label>
+            <input
+              type="email"
+              className="w-full p-3 bg-stone-100 border border-stone-200 rounded-xl text-sm text-stone-500 cursor-not-allowed"
+              value={formData.email}
+              disabled
+            />
+            <p className="text-xs text-stone-500">L'email ne peut pas être modifié</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+              Rôle
+            </label>
+            <select
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            >
+              {ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+              Téléphone
             </label>
             <input
               type="tel"
               className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all"
-              placeholder="Ex: 514-555-0101"
               value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                Emplacement <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
-                value={formData.location}
-                onChange={(e) => handleLocationChange(e.target.value)}
-              >
-                {LOCATIONS.map((loc) => (
-                  <option key={loc.value} value={loc.value}>
-                    {loc.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                Département <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none text-sm transition-all cursor-pointer"
-                value={formData.department}
-                onChange={(e) =>
-                  handleInputChange("department", e.target.value)
-                }
-              >
-                {getAvailableDepartments(formData.location).map((dept) => (
-                  <option key={dept.value} value={dept.value}>
-                    {dept.label}
-                  </option>
-                ))}
-              </select>
-              {formData.location === "Montreal" && (
-                <p className="text-xs text-stone-500">
-                  Personnel de cuisine disponible uniquement à Laval
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       <Modal
         open={isDeleteModalOpen}
         onOpenChange={setIsDeleteModalOpen}
@@ -638,7 +591,7 @@ export default function StaffManagement() {
         title="Supprimer le membre du personnel"
         description={
           deletingStaff
-            ? `Êtes-vous sûr de vouloir supprimer ${getFullName(deletingStaff)} ? Cette action est irréversible.`
+            ? `Êtes-vous sûr de vouloir supprimer ${deletingStaff.name} ? Cette action est irréversible.`
             : ""
         }
         closable={!isSubmitting}
@@ -661,31 +614,13 @@ export default function StaffManagement() {
         }}
       >
         {deletingStaff && (
-          <div className="space-y-3 py-2">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Trash2 className="text-red-600 shrink-0 mt-0.5" size={20} />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-red-900 mb-1">
-                    Informations du membre
-                  </p>
-                  <div className="text-sm text-red-700 space-y-1">
-                    <p>
-                      <strong>Nom:</strong> {getFullName(deletingStaff)}
-                    </p>
-                    <p>
-                      <strong>Email:</strong> {deletingStaff.email}
-                    </p>
-                    <p>
-                      <strong>Emplacement:</strong>{" "}
-                      {getLocationLabel(deletingStaff.location)}
-                    </p>
-                    <p>
-                      <strong>Statut:</strong>{" "}
-                      {deletingStaff.status === "active" ? "Actif" : "Suspendu"}
-                    </p>
-                  </div>
-                </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Trash2 className="text-red-600 shrink-0 mt-0.5" size={20} />
+              <div className="text-sm text-red-700 space-y-1">
+                <p><strong>Nom:</strong> {deletingStaff.name}</p>
+                <p><strong>Email:</strong> {deletingStaff.email}</p>
+                <p><strong>Rôle:</strong> {getRoleLabel(deletingStaff.role)}</p>
               </div>
             </div>
           </div>
@@ -697,7 +632,7 @@ export default function StaffManagement() {
         open={isErrorModalOpen}
         onOpenChange={setIsErrorModalOpen}
         type="warning"
-        title="Erreur de validation"
+        title="Erreur"
         actions={{
           primary: {
             label: "OK",

@@ -18,6 +18,7 @@ import {
   searchUsersSchema,
   userIdParamSchema,
   createClientSchema,
+  createStaffSchema,
 } from "../schemas/user.schema.js";
 import {
   paginationQuerySchema,
@@ -104,6 +105,55 @@ router.get(
   requireAuth,
   requireStaff,
   asyncHandler(userController.searchClients),
+);
+
+/**
+ * @route   POST /api/users/staff
+ * @desc    Create a new staff member with email/password/role
+ * @access  Private (Admin only)
+ */
+router.post(
+  "/staff",
+  requireAuth,
+  requireAdmin,
+  validateBody(createStaffSchema),
+  asyncHandler(userController.createStaff),
+);
+
+/**
+ * @route   GET /api/users/staff
+ * @desc    Get all staff members
+ * @access  Private (Admin only)
+ */
+router.get(
+  "/staff",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(userController.getAllStaff),
+);
+
+/**
+ * @route   PUT /api/users/staff/:id
+ * @desc    Update a staff member
+ * @access  Private (Admin only)
+ */
+router.put(
+  "/staff/:id",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(userController.updateStaff),
+);
+
+/**
+ * @route   DELETE /api/users/staff/:id
+ * @desc    Delete a staff member
+ * @access  Private (Admin only)
+ */
+router.delete(
+  "/staff/:id",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(userController.deleteStaff),
 );
 
 /**

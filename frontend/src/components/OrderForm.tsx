@@ -2144,7 +2144,7 @@ export default function OrderForm({
             <span className="text-gray-700">
               {formData.paymentMethod === "in_store"
                 ? "PAYABLE MAINTENANT (100%):"
-                : "ACOMPTE (50%):"}
+                : "PAIEMENT TOTAL (100%):"}
             </span>
             <span className="font-medium text-amber-700">
               ${formData.depositAmount.toFixed(2)}

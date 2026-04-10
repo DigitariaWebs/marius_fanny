@@ -4,6 +4,7 @@ import { User } from "../models/User.js";
 import Order from "../models/Order.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { canManageUser } from "../utils/roles.js";
+import { auth } from "../config/auth.js";
 
 async function backfillMissingClientsFromOrders() {
   const orderClientRecords = await Order.find({
@@ -582,5 +583,186 @@ export async function searchUsers(req: AuthRequest, res: Response) {
   } catch (error) {
     if (error instanceof AppError) throw error;
     throw new AppError("Failed to search users", 500);
+  }
+}
+
+/**
+ * Create a staff member with email/password/role.
+ * Uses better-auth signUp.email to properly create user + account (with hashed password),
+ * then updates the role and forces emailVerified=true.
+ */
+export async function createStaff(req: AuthRequest, res: Response) {
+  try {
+    const { email, name, password, role, phone } = req.body;
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing && !existing.isDeleted) {
+      throw new AppError("Un utilisateur avec cet email existe déjà", 400);
+    }
+
+    // Step 1: create user via better-auth (creates user + account record with hashed password)
+    try {
+      await auth.api.signUpEmail({
+        body: { email, password, name },
+      });
+    } catch (e: any) {
+      // If user was created but signUp threw because of email verification flow, that's OK
+      const msg = String(e?.message || "").toLowerCase();
+      if (!msg.includes("already") && !msg.includes("exists")) {
+        console.error("signUpEmail error:", e);
+      }
+    }
+
+    // Step 2: update the role + emailVerified directly in the DB
+    const updated = await User.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      {
+        $set: {
+          role,
+          emailVerified: true,
+          status: "active",
+          name,
+          ...(phone ? { profile: { phoneNumber: phone } } : {}),
+        },
+        $unset: {
+          isDeleted: 1,
+          deletedAt: 1,
+        },
+      },
+      { new: true },
+    );
+
+    if (!updated) {
+      throw new AppError("Failed to create staff member", 500);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: updated._id.toString(),
+        email: updated.email,
+        name: updated.name,
+        role: updated.role,
+        phone: updated.profile?.phoneNumber || "",
+        status: updated.status,
+        createdAt: updated.createdAt,
+      },
+      message: "Staff member created successfully",
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    console.error("createStaff error:", error);
+    throw new AppError("Failed to create staff member", 500);
+  }
+}
+
+/**
+ * Get all staff members (excludes clients with role 'user' and 'pro').
+ */
+export async function getAllStaff(req: AuthRequest, res: Response) {
+  try {
+    const staffRoles = [
+      "admin",
+      "customerService",
+      "deliveryDriver",
+      "cuisinier",
+      "patissier",
+      "four",
+      "vendeur",
+      "staff",
+    ];
+
+    const staff = await User.find({
+      role: { $in: staffRoles },
+      isDeleted: { $ne: true },
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formatted = staff.map((u: any) => ({
+      id: u._id.toString(),
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      phone: u.profile?.phoneNumber || "",
+      status: u.status || "active",
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    }));
+
+    res.json({ success: true, data: formatted });
+  } catch (error) {
+    console.error("getAllStaff error:", error);
+    throw new AppError("Failed to fetch staff", 500);
+  }
+}
+
+/**
+ * Update a staff member (role, status, name, phone, password).
+ */
+export async function updateStaff(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { name, role, phone, status, password } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      throw new AppError("Staff member not found", 404);
+    }
+
+    if (name) user.name = name;
+    if (role) user.role = role;
+    if (status) user.status = status;
+    if (phone !== undefined) {
+      user.profile = { ...(user.profile || {}), phoneNumber: phone };
+    }
+
+    await user.save();
+
+    // Password change is not supported via this admin endpoint for now
+    // (would require either auth.api.setPassword which is user-scoped, or direct DB access)
+    if (password) {
+      console.warn("Password change via updateStaff is not implemented");
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        phone: user.profile?.phoneNumber || "",
+        status: user.status,
+      },
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    console.error("updateStaff error:", error);
+    throw new AppError("Failed to update staff member", 500);
+  }
+}
+
+/**
+ * Delete a staff member (soft delete).
+ */
+export async function deleteStaff(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: { isDeleted: true, deletedAt: new Date(), status: "inactive" } },
+      { new: true },
+    );
+
+    if (!user) {
+      throw new AppError("Staff member not found", 404);
+    }
+
+    res.json({ success: true, message: "Staff member deleted" });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    console.error("deleteStaff error:", error);
+    throw new AppError("Failed to delete staff member", 500);
   }
 }

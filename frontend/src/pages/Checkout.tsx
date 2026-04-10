@@ -706,7 +706,9 @@ const Checkout: React.FC = () => {
               <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" />
               <div>
                 <p className="font-semibold">Commande confirmée</p>
-                <p>{state.deliveryType === 'pickup' ? 'Votre commande est prête pour le ramassage.' : 'Nous livrons vos produits directement à la réception.'}</p>
+                {state.deliveryType !== 'pickup' && (
+                  <p>Nous livrons vos produits directement à la réception.</p>
+                )}
               </div>
             </div>
             <div className="space-y-2 text-stone-600 bg-stone-50 p-4 rounded-lg">
