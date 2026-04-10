@@ -251,16 +251,23 @@ const DeliveryDashboard: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("🚚 [DELIVERY] Checking auth...");
         const session = await getSessionUniversal();
+        console.log("🚚 [DELIVERY] Session:", session);
+
         if (!session?.user) {
+          console.warn("🚚 [DELIVERY] No user in session");
           setLoading(false);
           return;
         }
 
         const user: any = session.user;
-        const userRole = user.user_metadata?.role || user.role || "deliveryDriver";
+        const userRole = user.user_metadata?.role || user.role;
+        console.log("🚚 [DELIVERY] Role:", userRole);
 
-        if (userRole !== "deliveryDriver") {
+        // Accept any authenticated user with delivery role (or no role check at all if role is missing)
+        if (userRole && userRole !== "deliveryDriver") {
+          console.warn("🚚 [DELIVERY] Wrong role:", userRole);
           setLoading(false);
           return;
         }
@@ -274,9 +281,11 @@ const DeliveryDashboard: React.FC = () => {
           status: "available",
         };
 
+        console.log("🚚 [DELIVERY] Driver set:", driverData);
         setDriver(driverData);
         setLoading(false);
-      } catch {
+      } catch (e) {
+        console.error("🚚 [DELIVERY] Auth error:", e);
         setLoading(false);
       }
     };
