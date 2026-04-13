@@ -1042,6 +1042,14 @@ export const getOrders = async (
       Order.countDocuments(query),
     ]);
 
+    // Backfill amountPaid for old orders that don't have it set
+    for (const order of orders) {
+      if ((!order.amountPaid || order.amountPaid === 0) && order.paymentStatus === "paid") {
+        order.amountPaid = order.total;
+        order.save().catch(() => {});
+      }
+    }
+
     // Add payment status indicators
     const ordersWithStatus = orders.map((order: any) => {
       const orderObj = order.toObject?.() || order;

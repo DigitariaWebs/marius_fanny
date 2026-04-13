@@ -108,6 +108,8 @@ export function OrderManagement() {
   const [orderToCancel, setOrderToCancel] = useState<OrderWithPacking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editNotification, setEditNotification] = useState<{ type: "balance" | "refund" | "nochange"; amount: number; clientName: string } | null>(null);
+  const [balancePaymentModal, setBalancePaymentModal] = useState<{ open: boolean; order: OrderWithPacking | null; amount: number; clientName: string }>({ open: false, order: null, amount: 0, clientName: "" });
+  const [isSendingBalanceLink, setIsSendingBalanceLink] = useState(false);
   const [viewMode, setViewMode] = useState<"simple" | "complete">("simple");
   const [refundEmployeeName, setRefundEmployeeName] = useState<string>("");
   const [balanceRefundOrder, setBalanceRefundOrder] = useState<OrderWithPacking | null>(null);
@@ -384,14 +386,25 @@ export function OrderManagement() {
     );
   };
 
-  const getPaymentBadge = (paymentStatus: Order["paymentStatus"]) => {
+  const getPaymentBadge = (paymentStatus: Order["paymentStatus"], order?: OrderWithPacking) => {
+    // Check if this order has refunds
+    const hasRefunds = order && (order as any).refunds?.length > 0;
+
+    if (hasRefunds) {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+          Remboursé
+        </span>
+      );
+    }
+
     const paymentConfig = {
-      unpaid: { label: "Non payer", className: "bg-red-100 text-red-800" },
+      unpaid: { label: "Non payé", className: "bg-red-100 text-red-800" },
       deposit_paid: {
-        label: "Depot payer",
+        label: "Dépôt payé",
         className: "bg-yellow-100 text-yellow-800",
       },
-      paid: { label: "Payer", className: "bg-green-100 text-green-800" },
+      paid: { label: "Payé", className: "bg-green-100 text-green-800" },
     };
 
     const config = paymentConfig[paymentStatus];
@@ -1181,7 +1194,7 @@ export function OrderManagement() {
       render: (order: OrderWithPacking) => (
         <div className="flex items-center gap-2">
           {getPaymentChannelIcon(order)}
-          {getPaymentBadge(order.paymentStatus)}
+          {getPaymentBadge(order.paymentStatus, order)}
           {isGovernmentLate(order) && (
             <span className="px-2 py-1 rounded-full text-[10px] font-black bg-red-600 text-white">
               EN RETARD (60j+)
@@ -1195,6 +1208,33 @@ export function OrderManagement() {
       label: "Date limite",
       sortable: false,
       render: (order: OrderWithPacking) => {
+        // Check if there's a refund due
+        const storedPaid = (order as any).amountPaid || 0;
+        const paidAmount = storedPaid > 0
+          ? storedPaid
+          : order.paymentStatus === "paid"
+            ? Math.max(order.total, order.depositAmount)
+            : order.depositPaid
+              ? order.depositAmount
+              : 0;
+        const refundDue = paidAmount - order.total;
+
+        if (refundDue > 0.01) {
+          return (
+            <div
+              className="inline-flex items-center px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-black cursor-pointer"
+              onClick={() => {
+                setBalanceRefundOrder(order);
+                setBalanceRefundEmployee("");
+                setIsBalanceRefundModalOpen(true);
+              }}
+              title="Cliquez pour rembourser"
+            >
+              REMBOURSER {formatCurrency(refundDue)}
+            </div>
+          );
+        }
+
         const due = getPaymentDueDateForOrder(order);
         if (!due) return <span className="text-xs text-gray-400">-</span>;
         const isOverdue = order.paymentStatus !== "paid" && new Date() > due;
@@ -1435,6 +1475,87 @@ export function OrderManagement() {
           )}
         </div>
       )}
+
+      {/* BALANCE PAYMENT METHOD MODAL */}
+      <Modal
+        open={balancePaymentModal.open}
+        onOpenChange={(open) => {
+          if (!open) setBalancePaymentModal({ open: false, order: null, amount: 0, clientName: "" });
+        }}
+        type="form"
+        title="Solde restant à payer"
+        description={`${balancePaymentModal.clientName} doit payer un solde de ${formatCurrency(balancePaymentModal.amount)}`}
+        closable={!isSendingBalanceLink}
+        actions={{
+          secondary: {
+            label: "Fermer",
+            onClick: () => setBalancePaymentModal({ open: false, order: null, amount: 0, clientName: "" }),
+            disabled: isSendingBalanceLink,
+          },
+        }}
+      >
+        <div className="space-y-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-orange-700">{formatCurrency(balancePaymentModal.amount)}</p>
+            <p className="text-sm text-orange-600 mt-1">Montant restant</p>
+          </div>
+
+          <p className="text-sm text-stone-600 text-center">Comment le client souhaite-t-il payer le solde ?</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              disabled={isSendingBalanceLink}
+              onClick={() => {
+                setBalancePaymentModal({ open: false, order: null, amount: 0, clientName: "" });
+                setEditNotification({
+                  type: "balance",
+                  amount: balancePaymentModal.amount,
+                  clientName: balancePaymentModal.clientName,
+                });
+                setTimeout(() => setEditNotification(null), 5000);
+              }}
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-stone-200 hover:border-[#C5A065] hover:bg-[#C5A065]/5 transition-all text-center"
+            >
+              <span className="text-2xl">🏪</span>
+              <span className="font-bold text-sm text-stone-800">En boutique</span>
+              <span className="text-xs text-stone-500">Le client paiera sur place</span>
+            </button>
+
+            <button
+              disabled={isSendingBalanceLink}
+              onClick={async () => {
+                const order = balancePaymentModal.order;
+                if (!order) return;
+                setIsSendingBalanceLink(true);
+                try {
+                  await sendPaymentLink(order);
+                  setBalancePaymentModal({ open: false, order: null, amount: 0, clientName: "" });
+                  setEditNotification({
+                    type: "balance",
+                    amount: balancePaymentModal.amount,
+                    clientName: balancePaymentModal.clientName,
+                  });
+                  setTimeout(() => setEditNotification(null), 5000);
+                  alert(`Lien de paiement envoyé à ${order.client.email}`);
+                } catch (e: any) {
+                  alert(`Erreur: ${e?.message || "Impossible d'envoyer le lien"}`);
+                } finally {
+                  setIsSendingBalanceLink(false);
+                }
+              }}
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-stone-200 hover:border-[#337957] hover:bg-[#337957]/5 transition-all text-center"
+            >
+              {isSendingBalanceLink ? (
+                <div className="w-6 h-6 border-2 border-[#337957] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <span className="text-2xl">📩</span>
+              )}
+              <span className="font-bold text-sm text-stone-800">Envoyer un lien</span>
+              <span className="text-xs text-stone-500">Par email ou SMS</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ALERT FOR OVERDUE PAYMENTS - AT TOP CENTER */}
       {(() => {
@@ -1831,7 +1952,7 @@ export function OrderManagement() {
                           {formatOrderNumber(selectedOrder.orderNumber)}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
-                          {getPaymentBadge(selectedOrder.paymentStatus)}
+                          {getPaymentBadge(selectedOrder.paymentStatus, selectedOrder)}
                         </div>
                       </div>
                     </div>
@@ -2252,6 +2373,40 @@ export function OrderManagement() {
                       </div>
                     );
                   })()}
+
+                  {/* Refund history */}
+                  {(selectedOrder as any).refunds?.length > 0 && (
+                    <div className="border-2 border-red-200 bg-red-50 rounded-lg p-4">
+                      <div className="font-bold text-red-800 mb-3">Historique des remboursements</div>
+                      <div className="space-y-2">
+                        {(selectedOrder as any).refunds.map((refund: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center bg-white rounded-lg p-3 border border-red-100">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">
+                                {refund.amountCents ? formatCurrency(refund.amountCents / 100) : "—"}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {refund.refundedAt ? formatDate(refund.refundedAt) : "—"}
+                              </div>
+                              {refund.reason && (
+                                <div className="text-xs text-gray-400 mt-0.5">{refund.reason}</div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              {refund.employeeName && (
+                                <div className="text-sm font-bold text-red-700">
+                                  Par: {refund.employeeName}
+                                </div>
+                              )}
+                              <div className="text-xs text-gray-400">
+                                {refund.refundStatus || "effectué"}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -2721,9 +2876,17 @@ export function OrderManagement() {
               if (paidAmount > 0.01) {
                 const diff = newTotal - paidAmount;
                 const clientName = `${formData.firstName} ${formData.lastName}`;
-                if (Math.abs(diff) > 0.01) {
+                if (diff > 0.01) {
+                  // Balance remaining — ask how to collect
+                  setBalancePaymentModal({
+                    open: true,
+                    order: updatedOrder,
+                    amount: diff,
+                    clientName,
+                  });
+                } else if (diff < -0.01) {
                   setEditNotification({
-                    type: diff > 0 ? "balance" : "refund",
+                    type: "refund",
                     amount: Math.abs(diff),
                     clientName,
                   });
@@ -2845,7 +3008,7 @@ export function OrderManagement() {
                   Statut: {getStatusBadge(orderToDelete.status)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Paiement: {getPaymentBadge(orderToDelete.paymentStatus)}
+                  Paiement: {getPaymentBadge(orderToDelete.paymentStatus, orderToDelete)}
                 </p>
               </div>
             </div>
@@ -2919,7 +3082,7 @@ export function OrderManagement() {
                   Total: {formatCurrency(orderToCancel.total)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Paiement: {getPaymentBadge(orderToCancel.paymentStatus)}
+                  Paiement: {getPaymentBadge(orderToCancel.paymentStatus, orderToCancel)}
                 </p>
               </div>
             </div>
@@ -2939,63 +3102,8 @@ export function OrderManagement() {
         description={balanceRefundOrder ? `Commande ${formatOrderNumber(balanceRefundOrder.orderNumber)}` : ""}
         icon={<Undo2 className="h-6 w-6 text-green-600" />}
         actions={{
-          primary: {
-            label: isSubmitting ? "Remboursement en cours..." : "Confirmer le remboursement",
-            disabled: !balanceRefundEmployee.trim() || isSubmitting,
-            loading: isSubmitting,
-            onClick: async () => {
-              if (!balanceRefundOrder || !balanceRefundEmployee.trim()) return;
-              const paidAmount = (balanceRefundOrder as any).amountPaid || 0;
-              const refundAmount = paidAmount - balanceRefundOrder.total;
-
-              setIsSubmitting(true);
-              try {
-                // Call real Square partial refund
-                const response = await fetch(`${normalizedApiUrl}/api/payments/refund-balance`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  credentials: "include",
-                  body: JSON.stringify({
-                    orderId: balanceRefundOrder.id,
-                    amount: refundAmount,
-                    employeeName: balanceRefundEmployee.trim(),
-                  }),
-                });
-
-                const result = await response.json();
-                if (!response.ok || !result.success) {
-                  throw new Error(result.error || "Échec du remboursement");
-                }
-
-                // Update locally
-                setOrders((prev) => {
-                  const next = prev.map((o) =>
-                    o.id === balanceRefundOrder.id
-                      ? { ...o, amountPaid: o.total } as any
-                      : o
-                  );
-                  setFilteredOrders(applyOrderFilters(next));
-                  return next;
-                });
-
-                setEditNotification({
-                  type: "refund",
-                  amount: refundAmount,
-                  clientName: `${balanceRefundOrder.client.firstName} ${balanceRefundOrder.client.lastName}`,
-                });
-                setTimeout(() => setEditNotification(null), 6000);
-
-                setIsBalanceRefundModalOpen(false);
-                setBalanceRefundOrder(null);
-              } catch (err: any) {
-                alert(err?.message || "Erreur lors du remboursement");
-              } finally {
-                setIsSubmitting(false);
-              }
-            },
-          },
           secondary: {
-            label: "Annuler",
+            label: "Fermer",
             onClick: () => {
               setIsBalanceRefundModalOpen(false);
               setBalanceRefundOrder(null);
@@ -3006,6 +3114,71 @@ export function OrderManagement() {
         {balanceRefundOrder && (() => {
           const paidAmount = (balanceRefundOrder as any).amountPaid || 0;
           const refundAmount = paidAmount - balanceRefundOrder.total;
+          const hasSquarePayment = !!(balanceRefundOrder.squarePaymentId || balanceRefundOrder.squareInvoiceId);
+
+          const confirmRefund = async (method: "in_store" | "square") => {
+            if (!balanceRefundEmployee.trim()) {
+              alert("Veuillez entrer votre nom");
+              return;
+            }
+            setIsSubmitting(true);
+            try {
+              if (method === "square" && hasSquarePayment) {
+                const response = await fetch(`${normalizedApiUrl}/api/payments/refund-balance`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    orderId: balanceRefundOrder.id,
+                    amount: refundAmount,
+                    employeeName: balanceRefundEmployee.trim(),
+                  }),
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                  throw new Error(result.error || "Échec du remboursement Square");
+                }
+              }
+
+              // Update order: set amountPaid = total (refund completed)
+              await orderAPI.updateOrder(balanceRefundOrder.id, {
+                amountPaid: balanceRefundOrder.total,
+              } as any);
+
+              const refundEntry = {
+                refundedAt: new Date().toISOString(),
+                employeeName: balanceRefundEmployee.trim(),
+                amountCents: Math.round(refundAmount * 100),
+                reason: method === "in_store" ? "Remboursement en magasin" : "Remboursement via Square",
+                refundStatus: "completed",
+              };
+
+              setOrders((prev) => {
+                const next = prev.map((o) => {
+                  if (o.id !== balanceRefundOrder.id) return o;
+                  const existingRefunds = (o as any).refunds || [];
+                  return { ...o, amountPaid: o.total, refunds: [...existingRefunds, refundEntry] } as any;
+                });
+                setFilteredOrders(applyOrderFilters(next));
+                return next;
+              });
+
+              setEditNotification({
+                type: "refund",
+                amount: refundAmount,
+                clientName: `${balanceRefundOrder.client.firstName} ${balanceRefundOrder.client.lastName}`,
+              });
+              setTimeout(() => setEditNotification(null), 6000);
+
+              setIsBalanceRefundModalOpen(false);
+              setBalanceRefundOrder(null);
+            } catch (err: any) {
+              alert(err?.message || "Erreur lors du remboursement");
+            } finally {
+              setIsSubmitting(false);
+            }
+          };
+
           return (
             <div className="space-y-4">
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
@@ -3015,6 +3188,7 @@ export function OrderManagement() {
                   Payé: {formatCurrency(paidAmount)} — Nouveau total: {formatCurrency(balanceRefundOrder.total)}
                 </p>
               </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
                   Nom de la personne qui rembourse *
@@ -3027,6 +3201,36 @@ export function OrderManagement() {
                   className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
                   autoFocus
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button
+                  disabled={isSubmitting || !balanceRefundEmployee.trim()}
+                  onClick={() => confirmRefund("in_store")}
+                  className="flex flex-col items-center gap-1 p-4 rounded-xl border-2 border-green-300 bg-green-50 hover:bg-green-100 transition-all text-center disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span className="font-bold text-sm text-green-800">Remboursé en magasin</span>
+                  )}
+                  <span className="text-xs text-green-600">Confirmer le remboursement en main propre</span>
+                </button>
+
+                {hasSquarePayment && (
+                  <button
+                    disabled={isSubmitting || !balanceRefundEmployee.trim()}
+                    onClick={() => confirmRefund("square")}
+                    className="flex flex-col items-center gap-1 p-4 rounded-xl border-2 border-blue-300 bg-blue-50 hover:bg-blue-100 transition-all text-center disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span className="font-bold text-sm text-blue-800">Rembourser via Square</span>
+                    )}
+                    <span className="text-xs text-blue-600">Remboursement sur la carte du client</span>
+                  </button>
+                )}
               </div>
             </div>
           );

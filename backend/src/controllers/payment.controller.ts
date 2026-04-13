@@ -1134,3 +1134,80 @@ export const getInvoice = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Square Webhook handler
+ * POST /api/payments/webhook
+ *
+ * Handles invoice.payment_made and payment.completed events.
+ * When a customer pays via a Square payment link/invoice, this endpoint
+ * updates the corresponding order's payment status to "paid".
+ */
+export const squareWebhook = async (req: Request, res: Response) => {
+  try {
+    const event = req.body;
+    const eventType = event?.type;
+
+    console.log(`🔔 [WEBHOOK] Received Square event: ${eventType}`);
+
+    if (eventType === "invoice.payment_made" || eventType === "invoice.updated") {
+      const invoice = event?.data?.object?.invoice;
+      const invoiceId = invoice?.id;
+      const invoiceStatus = invoice?.status;
+
+      console.log(`🧾 [WEBHOOK] Invoice ${invoiceId} status: ${invoiceStatus}`);
+
+      if (invoiceStatus === "PAID" && invoiceId) {
+        // Find the order with this Square invoice ID
+        const order = await Order.findOne({ squareInvoiceId: invoiceId });
+
+        if (order) {
+          const total = order.total || 0;
+          order.paymentStatus = "paid";
+          order.depositPaid = true;
+          order.balancePaid = true;
+          order.amountPaid = total;
+          order.depositPaidAt = order.depositPaidAt || new Date();
+          order.balancePaidAt = new Date();
+
+          await order.save();
+          console.log(`✅ [WEBHOOK] Order ${order.orderNumber} marked as PAID (invoice: ${invoiceId})`);
+        } else {
+          console.warn(`⚠️ [WEBHOOK] No order found for invoice ${invoiceId}`);
+        }
+      }
+    }
+
+    if (eventType === "payment.completed" || eventType === "payment.updated") {
+      const payment = event?.data?.object?.payment;
+      const paymentId = payment?.id;
+      const paymentStatus = payment?.status;
+
+      console.log(`💳 [WEBHOOK] Payment ${paymentId} status: ${paymentStatus}`);
+
+      if (paymentStatus === "COMPLETED" && paymentId) {
+        const order = await Order.findOne({ squarePaymentId: paymentId });
+
+        if (order) {
+          const total = order.total || 0;
+          order.paymentStatus = "paid";
+          order.depositPaid = true;
+          order.balancePaid = true;
+          order.amountPaid = total;
+          order.depositPaidAt = order.depositPaidAt || new Date();
+          order.balancePaidAt = new Date();
+
+          await order.save();
+          console.log(`✅ [WEBHOOK] Order ${order.orderNumber} marked as PAID (payment: ${paymentId})`);
+        }
+      }
+    }
+
+    // Always respond 200 to acknowledge receipt
+    res.status(200).json({ received: true });
+  } catch (error: any) {
+    console.error("❌ [WEBHOOK] Error processing webhook:", error.message || error);
+    // Still respond 200 to avoid Square retrying
+    res.status(200).json({ received: true });
+  }
+};
+

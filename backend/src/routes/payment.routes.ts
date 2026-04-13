@@ -14,6 +14,7 @@ import {
   getSquareConfig,
   createInvoice,
   getInvoice,
+  squareWebhook,
 } from "../controllers/payment.controller.js";
 import { validateBody, validateQuery } from "../middleware/validation.js";
 import {
@@ -33,6 +34,9 @@ const router = Router();
 
 // Get Square configuration for frontend
 router.get("/config", getSquareConfig);
+
+// Square webhook (receives payment notifications)
+router.post("/webhook", squareWebhook);
 
 /**
  * Payment processing routes
