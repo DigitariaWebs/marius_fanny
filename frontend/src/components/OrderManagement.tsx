@@ -27,6 +27,8 @@ import {
   Tag,
   Monitor,
   Home,
+  Store,
+  Send,
 } from "lucide-react";
 import { DataTable } from "./ui/DataTable";
 import { Modal } from "./ui/modal";
@@ -396,6 +398,19 @@ export function OrderManagement() {
           Remboursé
         </span>
       );
+    }
+
+    // If order has unpaid balance after modification, show "Non payé" regardless of stored status
+    if (order) {
+      const paidAmount = (order as any).amountPaid || 0;
+      const balance = (order.total || 0) - paidAmount;
+      if (balance > 0.01 && paidAmount > 0.01) {
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            Non payé
+          </span>
+        );
+      }
     }
 
     const paymentConfig = {
@@ -1517,7 +1532,7 @@ export function OrderManagement() {
               }}
               className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-stone-200 hover:border-[#C5A065] hover:bg-[#C5A065]/5 transition-all text-center"
             >
-              <span className="text-2xl">🏪</span>
+              <Store className="w-7 h-7 text-[#C5A065]" />
               <span className="font-bold text-sm text-stone-800">En boutique</span>
               <span className="text-xs text-stone-500">Le client paiera sur place</span>
             </button>
@@ -1549,7 +1564,7 @@ export function OrderManagement() {
               {isSendingBalanceLink ? (
                 <div className="w-6 h-6 border-2 border-[#337957] border-t-transparent rounded-full animate-spin" />
               ) : (
-                <span className="text-2xl">📩</span>
+                <Send className="w-7 h-7 text-[#337957]" />
               )}
               <span className="font-bold text-sm text-stone-800">Envoyer un lien</span>
               <span className="text-xs text-stone-500">Par email ou SMS</span>
