@@ -433,8 +433,13 @@ export function OrderManagement() {
   };
 
   const getPaymentChannelIcon = (order: OrderWithPacking) => {
-    const isPaidOrder = order.paymentStatus !== "unpaid";
-    if (!isPaidOrder) return null;
+    // Show icon as long as SOMETHING has been paid (amountPaid > 0 OR depositPaid OR paid status)
+    const hasSomePayment =
+      order.paymentStatus === "paid" ||
+      order.paymentStatus === "deposit_paid" ||
+      order.depositPaid ||
+      ((order as any).amountPaid || 0) > 0;
+    if (!hasSomePayment) return null;
 
     const paidViaBoutique = order.source === "online";
     if (paidViaBoutique) {
@@ -1084,28 +1089,53 @@ export function OrderManagement() {
     return isPaid && isSquareChannel && order.status !== "cancelled";
   };
 
-  const sendPaymentLink = async (order: OrderWithPacking) => {
-    const invoicePayload = {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      customerEmail: order.client.email,
-      customerPhone:
-        (order.paymentLinkChannel || "email") === "sms"
-          ? order.client.phone
-          : undefined,
-      customerName: `${order.client.firstName} ${order.client.lastName}`.trim(),
-      deliveryChannel: order.paymentLinkChannel || "email",
-      items: order.items.map((item) => ({
-        name: item.product?.name ?? item.productId.toString(),
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
-      deliveryFee: order.deliveryFee,
-      taxAmount: order.taxAmount,
-      total: order.total,
-      notes: `Lien de paiement pour commande ${order.orderNumber}`,
-      deliveryType: order.deliveryType,
-    };
+  const sendPaymentLink = async (order: OrderWithPacking, balanceOnly?: number) => {
+    // If balanceOnly is provided, create a simple invoice for just the balance
+    const invoicePayload: any = balanceOnly && balanceOnly > 0
+      ? {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerEmail: order.client.email,
+          customerPhone:
+            (order.paymentLinkChannel || "email") === "sms"
+              ? order.client.phone
+              : undefined,
+          customerName: `${order.client.firstName} ${order.client.lastName}`.trim(),
+          deliveryChannel: order.paymentLinkChannel || "email",
+          items: [
+            {
+              name: `Solde commande ${order.orderNumber}`,
+              quantity: 1,
+              unitPrice: balanceOnly,
+            },
+          ],
+          deliveryFee: 0,
+          taxAmount: 0,
+          total: balanceOnly,
+          notes: `Solde à payer pour commande ${order.orderNumber}`,
+          deliveryType: order.deliveryType,
+        }
+      : {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerEmail: order.client.email,
+          customerPhone:
+            (order.paymentLinkChannel || "email") === "sms"
+              ? order.client.phone
+              : undefined,
+          customerName: `${order.client.firstName} ${order.client.lastName}`.trim(),
+          deliveryChannel: order.paymentLinkChannel || "email",
+          items: order.items.map((item) => ({
+            name: item.product?.name ?? item.productId.toString(),
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })),
+          deliveryFee: order.deliveryFee,
+          taxAmount: order.taxAmount,
+          total: order.total,
+          notes: `Lien de paiement pour commande ${order.orderNumber}`,
+          deliveryType: order.deliveryType,
+        };
 
     const response = await fetch(`${normalizedApiUrl}/api/payments/invoice`, {
       method: "POST",
@@ -1574,7 +1604,8 @@ export function OrderManagement() {
                 if (!order) return;
                 setIsSendingBalanceLink(true);
                 try {
-                  await sendPaymentLink(order);
+                  // Send payment link for BALANCE ONLY, not full total
+                  await sendPaymentLink(order, balancePaymentModal.amount);
                   setBalancePaymentModal({ open: false, order: null, amount: 0, clientName: "" });
                   setEditNotification({
                     type: "balance",

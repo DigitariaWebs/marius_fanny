@@ -1502,9 +1502,13 @@ export const updateOrder = async (
       order.amountPaid = (updateData as any).amountPaid;
     }
 
-    // Refunds history append
+    // Refunds history append (normalize refundedAt string → Date)
     if (Array.isArray((updateData as any).refunds) && (updateData as any).refunds.length > 0) {
-      const incoming = (updateData as any).refunds;
+      const incoming = ((updateData as any).refunds as any[]).map((r) => ({
+        ...r,
+        refundedAt: r.refundedAt ? new Date(r.refundedAt) : new Date(),
+        amountCents: Number(r.amountCents) || 0,
+      }));
       const existing = (order as any).refunds || [];
       (order as any).refunds = [...existing, ...incoming];
     }

@@ -72,7 +72,7 @@ export interface IOrder extends Document {
     refundedAt: Date;
     employeeName: string;
     employeeId?: string;
-    paymentId: string;
+    paymentId?: string;
     refundId?: string;
     refundStatus?: string;
     amountCents: number;
@@ -206,7 +206,7 @@ const RefundEntrySchema = new Schema(
     refundedAt: { type: Date, required: true },
     employeeName: { type: String, required: true, trim: true },
     employeeId: { type: String, trim: true },
-    paymentId: { type: String, required: true, trim: true },
+    paymentId: { type: String, trim: true }, // optional — empty for in-store refunds
     refundId: { type: String, trim: true },
     refundStatus: { type: String, trim: true },
     amountCents: { type: Number, required: true, min: 0 },
