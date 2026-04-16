@@ -1550,41 +1550,9 @@ export const updateOrder = async (
 
     console.log(`✅ Order ${order.orderNumber} updated with ${changes.length} changes`);
 
-    // Send balance email to client if items were modified, client already paid, and there's a balance
-    if (updateData.items && order.clientInfo?.email) {
-      const itemsChange = changes.find((c) => c.changeType === "items_modified");
-      if (itemsChange) {
-        const paidAmount = order.amountPaid || 0;
-
-        // Only send email if the client has already paid something
-        if (paidAmount > 0.01) {
-          const balance = order.total - paidAmount;
-
-          if (Math.abs(balance) > 0.01) {
-            const shortNumber = order.orderNumber.split("-").pop() || order.orderNumber;
-            try {
-              await sendOrderBalanceEmail({
-                clientName: `${order.clientInfo.firstName} ${order.clientInfo.lastName}`,
-                clientEmail: order.clientInfo.email,
-                orderNumber: shortNumber,
-                oldTotal: paidAmount,
-                newTotal: order.total,
-                amountPaid: paidAmount,
-                balance,
-                items: order.items.map((item: any) => ({
-                  name: item.productName || `Produit #${item.productId}`,
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice,
-                  amount: item.amount,
-                })),
-              });
-            } catch (emailErr) {
-              console.error("❌ Failed to send balance email:", emailErr);
-            }
-          }
-        }
-      }
-    }
+    // NOTE: Balance email is no longer sent automatically here.
+    // The admin explicitly chooses via the balance modal (email with link OR in-store).
+    // This avoids duplicate emails and ensures the email has a proper payment link.
 
     res.json({
       success: true,
