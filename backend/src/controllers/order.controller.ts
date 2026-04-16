@@ -706,9 +706,12 @@ export const createOrder = async (
         if (entryIndex >= 0) {
           // Product exists - add to client quantity and recalculate total
           const oldClient = inventory.entries[entryIndex].client;
-          inventory.entries[entryIndex].client += quantity;
-          inventory.entries[entryIndex].total = 
-            inventory.entries[entryIndex].stdo + inventory.entries[entryIndex].client;
+          const currentClient = typeof oldClient === "number" ? oldClient : 0;
+          const currentStdo = typeof inventory.entries[entryIndex].stdo === "number"
+            ? (inventory.entries[entryIndex].stdo as number)
+            : 0;
+          inventory.entries[entryIndex].client = currentClient + quantity;
+          inventory.entries[entryIndex].total = currentStdo + currentClient + quantity;
           console.log(`📦 [INVENTORY] Updated "${productName}": client ${oldClient} -> ${inventory.entries[entryIndex].client}, total: ${inventory.entries[entryIndex].total}`);
           updatedCount++;
         } else if (KNOWN_INVENTORY_PRODUCTS.some(k => normalize(k) === normalizedName || normalize(k).includes(normalizedName) || normalizedName.includes(normalize(k)))) {

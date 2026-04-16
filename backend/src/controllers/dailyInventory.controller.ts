@@ -41,17 +41,27 @@ export const saveDailyInventory = async (
   // - Daily inventory (journalier): total = stdo + client
   // - Four inventory (date contains "__four"): total = stdo + comm_berri + client
   const isFourInventory = date.includes("__four");
-  
-  const sanitizedEntries = entries.map((entry) => ({
+
+  // Normalize a value: keep strings as-is (for SUPPLÉMENT row), convert numbers to non-negative
+  const normalize = (value: any): number | string => {
+    if (typeof value === "string") return value;
+    return Math.max(0, Number(value) || 0);
+  };
+  const numOnly = (value: any): number => {
+    if (typeof value === "string") return 0;
+    return Math.max(0, Number(value) || 0);
+  };
+
+  const sanitizedEntries = (entries as any[]).map((entry) => ({
     ...entry,
-    stock_stdo: Math.max(0, entry.stock_stdo ?? 0),
-    stdo: Math.max(0, entry.stdo),
-    berri: Math.max(0, entry.berri),
-    comm_berri: Math.max(0, entry.comm_berri),
-    client: Math.max(0, entry.client),
-    total: isFourInventory 
-      ? Math.max(0, entry.stdo) + Math.max(0, entry.comm_berri) + Math.max(0, entry.client) // Four: stdo + comm_berri + client
-      : Math.max(0, entry.stdo) + Math.max(0, entry.client), // Journalier: stdo + client
+    stock_stdo: normalize(entry.stock_stdo),
+    stdo: normalize(entry.stdo),
+    berri: normalize(entry.berri),
+    comm_berri: normalize(entry.comm_berri),
+    client: normalize(entry.client),
+    total: isFourInventory
+      ? numOnly(entry.stdo) + numOnly(entry.comm_berri) + numOnly(entry.client)
+      : numOnly(entry.stdo) + numOnly(entry.client),
   }));
 
   // @ts-ignore – user injected by requireAuth middleware

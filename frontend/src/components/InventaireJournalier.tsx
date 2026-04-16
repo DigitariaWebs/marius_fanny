@@ -577,19 +577,6 @@ export default function InventaireJournalier() {
         </div>
       </div>
 
-      {rows.length > 6 && (
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{ background: `linear-gradient(135deg, ${gold}, #b8935a)` }}
-          >
-            {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-            <span>{saving ? "Sauvegarde…" : "Sauvegarder"}</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }

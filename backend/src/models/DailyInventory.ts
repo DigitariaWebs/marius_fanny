@@ -3,12 +3,12 @@ import { Schema, model } from "mongoose";
 export interface IDailyInventoryEntry {
   productId: string;
   productName: string;
-  stock_stdo: number; // ST-do (stock)
-  stdo: number;       // Comm. St-do
-  berri: number;      // BERRI
-  comm_berri: number; // Comm Berri
-  client: number;     // Comm CLIENT
-  total: number;      // auto-calculated: stdo + client only
+  stock_stdo: number | string; // ST-do (stock) — string for SUPPLÉMENT row
+  stdo: number | string;       // Comm. St-do
+  berri: number | string;      // BERRI
+  comm_berri: number | string; // Comm Berri
+  client: number | string;     // Comm CLIENT
+  total: number | string;      // auto-calculated: stdo + client only
 }
 
 export interface IDailyInventory {
@@ -23,12 +23,13 @@ const DailyInventoryEntrySchema = new Schema<IDailyInventoryEntry>(
   {
     productId: { type: String, required: true },
     productName: { type: String, required: true, trim: true },
-    stock_stdo: { type: Number, required: true, min: 0, default: 0 },
-    stdo: { type: Number, required: true, min: 0, default: 0 },
-    berri: { type: Number, required: true, min: 0, default: 0 },
-    comm_berri: { type: Number, required: true, min: 0, default: 0 },
-    client: { type: Number, required: true, min: 0, default: 0 },
-    total: { type: Number, required: true, min: 0, default: 0 },
+    // Mixed type to allow numbers (regular rows) or strings (SUPPLÉMENT row)
+    stock_stdo: { type: Schema.Types.Mixed, default: 0 },
+    stdo: { type: Schema.Types.Mixed, default: 0 },
+    berri: { type: Schema.Types.Mixed, default: 0 },
+    comm_berri: { type: Schema.Types.Mixed, default: 0 },
+    client: { type: Schema.Types.Mixed, default: 0 },
+    total: { type: Schema.Types.Mixed, default: 0 },
   },
   { _id: false },
 );
