@@ -15,6 +15,7 @@ import {
   createInvoice,
   getInvoice,
   squareWebhook,
+  cancelInvoice,
 } from "../controllers/payment.controller.js";
 import { validateBody, validateQuery } from "../middleware/validation.js";
 import {
@@ -84,5 +85,8 @@ router.post(
 
 // Get invoice by ID
 router.get("/invoice/:invoiceId", getInvoice);
+
+// Cancel a Square invoice
+router.post("/cancel-invoice", requireAuth, requireAdmin, cancelInvoice);
 
 export default router;

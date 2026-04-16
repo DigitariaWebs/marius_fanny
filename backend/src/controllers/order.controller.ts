@@ -1319,7 +1319,8 @@ export const updateOrder = async (
         order.depositPaid = true;
         order.balancePaid = true;
         order.paymentStatus = "paid";
-      } else if (estimatedPaidAmount > epsilon && estimatedPaidAmount >= depositAmount - epsilon) {
+      } else if (estimatedPaidAmount > epsilon) {
+        // Any partial payment counts as deposit_paid (preserves "in_store" channel icon)
         order.depositPaid = true;
         order.balancePaid = false;
         order.paymentStatus = "deposit_paid";
@@ -1491,6 +1492,18 @@ export const updateOrder = async (
       } else if (order.depositPaid) {
         order.amountPaid = order.depositAmount;
       }
+    }
+
+    // Direct amountPaid update (e.g., after a refund)
+    if (typeof (updateData as any).amountPaid === "number") {
+      order.amountPaid = (updateData as any).amountPaid;
+    }
+
+    // Refunds history append
+    if (Array.isArray((updateData as any).refunds) && (updateData as any).refunds.length > 0) {
+      const incoming = (updateData as any).refunds;
+      const existing = (order as any).refunds || [];
+      (order as any).refunds = [...existing, ...incoming];
     }
 
     if (updateData.squarePaymentId && updateData.squarePaymentId !== order.squarePaymentId) {

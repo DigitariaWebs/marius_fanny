@@ -400,14 +400,14 @@ export function OrderManagement() {
       );
     }
 
-    // If order has unpaid balance after modification, show "Non payé" regardless of stored status
+    // If order has partial payment with balance remaining, show "Balance à payer"
     if (order) {
       const paidAmount = (order as any).amountPaid || 0;
       const balance = (order.total || 0) - paidAmount;
       if (balance > 0.01 && paidAmount > 0.01) {
         return (
-          <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            Non payé
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+            Balance à payer
           </span>
         );
       }
@@ -759,6 +759,19 @@ export function OrderManagement() {
 
     setIsSubmitting(true);
     try {
+      // If order has a pending Square invoice, cancel it first
+      if (orderToDelete.squareInvoiceId && orderToDelete.paymentStatus !== "paid") {
+        try {
+          await fetch(`${normalizedApiUrl}/api/payments/cancel-invoice`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ orderId: orderToDelete.id }),
+          });
+        } catch (e) {
+          console.warn("Failed to cancel Square invoice:", e);
+        }
+      }
       await orderAPI.deleteOrder(orderToDelete.id);
       const newOrders = orders.filter((o) => o.id !== orderToDelete.id);
       setOrders(newOrders);
@@ -879,6 +892,23 @@ export function OrderManagement() {
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderWithPacking["status"]) => {
+    // If cancelling and there's a pending Square invoice, cancel it too
+    if (newStatus === "cancelled") {
+      const targetOrder = orders.find((o) => o.id === orderId);
+      if (targetOrder?.squareInvoiceId && targetOrder.paymentStatus !== "paid") {
+        try {
+          await fetch(`${normalizedApiUrl}/api/payments/cancel-invoice`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ orderId }),
+          });
+        } catch (e) {
+          console.warn("Failed to cancel Square invoice:", e);
+        }
+      }
+    }
+
     const updatedOrders: OrderWithPacking[] = orders.map((o) =>
       o.id === orderId ? { ...o, status: newStatus } : o,
     );
@@ -2714,15 +2744,7 @@ export function OrderManagement() {
             setIsCreateModalOpen(false);
           }}
           clients={clients}
-          pricingBaseline={
-            selectedOrder
-              ? {
-                  total: selectedOrder.total,
-                  depositAmount: selectedOrder.depositAmount,
-                  paymentStatus: selectedOrder.paymentStatus,
-                }
-              : undefined
-          }
+          pricingBaseline={undefined}
           isSubmitting={isSubmitting}
         />
       </Modal>
@@ -3161,11 +3183,6 @@ export function OrderManagement() {
                 }
               }
 
-              // Update order: set amountPaid = total (refund completed)
-              await orderAPI.updateOrder(balanceRefundOrder.id, {
-                amountPaid: balanceRefundOrder.total,
-              } as any);
-
               const refundEntry = {
                 refundedAt: new Date().toISOString(),
                 employeeName: balanceRefundEmployee.trim(),
@@ -3173,6 +3190,12 @@ export function OrderManagement() {
                 reason: method === "in_store" ? "Remboursement en magasin" : "Remboursement via Square",
                 refundStatus: "completed",
               };
+
+              // Persist refund + amountPaid to backend
+              await orderAPI.updateOrder(balanceRefundOrder.id, {
+                amountPaid: balanceRefundOrder.total,
+                refunds: [refundEntry],
+              } as any);
 
               setOrders((prev) => {
                 const next = prev.map((o) => {

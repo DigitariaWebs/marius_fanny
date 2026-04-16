@@ -287,10 +287,16 @@ export default function InventaireJournalier() {
     }
   };
 
-  // ── column totals ──
+  // ── column totals (exclude SUPPLÉMENT row which is text, not numeric) ──
+  const numericRows = rows.filter(
+    (r) => !(r.productName || "").toLowerCase().includes("suppl"),
+  );
   const colTotals = COLUMNS.reduce<Record<Col, number>>(
     (acc, c) => {
-      acc[c.key] = rows.reduce((s, r) => s + (r[c.key] ?? 0), 0);
+      acc[c.key] = numericRows.reduce(
+        (s, r) => s + (typeof r[c.key] === "number" ? r[c.key] : 0),
+        0,
+      );
       return acc;
     },
     { stock_stdo: 0, stdo: 0, berri: 0, comm_berri: 0, client: 0 },
@@ -489,7 +495,8 @@ export default function InventaireJournalier() {
 
               <tbody className="divide-y divide-stone-50">
                 {rows.map((row, idx) => {
-                  const total = calcTotal(row);
+                  const isSupplementRow = (row.productName || "").toLowerCase().includes("suppl");
+                  const total = isSupplementRow ? 0 : calcTotal(row);
                   return (
                     <tr key={row.productId} className={`group transition-colors hover:bg-amber-50/30 ${idx % 2 === 0 ? "bg-white" : "bg-stone-50/40"}`}>
                       <td className="px-5 py-2.5 font-medium text-stone-800">
@@ -537,9 +544,13 @@ export default function InventaireJournalier() {
                       })}
 
                       <td className="px-3 py-2 text-center">
-                        <span className={`inline-block min-w-[52px] px-3 py-1.5 rounded-xl font-bold text-sm ${total > 0 ? "text-white shadow-sm" : "text-stone-300 bg-stone-100"}`} style={total > 0 ? { background: gold } : undefined}>
-                          {total}
-                        </span>
+                        {isSupplementRow ? (
+                          <span className="text-stone-300">—</span>
+                        ) : (
+                          <span className={`inline-block min-w-[52px] px-3 py-1.5 rounded-xl font-bold text-sm ${total > 0 ? "text-white shadow-sm" : "text-stone-300 bg-stone-100"}`} style={total > 0 ? { background: gold } : undefined}>
+                            {total}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

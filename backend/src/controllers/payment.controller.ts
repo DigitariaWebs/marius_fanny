@@ -566,6 +566,19 @@ export const createInvoice = async (req: Request, res: Response) => {
       },
     }));
 
+    // Add tax as a line item (instead of using Square's tax system which applies to all items)
+    if (taxAmount > 0) {
+      lineItems.push({
+        name: "TPS + TVQ",
+        quantity: "1",
+        itemType: "ITEM",
+        basePriceMoney: {
+          amount: BigInt(Math.round(taxAmount * 100)),
+          currency: "CAD",
+        },
+      });
+    }
+
     // Add delivery fee as a line item if applicable
     if (deliveryFee > 0) {
       lineItems.push({
@@ -582,25 +595,12 @@ export const createInvoice = async (req: Request, res: Response) => {
     // Calculate due date (default to 7 days from now)
     const invoiceDueDate = dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    const taxUid = "order-tax";
     const orderRequest: any = {
       idempotencyKey: randomUUID(),
       order: {
         locationId: squareConfig.locationId,
         referenceId: orderId,
         lineItems,
-        ...(taxAmount > 0
-          ? {
-              taxes: [
-                {
-                  uid: taxUid,
-                  name: "Taxes",
-                  percentage: "14.975",
-                  scope: "ORDER",
-                },
-              ],
-            }
-          : {}),
       },
     };
 
@@ -1147,6 +1147,57 @@ export const getInvoice = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to fetch invoice",
+    });
+  }
+};
+
+/**
+ * Cancel a Square invoice (used when an order is cancelled but the invoice
+ * was sent and not yet paid).
+ * POST /api/payments/cancel-invoice
+ */
+export const cancelInvoice = async (req: Request, res: Response) => {
+  try {
+    const { orderId, invoiceId } = req.body as { orderId?: string; invoiceId?: string };
+
+    let targetInvoiceId = invoiceId;
+    if (!targetInvoiceId && orderId) {
+      const order = await Order.findById(orderId);
+      targetInvoiceId = order?.squareInvoiceId;
+    }
+
+    if (!targetInvoiceId) {
+      return res.status(400).json({
+        success: false,
+        error: "Aucun ID de facture Square fourni",
+      });
+    }
+
+    // Fetch invoice to get current version
+    const getResp = await squareClient.invoices.get({ invoiceId: targetInvoiceId });
+    const invoice = (getResp as any)?.invoice;
+    if (!invoice) {
+      return res.status(404).json({ success: false, error: "Facture Square introuvable" });
+    }
+
+    // If already cancelled or paid, skip
+    if (invoice.status === "CANCELED" || invoice.status === "PAID") {
+      return res.json({ success: true, data: { status: invoice.status, alreadyHandled: true } });
+    }
+
+    // Cancel via Square
+    const cancelResp = await squareClient.invoices.cancel({
+      invoiceId: targetInvoiceId,
+      version: invoice.version!,
+    });
+
+    console.log(`✅ [INVOICE] Cancelled Square invoice ${targetInvoiceId}`);
+    res.json({ success: true, data: cancelResp });
+  } catch (error: any) {
+    console.error("❌ [INVOICE] Failed to cancel Square invoice:", error?.message || error);
+    res.status(500).json({
+      success: false,
+      error: error?.message || "Échec de l'annulation de la facture Square",
     });
   }
 };
