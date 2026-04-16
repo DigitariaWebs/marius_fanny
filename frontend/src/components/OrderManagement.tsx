@@ -2969,6 +2969,38 @@ export function OrderManagement() {
                   setEditNotification({ type: "nochange", amount: 0, clientName });
                   setTimeout(() => setEditNotification(null), 4000);
                 }
+              } else if (
+                updatedOrder.paymentMethod === "payment_link" &&
+                updatedOrder.squareInvoiceId &&
+                updatedOrder.paymentStatus !== "paid" &&
+                Math.abs(newTotal - (selectedOrder.total || 0)) > 0.01
+              ) {
+                // Order has pending invoice, total changed → cancel old + send new
+                try {
+                  await fetch(`${normalizedApiUrl}/api/payments/cancel-invoice`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ orderId: updatedOrder.id }),
+                  });
+                  const invoiceData = await sendPaymentLink(updatedOrder);
+                  updatedOrder.squareInvoiceId = invoiceData?.invoiceId;
+                  setOrders((prev) => {
+                    const next = prev.map((o) =>
+                      o.id === updatedOrder.id ? updatedOrder : o,
+                    );
+                    setFilteredOrders(applyOrderFilters(next));
+                    return next;
+                  });
+                  alert(
+                    `Un nouveau lien de paiement a été envoyé à ${updatedOrder.client.email} pour le nouveau total.`,
+                  );
+                } catch (err: any) {
+                  console.error("Failed to resend payment link:", err);
+                  alert(
+                    `Commande modifiée, mais l'envoi du nouveau lien a échoué: ${err?.message || err}`,
+                  );
+                }
               }
 
               setIsEditModalOpen(false);
