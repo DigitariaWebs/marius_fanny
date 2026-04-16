@@ -282,14 +282,49 @@ export default function OrderForm({
 
   useEffect(() => {
     const subtotal = formData.items.reduce((sum, item) => sum + item.amount, 0);
+
+    // Tax exemption rule: when 6+ viennoiseries/pâtisseries (any mix), they become tax-exempt
+    const categoryText = (product: any): string => {
+      if (!product) return "";
+      const cat = (product as any).category;
+      if (Array.isArray(cat)) return cat.join(" ").toLowerCase();
+      return String(cat || "").toLowerCase();
+    };
+
+    const bakedGoodsCount = formData.items.reduce((sum, item) => {
+      if (item.isCustom) return sum;
+      const product = products.find((p) => p.id === item.productId);
+      if (!product) return sum;
+      const cat = categoryText(product);
+      const isViennoiserie = cat.includes("viennoiser");
+      const isPatisserie =
+        (product as any).productionType === "patisserie" || cat.includes("patisser");
+      if (isViennoiserie || isPatisserie) {
+        return sum + item.quantity;
+      }
+      return sum;
+    }, 0);
+    const bakedGoodsExempt = bakedGoodsCount >= 6;
+
     const taxableSubtotal = formData.items.reduce((sum, item) => {
       if (item.isCustom) {
         return sum + (item.taxable === false ? 0 : item.amount);
       }
-      // For regular products, check the product's hasTaxes flag
       const product = products.find((p) => p.id === item.productId);
       const hasTaxes = product?.hasTaxes !== undefined ? product.hasTaxes : true;
-      return sum + (hasTaxes ? item.amount : 0);
+      if (!hasTaxes) return sum;
+
+      // Check if this is a baked good (viennoiserie or pâtisserie)
+      const cat = categoryText(product);
+      const isViennoiserie = cat.includes("viennoiser");
+      const isPatisserie =
+        (product as any)?.productionType === "patisserie" || cat.includes("patisser");
+      const isBakedGood = isViennoiserie || isPatisserie;
+
+      // Baked goods are tax-exempt when 6+ of them are ordered (any mix)
+      if (isBakedGood && bakedGoodsExempt) return sum;
+
+      return sum + item.amount;
     }, 0);
     const taxAmount = taxableSubtotal * TAX_RATE;
     const total = subtotal + taxAmount + formData.deliveryFee;
@@ -1732,8 +1767,8 @@ export default function OrderForm({
 
                 return (
                   <React.Fragment key={item.id}>
-                    <TableRow className={item.isCustom ? "bg-purple-50" : ""}>
-                      <TableCell>
+                    <TableRow className={`align-top ${item.isCustom ? "bg-purple-50" : ""}`}>
+                      <TableCell className="align-top pt-3">
                         {item.isCustom ? (
                           <div className="space-y-1">
                             <div className="text-[10px] font-semibold text-purple-700 uppercase mb-1">Item personnalisé</div>
@@ -1765,30 +1800,71 @@ export default function OrderForm({
                         ) : (
                         <div className="space-y-1">
                           {item.productId && product && (
-                            <div className="flex items-start justify-between gap-2 rounded-md border border-green-200 bg-green-50 px-2 py-1.5">
-                              <div className="min-w-0">
-                                <div className="text-[10px] font-semibold text-green-700 uppercase">
-                                  Produit choisi
+                            <>
+                              <div className="flex items-center justify-between gap-2 rounded-md border border-green-200 bg-green-50 px-2 py-1">
+                                <div className="min-w-0 flex items-center gap-2">
+                                  <div className="text-[9px] font-semibold text-green-700 uppercase shrink-0">
+                                    Produit
+                                  </div>
+                                  <div className="truncate text-sm font-semibold text-gray-900">
+                                    {product.name}
+                                  </div>
                                 </div>
-                                <div className="truncate text-base font-semibold text-gray-900 leading-tight">
-                                  {product.name}
-                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-[11px] text-green-800 hover:text-green-900 hover:bg-green-100 shrink-0"
+                                  onClick={() => handleClearProduct(item.id)}
+                                >
+                                  Changer
+                                </Button>
                               </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs text-green-800 hover:text-green-900 hover:bg-green-100"
-                                onClick={() => handleClearProduct(item.id)}
-                              >
-                                Changer
-                              </Button>
-                            </div>
-                          )}
-                          {!item.productId && (
-                            <div className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
-                              Sélectionnez un produit dans la grille POS ci-dessus.
-                            </div>
+                              {/* Inline dropdowns below the product banner */}
+                              {product.customOptions && product.customOptions.some(
+                                (opt) =>
+                                  opt.type !== "text" &&
+                                  !isAllergyOptionName(opt.name) &&
+                                  !isClientNoteOptionName(opt.name),
+                              ) && (
+                                <div className="flex items-center flex-wrap gap-3 px-2">
+                                  {product.customOptions
+                                    .filter(
+                                      (opt) =>
+                                        opt.type !== "text" &&
+                                        !isAllergyOptionName(opt.name) &&
+                                        !isClientNoteOptionName(opt.name),
+                                    )
+                                    .map((option) => (
+                                      <div
+                                        key={`inline-${item.id}-${option.name}`}
+                                        className="flex items-center gap-1.5"
+                                      >
+                                        <span className="text-[11px] font-medium text-gray-600">
+                                          {option.name}:
+                                        </span>
+                                        <Select
+                                          value={item.selectedOptions?.[option.name] || ""}
+                                          onValueChange={(value) =>
+                                            handleOptionChange(item.id, option.name, value)
+                                          }
+                                        >
+                                          <SelectTrigger className="h-6 text-xs w-auto min-w-[90px] px-2">
+                                            <SelectValue placeholder="Choisir" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {option.choices.map((choice) => (
+                                              <SelectItem key={choice} value={choice}>
+                                                {choice}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    ))}
+                                </div>
+                              )}
+                            </>
                           )}
                           {(livePreparationWarning || preparationError) && (
                             <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
@@ -1798,7 +1874,7 @@ export default function OrderForm({
                         </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top pt-3">
                         <Input
                           type="number"
                           min={product?.minOrderQuantity || 1}
@@ -1820,7 +1896,7 @@ export default function OrderForm({
                           </p>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top pt-3">
                         {item.isCustom ? (
                           <div>
                             <Input
@@ -1845,12 +1921,12 @@ export default function OrderForm({
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top pt-3">
                         <div className="text-sm font-medium text-gray-700">
                           ${item.amount.toFixed(2)}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top pt-3">
                         {/* Bouton Emballer */}
                         {false && item.productId && !item.isPacked && (
                           <Button
@@ -1869,7 +1945,7 @@ export default function OrderForm({
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top pt-3">
                         <Button
                           type="button"
                           variant="ghost"
@@ -1887,7 +1963,14 @@ export default function OrderForm({
                           <div className="space-y-3">
                             {product?.customOptions && product.customOptions.length > 0 && (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {product.customOptions.map((option) => (
+                                {product.customOptions
+                                  .filter(
+                                    (option) =>
+                                      option.type === "text" ||
+                                      isAllergyOptionName(option.name) ||
+                                      isClientNoteOptionName(option.name),
+                                  )
+                                  .map((option) => (
                                   <div key={`${item.id}-${option.name}`}>
                                     {option.type === "text" &&
                                     (isAllergyOptionName(option.name) ||
@@ -1907,28 +1990,10 @@ export default function OrderForm({
                                             : "Ajouter";
 
                                         return (
-                                          <div className="space-y-1">
-                                            <div className="flex items-center justify-between gap-2">
-                                              <Label className="text-[11px] text-gray-600">
-                                                {option.name}
-                                              </Label>
-                                              <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-7 px-2 text-[11px]"
-                                                onClick={() =>
-                                                  toggleTextOptionExpanded(
-                                                    item.id,
-                                                    option.name,
-                                                    !expanded,
-                                                  )
-                                                }
-                                              >
-                                                {actionLabel}
-                                              </Button>
-                                            </div>
-
+                                          <div className="flex items-center gap-2">
+                                            <Label className="text-[11px] text-gray-600 shrink-0 min-w-[70px]">
+                                              {option.name}
+                                            </Label>
                                             {expanded ? (
                                               <Input
                                                 value={currentValue}
@@ -1939,20 +2004,37 @@ export default function OrderForm({
                                                     e.target.value,
                                                   )
                                                 }
-                                                placeholder={`Entrer ${option.name.toLowerCase()}...`}
-                                                className="h-8 text-xs"
+                                                placeholder="..."
+                                                className="h-7 text-xs flex-1"
                                               />
                                             ) : currentValue.trim() ? (
-                                              <div className="text-[11px] text-gray-500 truncate">
+                                              <div className="text-[11px] text-gray-700 truncate flex-1">
                                                 {currentValue}
                                               </div>
-                                            ) : null}
+                                            ) : (
+                                              <div className="flex-1 text-[11px] text-gray-400 italic">aucune note</div>
+                                            )}
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-7 px-2 text-[11px] shrink-0"
+                                              onClick={() =>
+                                                toggleTextOptionExpanded(
+                                                  item.id,
+                                                  option.name,
+                                                  !expanded,
+                                                )
+                                              }
+                                            >
+                                              {actionLabel}
+                                            </Button>
                                           </div>
                                         );
                                       })()
                                     ) : (
-                                      <div>
-                                        <Label className="text-[11px] text-gray-600">
+                                      <div className="flex items-center gap-2">
+                                        <Label className="text-[11px] text-gray-600 shrink-0 min-w-[70px]">
                                           {option.name}
                                         </Label>
                                         {option.type === "text" ? (
@@ -1968,7 +2050,7 @@ export default function OrderForm({
                                               )
                                             }
                                             placeholder={`Entrer ${option.name.toLowerCase()}...`}
-                                            className="h-8 text-xs"
+                                            className="h-7 text-xs flex-1"
                                           />
                                         ) : (
                                           <Select
@@ -1983,7 +2065,7 @@ export default function OrderForm({
                                               )
                                             }
                                           >
-                                            <SelectTrigger className="h-8 text-xs">
+                                            <SelectTrigger className="h-7 text-xs flex-1">
                                               <SelectValue placeholder="Choisir" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -2001,20 +2083,6 @@ export default function OrderForm({
                                 ))}
                               </div>
                             )}
-
-                            <div>
-                              <Label className="text-[11px] text-gray-600">
-                                Note client (allergie/commentaire)
-                              </Label>
-                              <Input
-                                value={item.notes || ""}
-                                onChange={(e) =>
-                                  handleItemChange(item.id, "notes", e.target.value)
-                                }
-                                placeholder="Ex: sans noix, sans oignons, message spécial..."
-                                className="h-8 text-xs"
-                              />
-                            </div>
 
                           </div>
                         </TableCell>
@@ -2043,6 +2111,14 @@ export default function OrderForm({
         <Label className="text-xs font-bold text-gray-700 uppercase">
           MÉTHODE DE PAIEMENT:
         </Label>
+        {formData.billingKind === "gouvernement" ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+            <p className="font-semibold mb-1">Client gouvernemental</p>
+            <p className="text-xs">
+              Aucun lien de paiement ne sera envoyé. La facture sera envoyée par courriel et le paiement se fera par chèque ou virement.
+            </p>
+          </div>
+        ) : (
         <RadioGroup
           value={formData.paymentMethod}
           onValueChange={(value) => handleInputChange("paymentMethod", value)}
@@ -2061,8 +2137,9 @@ export default function OrderForm({
             </Label>
           </div>
         </RadioGroup>
+        )}
 
-        {formData.paymentMethod === "payment_link" && (
+        {formData.billingKind !== "gouvernement" && formData.paymentMethod === "payment_link" && (
           <div className="space-y-2 pt-1">
             <Label className="text-xs text-gray-600">ENVOI DU LIEN:</Label>
             <RadioGroup

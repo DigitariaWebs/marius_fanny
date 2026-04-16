@@ -740,14 +740,18 @@ export const createOrder = async (
     try {
       const customerName = `${orderData.clientInfo.firstName} ${orderData.clientInfo.lastName}`;
 
-      // If paid in store, send full receipt (thank you + summary)
-      // If payment link, send invoice mode
-      const receiptMode =
-        paidInStore
-          ? "full"
-          : (orderData.paymentType || "full") === "full" && !orderData.squarePaymentId
-            ? "invoice"
-            : (orderData.paymentType || "full");
+      // Determine receipt mode:
+      // - Paid in store → "full" (receipt with summary)
+      // - Has Square payment ID (paid online) → "deposit" or "full" depending on type
+      // - Government client → "invoice" (no Square link, will pay by cheque/transfer)
+      // - Payment link (no payment yet) → SKIP email — payment.controller will send invoice email with link
+      const isGovernment = billingKind === "gouvernement";
+      const isPaymentLinkFlow = !paidInStore && !orderData.squarePaymentId && !isGovernment;
+
+      if (isPaymentLinkFlow) {
+        console.log(`📧 [ORDER] Skipping confirmation email — payment link email will be sent by invoice flow`);
+      } else {
+      const receiptMode = paidInStore ? "full" : isGovernment ? "invoice" : (orderData.paymentType || "full");
 
       await sendOrderReceipt(receiptMode as "full" | "deposit" | "invoice", {
         email: orderData.clientInfo.email,
@@ -768,11 +772,13 @@ export const createOrder = async (
         orderDate: order.orderDate,
         pickupDate: order.pickupDate || (orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined),
         pickupTimeSlot: orderData.deliveryTimeSlot || undefined,
+        deliveryType: orderData.deliveryType,
       });
 
       console.log(
         `✅ Order receipt email sent to ${orderData.clientInfo.email}`,
       );
+      }
     } catch (emailError: any) {
       // Log email error but don't fail the order creation
       console.error(

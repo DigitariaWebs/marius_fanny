@@ -29,6 +29,19 @@ const GOOGLE_REVIEW_URL =
     ? `https://search.google.com/local/writereview?placeid=${encodeURIComponent(GOOGLE_REVIEW_PLACE_ID_LAVAL)}`
     : "https://www.google.com/maps/search/?api=1&query=Marius%20%26%20Fanny%20Laval");
 
+const buildCancellationPolicySection = () => `
+  <div style="background-color: #FFF4E6; padding: 16px 20px; border-radius: 8px; margin-top: 24px; border-left: 4px solid #C5A065;">
+    <p style="color: #2D2A26; margin: 0 0 10px 0; font-weight: bold; font-size: 14px;">
+      Politique d'annulation
+    </p>
+    <ul style="color: #555; margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7;">
+      <li>Annulation jusqu'à 48 h à l'avance : remboursement complet.</li>
+      <li>Annulation 24 h à l'avance : 25 % du montant sera retenu.</li>
+      <li>Annulation le jour même : aucun remboursement.</li>
+    </ul>
+  </div>
+`;
+
 const buildGoogleReviewSection = () => `
   <div style="background-color: #FFF8E7; padding: 18px; border-radius: 8px; margin-top: 24px; border-left: 4px solid #C5A065; text-align: center;">
     <p style="color: #2D2A26; margin: 0; font-weight: bold;">
@@ -668,6 +681,7 @@ export async function sendFullPaymentReceipt(
   orderDate?: Date,
   pickupDate?: Date,
   pickupTimeSlot?: string,
+  deliveryType?: "pickup" | "delivery",
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -698,7 +712,7 @@ export async function sendFullPaymentReceipt(
       : null;
     const pickupSection = formattedPickupDate
       ? `<div style="background-color: #EAF6EF; border: 2px solid #337957; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center;">
-          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 Date de ramassage</p>
+          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 ${deliveryType === "delivery" ? "Date de livraison" : "Date de ramassage"}</p>
           <p style="color: #2D2A26; font-size: 18px; font-weight: bold; margin: 0;">${formattedPickupDate}</p>
           ${pickupTimeSlot ? `<p style="color: #337957; font-size: 15px; margin: 6px 0 0 0;">⏰ Heure : <strong>${pickupTimeSlot}</strong></p>` : ""}
         </div>`
@@ -789,6 +803,8 @@ export async function sendFullPaymentReceipt(
               </p>
             </div>
 
+            ${buildCancellationPolicySection()}
+
             ${buildGoogleReviewSection()}
           </div>
 
@@ -826,6 +842,7 @@ export async function sendDepositReceipt(
   orderDate?: Date,
   pickupDate?: Date,
   pickupTimeSlot?: string,
+  deliveryType?: "pickup" | "delivery",
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -864,7 +881,7 @@ export async function sendDepositReceipt(
       : null;
     const pickupSectionD = formattedPickupDateD
       ? `<div style="background-color: #EAF6EF; border: 2px solid #337957; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center;">
-          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 Date de ramassage</p>
+          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 ${deliveryType === "delivery" ? "Date de livraison" : "Date de ramassage"}</p>
           <p style="color: #2D2A26; font-size: 18px; font-weight: bold; margin: 0;">${formattedPickupDateD}</p>
           ${pickupTimeSlot ? `<p style="color: #337957; font-size: 15px; margin: 6px 0 0 0;">⏰ Heure : <strong>${pickupTimeSlot}</strong></p>` : ""}
         </div>`
@@ -963,6 +980,8 @@ export async function sendDepositReceipt(
               </p>
             </div>
 
+            ${buildCancellationPolicySection()}
+
             ${buildGoogleReviewSection()}
           </div>
 
@@ -998,6 +1017,7 @@ export async function sendInvoiceOrderConfirmation(
   orderDate?: Date,
   pickupDate?: Date,
   pickupTimeSlot?: string,
+  deliveryType?: "pickup" | "delivery",
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -1036,7 +1056,7 @@ export async function sendInvoiceOrderConfirmation(
       : null;
     const pickupSectionI = formattedPickupDateI
       ? `<div style="background-color: #EAF6EF; border: 2px solid #337957; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center;">
-          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 Date de ramassage</p>
+          <p style="color: #337957; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">📅 ${deliveryType === "delivery" ? "Date de livraison" : "Date de ramassage"}</p>
           <p style="color: #2D2A26; font-size: 18px; font-weight: bold; margin: 0;">${formattedPickupDateI}</p>
           ${pickupTimeSlot ? `<p style="color: #337957; font-size: 15px; margin: 6px 0 0 0;">⏰ Heure : <strong>${pickupTimeSlot}</strong></p>` : ""}
         </div>`
@@ -1139,6 +1159,8 @@ export async function sendInvoiceOrderConfirmation(
                   : ""
               }
             </div>
+
+            ${buildCancellationPolicySection()}
 
             ${buildGoogleReviewSection()}
           </div>

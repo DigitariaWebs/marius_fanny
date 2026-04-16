@@ -44,7 +44,9 @@ function todayISO(): string {
 function calcTotal(e: RowState): number {
   // Total = stdo + client only (addition entre Comm. St-do et Comm CLIENT)
   // Les autres colonnes (stock_stdo, berri, comm_berri) sont stockées mais pas incluses dans le total
-  return (e.stdo ?? 0) + (e.client ?? 0);
+  const stdo = typeof e.stdo === "number" ? e.stdo : 0;
+  const client = typeof e.client === "number" ? e.client : 0;
+  return stdo + client;
 }
 
 // ─── types ──────────────────────────────────────────────────────────────────
@@ -247,9 +249,15 @@ export default function InventaireJournalier() {
 
   // ── cell change handler ──
   const handleCellChange = (productId: string, col: Col, raw: string) => {
-    const val = raw === "" ? 0 : Math.max(0, parseInt(raw, 10) || 0);
     setRows((prev) =>
-      prev.map((r) => (r.productId === productId ? { ...r, [col]: val } : r)),
+      prev.map((r) => {
+        if (r.productId !== productId) return r;
+        const isSupplement = (r.productName || "").toLowerCase().includes("suppl");
+        const val: any = isSupplement
+          ? raw // keep as string for SUPPLÉMENT
+          : raw === "" ? 0 : Math.max(0, parseInt(raw, 10) || 0);
+        return { ...r, [col]: val };
+      }),
     );
   };
 
@@ -500,19 +508,33 @@ export default function InventaireJournalier() {
                         </div>
                       </td>
 
-                      {COLUMNS.map((col) => (
-                        <td key={col.key} className="px-2 py-2">
-                          <input
-                            type="number"
-                            min={0}
-                            value={row[col.key] === 0 ? "" : row[col.key]}
-                            placeholder="0"
-                            onChange={(e) => handleCellChange(row.productId, col.key, e.target.value)}
-                            onFocus={(e) => e.target.select()}
-                            className="w-full text-center px-2 py-1.5 rounded-xl border border-stone-200 bg-white text-stone-800 font-semibold focus:outline-none focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 hover:border-stone-300 transition-colors text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        </td>
-                      ))}
+                      {COLUMNS.map((col) => {
+                        const isSupplement = (row.productName || "").toLowerCase().includes("suppl");
+                        return (
+                          <td key={col.key} className="px-2 py-2">
+                            {isSupplement ? (
+                              <input
+                                type="text"
+                                value={row[col.key] === 0 ? "" : row[col.key]}
+                                placeholder="..."
+                                onChange={(e) => handleCellChange(row.productId, col.key, e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                className="w-full text-center px-2 py-1.5 rounded-xl border border-stone-200 bg-white text-stone-800 font-semibold focus:outline-none focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 hover:border-stone-300 transition-colors text-sm"
+                              />
+                            ) : (
+                              <input
+                                type="number"
+                                min={0}
+                                value={row[col.key] === 0 ? "" : row[col.key]}
+                                placeholder="0"
+                                onChange={(e) => handleCellChange(row.productId, col.key, e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                className="w-full text-center px-2 py-1.5 rounded-xl border border-stone-200 bg-white text-stone-800 font-semibold focus:outline-none focus:border-[#C5A065] focus:ring-2 focus:ring-[#C5A065]/20 hover:border-stone-300 transition-colors text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            )}
+                          </td>
+                        );
+                      })}
 
                       <td className="px-3 py-2 text-center">
                         <span className={`inline-block min-w-[52px] px-3 py-1.5 rounded-xl font-bold text-sm ${total > 0 ? "text-white shadow-sm" : "text-stone-300 bg-stone-100"}`} style={total > 0 ? { background: gold } : undefined}>

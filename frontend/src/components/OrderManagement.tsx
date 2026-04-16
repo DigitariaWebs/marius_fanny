@@ -1059,6 +1059,7 @@ export function OrderManagement() {
       taxAmount: order.taxAmount,
       total: order.total,
       notes: `Lien de paiement pour commande ${order.orderNumber}`,
+      deliveryType: order.deliveryType,
     };
 
     const response = await fetch(`${normalizedApiUrl}/api/payments/invoice`, {
@@ -2658,7 +2659,12 @@ export function OrderManagement() {
                 updatedAt: now,
               };
 
-              if (newOrder.paymentMethod === "payment_link") {
+              const isGovernment = formData.billingKind === "gouvernement";
+
+              if (isGovernment) {
+                // Government clients: no Square link, just facture email
+                alert("Commande créée. La facture sera envoyée par courriel pour paiement par chèque ou virement.");
+              } else if (newOrder.paymentMethod === "payment_link") {
                 try {
                   const invoiceData = await sendPaymentLink(newOrder);
                   newOrder.squareInvoiceId = invoiceData?.invoiceId;

@@ -532,6 +532,7 @@ export const createInvoice = async (req: Request, res: Response) => {
       total,
       dueDate,
       notes,
+      deliveryType,
     } = req.body;
 
     // Validate required fields
@@ -709,6 +710,9 @@ export const createInvoice = async (req: Request, res: Response) => {
             total,
             publicUrl,
             new Date(),
+            undefined,
+            undefined,
+            deliveryType,
           );
           console.log(`✅ [INVOICE] Invoice published and branded email sent`);
         }
@@ -743,6 +747,9 @@ export const createInvoice = async (req: Request, res: Response) => {
                 total,
                 publishedPublicUrl,
                 new Date(),
+                undefined,
+                undefined,
+                deliveryType,
               );
               console.log(`✅ [INVOICE] Fallback email sent after SMS failure`);
             } catch (fallbackEmailError: any) {
