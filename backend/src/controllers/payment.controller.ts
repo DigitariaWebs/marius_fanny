@@ -695,6 +695,12 @@ export const createInvoice = async (req: Request, res: Response) => {
             throw new Error("Email impossible: lien facture manquant");
           }
 
+          // Fetch order to get pickup/delivery date and slot
+          const orderDoc = await Order.findById(orderId).lean().catch(() => null);
+          const pickupDate = (orderDoc as any)?.pickupDate ? new Date((orderDoc as any).pickupDate) : undefined;
+          const pickupTimeSlot = (orderDoc as any)?.pickupTimeSlot || (orderDoc as any)?.deliveryTimeSlot;
+          const orderDeliveryType = (orderDoc as any)?.deliveryType || deliveryType;
+
           await sendInvoiceOrderConfirmation(
             customerEmail,
             customerName,
@@ -710,9 +716,9 @@ export const createInvoice = async (req: Request, res: Response) => {
             total,
             publicUrl,
             new Date(),
-            undefined,
-            undefined,
-            deliveryType,
+            pickupDate,
+            pickupTimeSlot,
+            orderDeliveryType,
           );
           console.log(`✅ [INVOICE] Invoice published and branded email sent`);
         }
@@ -732,6 +738,10 @@ export const createInvoice = async (req: Request, res: Response) => {
           // Optional fallback: send branded email when available
           if (customerEmail && publishedPublicUrl) {
             try {
+              const orderDoc2 = await Order.findById(orderId).lean().catch(() => null);
+              const pickupDate2 = (orderDoc2 as any)?.pickupDate ? new Date((orderDoc2 as any).pickupDate) : undefined;
+              const pickupTimeSlot2 = (orderDoc2 as any)?.pickupTimeSlot || (orderDoc2 as any)?.deliveryTimeSlot;
+              const orderDeliveryType2 = (orderDoc2 as any)?.deliveryType || deliveryType;
               await sendInvoiceOrderConfirmation(
                 customerEmail,
                 customerName,
@@ -747,9 +757,9 @@ export const createInvoice = async (req: Request, res: Response) => {
                 total,
                 publishedPublicUrl,
                 new Date(),
-                undefined,
-                undefined,
-                deliveryType,
+                pickupDate2,
+                pickupTimeSlot2,
+                orderDeliveryType2,
               );
               console.log(`✅ [INVOICE] Fallback email sent after SMS failure`);
             } catch (fallbackEmailError: any) {

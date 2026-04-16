@@ -1866,6 +1866,11 @@ export default function OrderForm({
                               )}
                             </>
                           )}
+                          {!item.productId && (
+                            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                              Sélectionnez un produit dans la grille ci-dessus
+                            </div>
+                          )}
                           {(livePreparationWarning || preparationError) && (
                             <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                               ⚠️ {livePreparationWarning || preparationError}
