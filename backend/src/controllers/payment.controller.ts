@@ -630,9 +630,10 @@ export const createInvoice = async (req: Request, res: Response) => {
       invoice: {
         locationId: squareConfig.locationId,
         orderId: squareOrderId,
-        invoiceNumber: orderId,
-        title: `Commande ${orderId}`,
-        description: notes || `Facture pour la commande ${orderId}`,
+        // Unique invoice number per attempt (orderId + timestamp) — Square requires uniqueness per location
+        invoiceNumber: `${orderId}-${Date.now()}`,
+        title: `Commande ${orderNumber || orderId}`,
+        description: notes || `Facture pour la commande ${orderNumber || orderId}`,
         primaryRecipient: {
           customerId: squareCustomerId,
         },

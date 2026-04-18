@@ -2643,7 +2643,8 @@ export function OrderManagement() {
                 items: apiItems,
                 notes: formData.notes || undefined,
                 paymentType: "full" as const,
-                depositPaid: formData.paymentMethod === "in_store",
+                // Government clients pay by cheque/transfer later, so depositPaid MUST stay false
+                depositPaid: formData.billingKind !== "gouvernement" && formData.paymentMethod === "in_store",
                 paymentLinkChannel: formData.paymentLinkChannel,
                 billingKind: formData.billingKind || "standard",
               };
@@ -2723,9 +2724,9 @@ export function OrderManagement() {
                 deliveryFee: saved?.deliveryFee ?? formData.deliveryFee,
                 total: saved?.total ?? formData.total,
                 depositAmount: saved?.depositAmount ?? formData.depositAmount,
-                depositPaid: formData.paymentMethod === "in_store",
-                balancePaid: formData.paymentMethod === "in_store",
-                paymentStatus: formData.paymentMethod === "in_store" ? "paid" : "unpaid",
+                depositPaid: formData.billingKind !== "gouvernement" && formData.paymentMethod === "in_store",
+                balancePaid: formData.billingKind !== "gouvernement" && formData.paymentMethod === "in_store",
+                paymentStatus: formData.billingKind !== "gouvernement" && formData.paymentMethod === "in_store" ? "paid" : "unpaid",
                 status: "pending",
                 source: "in_store",
                 paymentMethod: formData.paymentMethod || "payment_link",
@@ -2970,6 +2971,7 @@ export function OrderManagement() {
                   setTimeout(() => setEditNotification(null), 4000);
                 }
               } else if (
+                formData.billingKind !== "gouvernement" &&
                 updatedOrder.paymentMethod === "payment_link" &&
                 updatedOrder.squareInvoiceId &&
                 updatedOrder.paymentStatus !== "paid" &&

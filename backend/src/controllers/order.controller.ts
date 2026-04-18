@@ -301,16 +301,19 @@ export const createOrder = async (
     // In-store/full payments are charged at 100%; deposit flow stays at 50%.
     const depositAmount = orderData.paymentType === "full" ? total : total * 0.5;
 
+    // Government clients NEVER have depositPaid=true at creation — they pay by cheque/transfer
+    const isGovernmentClient = orderData.billingKind === "gouvernement";
+
     // Determine payment status based on payment type and depositPaid flag
-    const paidInStore = orderData.paymentType === "full" && orderData.depositPaid === true;
+    const paidInStore = !isGovernmentClient && orderData.paymentType === "full" && orderData.depositPaid === true;
     let depositPaid = false;
     let balancePaid = false;
 
-    if (orderData.paymentType === "full" && orderData.depositPaid) {
+    if (!isGovernmentClient && orderData.paymentType === "full" && orderData.depositPaid) {
       // Full payment made upfront
       depositPaid = true;
       balancePaid = true;
-    } else if (orderData.paymentType === "deposit" && orderData.depositPaid) {
+    } else if (!isGovernmentClient && orderData.paymentType === "deposit" && orderData.depositPaid) {
       // Deposit payment made
       depositPaid = true;
       balancePaid = false;
