@@ -689,6 +689,11 @@ export default function OrderForm({
 
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client);
+    const clientBillingKind = (client as any).billing?.kind as
+      | "standard"
+      | "representant"
+      | "gouvernement"
+      | undefined;
     setFormData((prev) => ({
       ...prev,
       clientId: client.id,
@@ -696,6 +701,11 @@ export default function OrderForm({
       lastName: client.lastName,
       email: client.email,
       phone: client.phone,
+      // Inherit billing kind from the selected client so government flow works correctly
+      billingKind: clientBillingKind || prev.billingKind || "standard",
+      // Force paymentMethod to in_store for government clients (no Square link)
+      paymentMethod:
+        clientBillingKind === "gouvernement" ? "in_store" : prev.paymentMethod,
     }));
     setEmailSearch(client.email);
     setEmailOpen(false);
