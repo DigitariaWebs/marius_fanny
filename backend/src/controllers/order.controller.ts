@@ -779,6 +779,7 @@ export const createOrder = async (
         pickupDate: order.pickupDate || (orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined),
         pickupTimeSlot: orderData.deliveryTimeSlot || undefined,
         deliveryType: orderData.deliveryType,
+        clientNote: orderData.notes,
       });
 
       console.log(

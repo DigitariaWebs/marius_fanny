@@ -400,14 +400,14 @@ export function OrderManagement() {
       );
     }
 
-    // If order has partial payment with balance remaining, show "Balance à payer"
+    // If order has partial payment with balance remaining, show "Balance à payer: X$"
     if (order) {
       const paidAmount = (order as any).amountPaid || 0;
       const balance = (order.total || 0) - paidAmount;
       if (balance > 0.01 && paidAmount > 0.01) {
         return (
-          <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-            Balance à payer
+          <span className="px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
+            Balance: {balance.toFixed(2)}$
           </span>
         );
       }

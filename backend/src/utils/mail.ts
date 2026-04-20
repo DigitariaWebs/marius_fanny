@@ -668,6 +668,15 @@ export async function sendPartnerInvitationEmail(
 /**
  * Send full payment receipt email
  */
+const buildClientNoteSection = (note?: string) => {
+  if (!note || !note.trim()) return "";
+  return `
+  <div style="background-color: #FFF8E7; padding: 16px 20px; border-radius: 8px; margin-top: 24px; border-left: 4px solid #C5A065;">
+    <p style="color: #2D2A26; margin: 0 0 8px 0; font-weight: bold; font-size: 14px;">📝 Note importante</p>
+    <p style="color: #555; margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-line;">${note.trim()}</p>
+  </div>`;
+};
+
 export async function sendFullPaymentReceipt(
   email: string,
   name: string,
@@ -682,6 +691,7 @@ export async function sendFullPaymentReceipt(
   pickupDate?: Date,
   pickupTimeSlot?: string,
   deliveryType?: "pickup" | "delivery",
+  clientNote?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -778,6 +788,10 @@ export async function sendFullPaymentReceipt(
                 <span style="display: inline-block; width: 150px;">Taxes (TPS+TVQ):</span>
                 <strong>${taxAmount.toFixed(2)}$</strong>
               </p>
+              <p style="color: #999; margin: 2px 0 10px 0; font-size: 11px;">
+                <span style="display: inline-block; width: 150px;">&nbsp;</span>
+                TPS: 144652641RT001 &nbsp;&nbsp; TVQ: 1201862732TQ0001
+              </p>
               ${
                 deliveryFee > 0
                   ? `
@@ -803,13 +817,14 @@ export async function sendFullPaymentReceipt(
               </p>
             </div>
 
+            ${buildClientNoteSection(clientNote)}
+
             ${buildCancellationPolicySection()}
 
             ${buildGoogleReviewSection()}
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>Des questions ? Contactez-nous à <a href="mailto:mariusetfanny@gmail.com" style="color: #C5A065;">mariusetfanny@gmail.com</a></p>
             <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
           </div>
         </div>
@@ -843,6 +858,7 @@ export async function sendDepositReceipt(
   pickupDate?: Date,
   pickupTimeSlot?: string,
   deliveryType?: "pickup" | "delivery",
+  clientNote?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -947,6 +963,10 @@ export async function sendDepositReceipt(
                 <span style="display: inline-block; width: 180px;">Taxes (TPS+TVQ):</span>
                 <strong>${taxAmount.toFixed(2)}$</strong>
               </p>
+              <p style="color: #999; margin: 2px 0 10px 0; font-size: 11px;">
+                <span style="display: inline-block; width: 180px;">&nbsp;</span>
+                TPS: 144652641RT001 &nbsp;&nbsp; TVQ: 1201862732TQ0001
+              </p>
               ${
                 deliveryFee > 0
                   ? `
@@ -980,13 +1000,14 @@ export async function sendDepositReceipt(
               </p>
             </div>
 
+            ${buildClientNoteSection(clientNote)}
+
             ${buildCancellationPolicySection()}
 
             ${buildGoogleReviewSection()}
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>Des questions ? Contactez-nous à <a href="mailto:mariusetfanny@gmail.com" style="color: #C5A065;">mariusetfanny@gmail.com</a></p>
             <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
           </div>
         </div>
@@ -1018,6 +1039,7 @@ export async function sendInvoiceOrderConfirmation(
   pickupDate?: Date,
   pickupTimeSlot?: string,
   deliveryType?: "pickup" | "delivery",
+  clientNote?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -1084,8 +1106,8 @@ export async function sendInvoiceOrderConfirmation(
             </h2>
 
             <p style="color: #555; line-height: 1.6; text-align: center; margin-bottom: 30px;">
-              Votre commande chez <strong>Marius &amp; Fanny</strong> a bien été confirmée.
-              Vous pouvez finaliser votre paiement en ligne à l'aide du bouton ci-dessous.
+              Votre commande chez <strong>Marius &amp; Fanny</strong> a bien été confirmée.${invoiceUrl ? `
+              Vous pouvez finaliser votre paiement en ligne à l'aide du bouton ci-dessous.` : ""}
             </p>
 
             <div style="background-color: #F9F7F2; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
@@ -1122,6 +1144,10 @@ export async function sendInvoiceOrderConfirmation(
                 <span style="display: inline-block; width: 150px;">Taxes (TPS+TVQ):</span>
                 <strong>${taxAmount.toFixed(2)}$</strong>
               </p>
+              <p style="color: #999; margin: 2px 0 10px 0; font-size: 11px;">
+                <span style="display: inline-block; width: 150px;">&nbsp;</span>
+                TPS: 144652641RT001 &nbsp;&nbsp; TVQ: 1201862732TQ0001
+              </p>
               ${
                 deliveryFee > 0
                   ? `
@@ -1138,6 +1164,7 @@ export async function sendInvoiceOrderConfirmation(
               </p>
             </div>
 
+            ${invoiceUrl ? `
             <div style="background-color: #E3F2FD; padding: 15px; border-radius: 8px; margin-top: 30px; border-left: 4px solid #2196F3;">
               <p style="color: #0D47A1; margin: 0; font-weight: bold;">
                 💳 Lien de paiement sécurisé
@@ -1145,20 +1172,17 @@ export async function sendInvoiceOrderConfirmation(
               <p style="color: #555; margin: 5px 0 0 0; font-size: 14px;">
                 Utilisez ce lien pour régler votre commande en toute sécurité. Si vous avez la moindre question, l'équipe de Marius &amp; Fanny est là pour vous aider.
               </p>
-              ${
-                invoiceUrl
-                  ? `
               <div style="text-align: center; margin-top: 15px;">
-                <a href="${invoiceUrl}" 
+                <a href="${invoiceUrl}"
                    style="display: inline-block; padding: 12px 30px; background-color: #2196F3; color: white;
                           text-decoration: none; border-radius: 5px; font-weight: bold;">
                   Régler ma commande
                 </a>
               </div>
-              `
-                  : ""
-              }
             </div>
+            ` : ""}
+
+            ${buildClientNoteSection(clientNote)}
 
             ${buildCancellationPolicySection()}
 
@@ -1166,7 +1190,6 @@ export async function sendInvoiceOrderConfirmation(
           </div>
 
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>Des questions ? Contactez-nous à <a href="mailto:mariusetfanny@gmail.com" style="color: #C5A065;">mariusetfanny@gmail.com</a></p>
             <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
           </div>
         </div>

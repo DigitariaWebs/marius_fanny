@@ -2181,6 +2181,20 @@ export default function OrderForm({
         )}
       </div>
 
+      {/* SECTION 7.6: Note client visible sur la confirmation */}
+      <div className="space-y-2 pb-4 border-b border-gray-200">
+        <Label className="text-xs font-bold text-gray-700 uppercase">
+          NOTE POUR LE CLIENT (visible sur la confirmation):
+        </Label>
+        <textarea
+          value={formData.notes || ""}
+          onChange={(e) => handleInputChange("notes", e.target.value)}
+          placeholder="Ex: Préparez la commande au comptoir B..."
+          rows={3}
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#C5A065] focus:border-transparent outline-none resize-y"
+        />
+      </div>
+
       {/* SECTION 8: Totaux */}
       <div className="border-t border-gray-200 pt-4">
         <div className="ml-auto space-y-2">

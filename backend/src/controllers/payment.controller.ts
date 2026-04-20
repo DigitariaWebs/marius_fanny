@@ -701,6 +701,7 @@ export const createInvoice = async (req: Request, res: Response) => {
           const pickupDate = (orderDoc as any)?.pickupDate ? new Date((orderDoc as any).pickupDate) : undefined;
           const pickupTimeSlot = (orderDoc as any)?.pickupTimeSlot || (orderDoc as any)?.deliveryTimeSlot;
           const orderDeliveryType = (orderDoc as any)?.deliveryType || deliveryType;
+          const orderClientNote = (orderDoc as any)?.notes;
 
           await sendInvoiceOrderConfirmation(
             customerEmail,
@@ -720,6 +721,7 @@ export const createInvoice = async (req: Request, res: Response) => {
             pickupDate,
             pickupTimeSlot,
             orderDeliveryType,
+            orderClientNote,
           );
           console.log(`✅ [INVOICE] Invoice published and branded email sent`);
         }
@@ -743,6 +745,7 @@ export const createInvoice = async (req: Request, res: Response) => {
               const pickupDate2 = (orderDoc2 as any)?.pickupDate ? new Date((orderDoc2 as any).pickupDate) : undefined;
               const pickupTimeSlot2 = (orderDoc2 as any)?.pickupTimeSlot || (orderDoc2 as any)?.deliveryTimeSlot;
               const orderDeliveryType2 = (orderDoc2 as any)?.deliveryType || deliveryType;
+              const orderClientNote2 = (orderDoc2 as any)?.notes;
               await sendInvoiceOrderConfirmation(
                 customerEmail,
                 customerName,
@@ -761,6 +764,7 @@ export const createInvoice = async (req: Request, res: Response) => {
                 pickupDate2,
                 pickupTimeSlot2,
                 orderDeliveryType2,
+                orderClientNote2,
               );
               console.log(`✅ [INVOICE] Fallback email sent after SMS failure`);
             } catch (fallbackEmailError: any) {
@@ -1267,6 +1271,57 @@ export const squareWebhook = async (req: Request, res: Response) => {
 
           await order.save();
           console.log(`✅ [WEBHOOK] Order ${order.orderNumber} marked as PAID (payment: ${paymentId})`);
+        }
+      }
+    }
+
+    // Refunds initiated from Square dashboard
+    if (eventType === "refund.created" || eventType === "refund.updated") {
+      const refund = event?.data?.object?.refund;
+      const refundId = refund?.id;
+      const refundStatus = refund?.status;
+      const paymentId = refund?.payment_id || refund?.paymentId;
+      const amountMoney = refund?.amount_money || refund?.amountMoney;
+      const refundAmountCents = Number(amountMoney?.amount || 0);
+
+      console.log(`↩️ [WEBHOOK] Refund ${refundId} status: ${refundStatus}, payment: ${paymentId}, amount: ${refundAmountCents}`);
+
+      if (refundStatus === "COMPLETED" && paymentId && refundAmountCents > 0) {
+        const order = await Order.findOne({ squarePaymentId: paymentId });
+
+        if (order) {
+          const existingRefunds = (order as any).refunds || [];
+          const alreadyRecorded = existingRefunds.some((r: any) => r.refundId === refundId);
+
+          if (!alreadyRecorded) {
+            (order as any).refunds = [
+              ...existingRefunds,
+              {
+                refundedAt: new Date(),
+                employeeName: "Square Dashboard",
+                paymentId,
+                refundId,
+                refundStatus: "completed",
+                amountCents: refundAmountCents,
+                reason: "Remboursement via Square Dashboard",
+              },
+            ];
+
+            // Reduce amountPaid by the refund amount
+            const refundDollars = refundAmountCents / 100;
+            order.amountPaid = Math.max(0, (order.amountPaid || 0) - refundDollars);
+
+            // If fully refunded, mark order as cancelled
+            if (order.amountPaid < 0.01) {
+              order.status = "cancelled";
+              order.paymentStatus = "unpaid";
+              order.depositPaid = false;
+              order.balancePaid = false;
+            }
+
+            await order.save();
+            console.log(`✅ [WEBHOOK] Refund recorded for order ${order.orderNumber}`);
+          }
         }
       }
     }
