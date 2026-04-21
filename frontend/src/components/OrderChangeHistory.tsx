@@ -125,16 +125,19 @@ export default function OrderChangeHistory({ orderId, orderNumber }: OrderChange
         setLoading(true);
         setError(null);
         
+        const token = localStorage.getItem('bearer_token');
         const response = await fetch(`${apiUrl}/api/orders/${orderId}/history`, {
           credentials: 'include',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch order history');
+          const errBody = await response.text().catch(() => '');
+          throw new Error(`Failed to fetch order history (${response.status}) ${errBody.slice(0, 200)}`);
         }
 
         const result = await response.json();
-        setHistory(result.data.changeHistory || []);
+        setHistory(result.data?.changeHistory || []);
       } catch (err) {
         console.error('Error fetching order history:', err);
         setError('Impossible de charger l\'historique des modifications');

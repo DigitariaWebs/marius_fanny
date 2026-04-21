@@ -722,6 +722,7 @@ export const createInvoice = async (req: Request, res: Response) => {
             pickupTimeSlot,
             orderDeliveryType,
             orderClientNote,
+            orderId,
           );
           console.log(`✅ [INVOICE] Invoice published and branded email sent`);
         }
@@ -765,6 +766,7 @@ export const createInvoice = async (req: Request, res: Response) => {
                 pickupTimeSlot2,
                 orderDeliveryType2,
                 orderClientNote2,
+                orderId,
               );
               console.log(`✅ [INVOICE] Fallback email sent after SMS failure`);
             } catch (fallbackEmailError: any) {

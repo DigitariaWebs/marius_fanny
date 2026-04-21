@@ -780,6 +780,7 @@ export const createOrder = async (
         pickupTimeSlot: orderData.deliveryTimeSlot || undefined,
         deliveryType: orderData.deliveryType,
         clientNote: orderData.notes,
+        orderId: order._id.toString(),
       });
 
       console.log(

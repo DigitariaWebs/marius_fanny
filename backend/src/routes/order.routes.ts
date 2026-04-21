@@ -68,6 +68,9 @@ router.get("/", requireAuth, validateQuery(orderQuerySchema), getOrders);
 // Get a single order by ID (requires authentication)
 router.get("/:id", requireAuth, getOrderById);
 
+// Public invoice endpoint — no auth required so customer can view their own invoice via email link
+router.get("/:id/public", getOrderById);
+
 // Get order change history (requires authentication)
 router.get("/:id/history", requireAuth, getOrderHistory);
 

@@ -29,6 +29,25 @@ const GOOGLE_REVIEW_URL =
     ? `https://search.google.com/local/writereview?placeid=${encodeURIComponent(GOOGLE_REVIEW_PLACE_ID_LAVAL)}`
     : "https://www.google.com/maps/search/?api=1&query=Marius%20%26%20Fanny%20Laval");
 
+const FRONTEND_URL =
+  process.env.FRONTEND_URL || "https://marius-fanny-xi.vercel.app";
+
+const buildInvoiceDownloadSection = (orderId?: string) => {
+  if (!orderId) return "";
+  const invoiceUrl = `${FRONTEND_URL}/facture/${orderId}`;
+  return `
+  <div style="background-color: #F9F7F2; padding: 16px 20px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #337957; text-align: center;">
+    <p style="color: #2D2A26; margin: 0 0 10px 0; font-weight: bold; font-size: 14px;">📄 Votre facture</p>
+    <p style="color: #555; margin: 0 0 12px 0; font-size: 13px;">
+      Téléchargez ou imprimez votre facture en cliquant sur le bouton ci-dessous.
+    </p>
+    <a href="${invoiceUrl}"
+       style="display: inline-block; padding: 10px 24px; background-color: #337957; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
+      Télécharger la facture
+    </a>
+  </div>`;
+};
+
 const buildCancellationPolicySection = () => `
   <div style="background-color: #FFF4E6; padding: 16px 20px; border-radius: 8px; margin-top: 24px; border-left: 4px solid #C5A065;">
     <p style="color: #2D2A26; margin: 0 0 10px 0; font-weight: bold; font-size: 14px;">
@@ -692,6 +711,7 @@ export async function sendFullPaymentReceipt(
   pickupTimeSlot?: string,
   deliveryType?: "pickup" | "delivery",
   clientNote?: string,
+  orderId?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -817,6 +837,8 @@ export async function sendFullPaymentReceipt(
               </p>
             </div>
 
+            ${buildInvoiceDownloadSection(orderId)}
+
             ${buildClientNoteSection(clientNote)}
 
             ${buildCancellationPolicySection()}
@@ -859,6 +881,7 @@ export async function sendDepositReceipt(
   pickupTimeSlot?: string,
   deliveryType?: "pickup" | "delivery",
   clientNote?: string,
+  orderId?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -1000,6 +1023,8 @@ export async function sendDepositReceipt(
               </p>
             </div>
 
+            ${buildInvoiceDownloadSection(orderId)}
+
             ${buildClientNoteSection(clientNote)}
 
             ${buildCancellationPolicySection()}
@@ -1040,6 +1065,7 @@ export async function sendInvoiceOrderConfirmation(
   pickupTimeSlot?: string,
   deliveryType?: "pickup" | "delivery",
   clientNote?: string,
+  orderId?: string,
 ): Promise<void> {
   try {
     const itemsHtml = items
@@ -1181,6 +1207,8 @@ export async function sendInvoiceOrderConfirmation(
               </div>
             </div>
             ` : ""}
+
+            ${buildInvoiceDownloadSection(orderId)}
 
             ${buildClientNoteSection(clientNote)}
 
