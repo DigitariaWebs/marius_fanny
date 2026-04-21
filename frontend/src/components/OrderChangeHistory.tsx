@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Badge } from './ui/badge';
-import { ScrollArea } from './ui/scroll-area';
-import { 
-  FileEdit, 
-  Package, 
-  DollarSign, 
-  AlertCircle, 
-  CheckCircle,
+import {
+  Package,
+  DollarSign,
   Clock,
-  User,
-  FileText
+  FileText,
+  Truck,
+  MapPin,
+  Calendar,
+  StickyNote,
+  Undo2,
+  CheckCircle,
 } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -31,100 +30,221 @@ interface OrderChangeHistoryProps {
   orderNumber?: string;
 }
 
-const changeTypeConfig = {
-  created: {
-    label: 'Créé',
-    icon: FileText,
-    color: 'bg-blue-100 text-blue-800 border-blue-200',
-    iconColor: 'text-blue-600',
-  },
-  updated: {
-    label: 'Modifié',
-    icon: FileEdit,
-    color: 'bg-gray-100 text-gray-800 border-gray-200',
-    iconColor: 'text-gray-600',
-  },
-  status_changed: {
-    label: 'Statut',
-    icon: AlertCircle,
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
-    iconColor: 'text-purple-600',
-  },
-  payment_updated: {
-    label: 'Paiement',
-    icon: DollarSign,
-    color: 'bg-green-100 text-green-800 border-green-200',
-    iconColor: 'text-green-600',
-  },
-  items_modified: {
-    label: 'Articles',
-    icon: Package,
-    color: 'bg-orange-100 text-orange-800 border-orange-200',
-    iconColor: 'text-orange-600',
-  },
+const statusLabels: Record<string, string> = {
+  pending: "En attente",
+  confirmed: "Confirmée",
+  in_production: "En production",
+  ready: "Prête",
+  completed: "Terminée",
+  cancelled: "Annulée",
+  delivered: "Livrée",
 };
 
-const formatValue = (value: any, field?: string): string => {
-  if (value === null || value === undefined) return 'N/A';
-  if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
+// Convert a raw change entry into a human-readable French message
+function describeChange(change: OrderChange): {
+  icon: any;
+  color: string;
+  title: string;
+  details: string[];
+} {
+  const field = change.field;
+  const oldV = change.oldValue;
+  const newV = change.newValue;
 
-  if (field === 'items' && Array.isArray(value)) {
-    if (value.length === 0) return 'Aucun produit';
-
-    return value
-      .map((item: any) => {
-        const productName = item?.productName || (item?.productId ? `Produit #${item.productId}` : 'Produit');
-        const quantity = Number(item?.quantity || 0);
-        const unitPrice = Number(item?.unitPrice || 0);
-        return `• ${productName} × ${quantity} (${unitPrice.toFixed(2)} $)`;
-      })
-      .join('\n');
+  // Order created
+  if (change.changeType === 'created') {
+    return {
+      icon: FileText,
+      color: "bg-blue-100 text-blue-700",
+      title: "Commande créée",
+      details: [],
+    };
   }
 
-  if (typeof value === 'object') {
-    if (value instanceof Date || (typeof value === 'string' && !isNaN(Date.parse(value)))) {
-      return new Date(value).toLocaleDateString('fr-CA');
+  // Items modified (add/remove products or quantities)
+  if (change.changeType === 'items_modified' || field === 'items') {
+    const oldItems: any[] = Array.isArray(oldV) ? oldV : [];
+    const newItems: any[] = Array.isArray(newV) ? newV : [];
+    const details: string[] = [];
+
+    // Build quantity maps
+    const oldMap = new Map<string, number>();
+    for (const it of oldItems) {
+      const key = it.productName || `Produit #${it.productId}`;
+      oldMap.set(key, (oldMap.get(key) || 0) + (Number(it.quantity) || 0));
     }
-    return JSON.stringify(value, null, 2);
+    const newMap = new Map<string, number>();
+    for (const it of newItems) {
+      const key = it.productName || `Produit #${it.productId}`;
+      newMap.set(key, (newMap.get(key) || 0) + (Number(it.quantity) || 0));
+    }
+
+    // Find additions, removals, quantity changes
+    const allKeys = new Set([...oldMap.keys(), ...newMap.keys()]);
+    for (const key of allKeys) {
+      const oldQ = oldMap.get(key) || 0;
+      const newQ = newMap.get(key) || 0;
+      if (oldQ === 0 && newQ > 0) {
+        details.push(`➕ Ajouté : ${key} × ${newQ}`);
+      } else if (newQ === 0 && oldQ > 0) {
+        details.push(`➖ Retiré : ${key} × ${oldQ}`);
+      } else if (oldQ !== newQ) {
+        details.push(`↕️ ${key} : ${oldQ} → ${newQ}`);
+      }
+    }
+
+    // Extract total change from notes if available
+    const notesMatch = change.notes?.match(/Total:\s*([\d.,]+)\$?\s*->\s*([\d.,]+)/i);
+    if (notesMatch) {
+      details.push(`💵 Total : ${notesMatch[1]}$ → ${notesMatch[2]}$`);
+    }
+
+    return {
+      icon: Package,
+      color: "bg-orange-100 text-orange-700",
+      title: "Produits modifiés",
+      details,
+    };
   }
 
-  return String(value);
-};
+  // Status change
+  if (field === 'status') {
+    const oldLabel = statusLabels[String(oldV)] || String(oldV);
+    const newLabel = statusLabels[String(newV)] || String(newV);
+    return {
+      icon: CheckCircle,
+      color: "bg-purple-100 text-purple-700",
+      title: `Statut : ${oldLabel} → ${newLabel}`,
+      details: [],
+    };
+  }
 
-const formatFieldName = (field: string): string => {
-  const fieldNames: Record<string, string> = {
-    status: 'Statut',
-    depositPaid: 'Dépôt payé',
-    balancePaid: 'Solde payé',
-    items: 'Articles',
-    clientInfo: 'Info client',
-    pickupDate: 'Date de ramassage',
-    pickupLocation: 'Lieu de ramassage',
-    deliveryType: 'Type de livraison',
-    deliveryAddress: 'Adresse de livraison',
-    notes: 'Notes',
-    squarePaymentId: 'ID paiement Square',
-    squareInvoiceId: 'ID facture Square',
-    total: 'Total',
-    subtotal: 'Sous-total',
-    taxAmount: 'Taxes',
-    deliveryFee: 'Frais de livraison',
+  // Payment updates
+  if (change.changeType === 'payment_updated' || field === 'depositPaid' || field === 'balancePaid' || field === 'paymentStatus') {
+    const title =
+      field === 'depositPaid' && newV
+        ? "Dépôt marqué comme payé"
+        : field === 'balancePaid' && newV
+          ? "Solde marqué comme payé"
+          : field === 'paymentStatus' && newV === 'paid'
+            ? "Commande payée"
+            : "Paiement mis à jour";
+    return {
+      icon: DollarSign,
+      color: "bg-green-100 text-green-700",
+      title,
+      details: change.notes ? [change.notes] : [],
+    };
+  }
+
+  // Refund
+  if (field === 'refunds') {
+    const newRefunds: any[] = Array.isArray(newV) ? newV : [];
+    const oldRefunds: any[] = Array.isArray(oldV) ? oldV : [];
+    const addedRefunds = newRefunds.slice(oldRefunds.length);
+    const details = addedRefunds.map((r: any) => {
+      const amount = (Number(r.amountCents) || 0) / 100;
+      const who = r.employeeName ? ` par ${r.employeeName}` : "";
+      return `💸 Remboursement de ${amount.toFixed(2)}$${who}`;
+    });
+    return {
+      icon: Undo2,
+      color: "bg-red-100 text-red-700",
+      title: "Remboursement effectué",
+      details: details.length > 0 ? details : ["Remboursement enregistré"],
+    };
+  }
+
+  // Pickup / Delivery date
+  if (field === 'pickupDate' || field === 'deliveryDate') {
+    const formatDate = (v: any) => {
+      try {
+        return v ? new Date(v).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }) : "—";
+      } catch { return String(v); }
+    };
+    return {
+      icon: Calendar,
+      color: "bg-blue-100 text-blue-700",
+      title: `Date ${field === 'pickupDate' ? 'de ramassage' : 'de livraison'} modifiée`,
+      details: [`${formatDate(oldV)} → ${formatDate(newV)}`],
+    };
+  }
+
+  // Pickup location
+  if (field === 'pickupLocation') {
+    return {
+      icon: MapPin,
+      color: "bg-blue-100 text-blue-700",
+      title: `Lieu de ramassage : ${oldV || "—"} → ${newV || "—"}`,
+      details: [],
+    };
+  }
+
+  // Delivery type
+  if (field === 'deliveryType') {
+    const label = (v: any) => (v === 'delivery' ? 'Livraison' : v === 'pickup' ? 'Ramassage' : String(v));
+    return {
+      icon: Truck,
+      color: "bg-blue-100 text-blue-700",
+      title: `Mode : ${label(oldV)} → ${label(newV)}`,
+      details: [],
+    };
+  }
+
+  // Delivery address
+  if (field === 'deliveryAddress') {
+    const fmt = (v: any) =>
+      v && typeof v === 'object'
+        ? `${v.street || ''}, ${v.city || ''} ${v.postalCode || ''}`.trim()
+        : "—";
+    return {
+      icon: MapPin,
+      color: "bg-blue-100 text-blue-700",
+      title: "Adresse de livraison modifiée",
+      details: [`Nouvelle : ${fmt(newV)}`],
+    };
+  }
+
+  // Client info
+  if (field === 'clientInfo') {
+    return {
+      icon: StickyNote,
+      color: "bg-gray-100 text-gray-700",
+      title: "Informations du client mises à jour",
+      details: [],
+    };
+  }
+
+  // Notes
+  if (field === 'notes') {
+    return {
+      icon: StickyNote,
+      color: "bg-yellow-100 text-yellow-700",
+      title: "Note modifiée",
+      details: newV ? [String(newV)] : [],
+    };
+  }
+
+  // Default / fallback
+  return {
+    icon: FileText,
+    color: "bg-gray-100 text-gray-700",
+    title: change.notes || `Champ "${field}" modifié`,
+    details: [],
   };
-  return fieldNames[field] || field;
-};
+}
 
 export default function OrderChangeHistory({ orderId, orderNumber }: OrderChangeHistoryProps) {
   const [history, setHistory] = useState<OrderChange[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>('all');
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const token = localStorage.getItem('bearer_token');
         const response = await fetch(`${apiUrl}/api/orders/${orderId}/history`, {
           credentials: 'include',
@@ -133,14 +253,14 @@ export default function OrderChangeHistory({ orderId, orderNumber }: OrderChange
 
         if (!response.ok) {
           const errBody = await response.text().catch(() => '');
-          throw new Error(`Failed to fetch order history (${response.status}) ${errBody.slice(0, 200)}`);
+          throw new Error(`Impossible de charger l'historique (${response.status}) ${errBody.slice(0, 200)}`);
         }
 
         const result = await response.json();
         setHistory(result.data?.changeHistory || []);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching order history:', err);
-        setError('Impossible de charger l\'historique des modifications');
+        setError(err?.message || "Impossible de charger l'historique des modifications");
       } finally {
         setLoading(false);
       }
@@ -151,29 +271,16 @@ export default function OrderChangeHistory({ orderId, orderNumber }: OrderChange
     }
   }, [orderId]);
 
-  const filteredHistory = filter === 'all' 
-    ? history 
-    : history.filter(change => change.changeType === filter);
-
-  const changeTypeCounts = {
-    all: history.length,
-    created: history.filter(c => c.changeType === 'created').length,
-    status_changed: history.filter(c => c.changeType === 'status_changed').length,
-    payment_updated: history.filter(c => c.changeType === 'payment_updated').length,
-    items_modified: history.filter(c => c.changeType === 'items_modified').length,
-    updated: history.filter(c => c.changeType === 'updated').length,
-  };
-
   if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Historique des modifications</CardTitle>
+          <CardTitle>Historique de la commande</CardTitle>
           <CardDescription>Chargement...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C5A065]"></div>
           </div>
         </CardContent>
       </Card>
@@ -184,7 +291,7 @@ export default function OrderChangeHistory({ orderId, orderNumber }: OrderChange
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Historique des modifications</CardTitle>
+          <CardTitle>Historique de la commande</CardTitle>
           <CardDescription className="text-red-600">{error}</CardDescription>
         </CardHeader>
       </Card>
@@ -195,130 +302,67 @@ export default function OrderChangeHistory({ orderId, orderNumber }: OrderChange
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Historique des modifications</CardTitle>
-          <CardDescription>Aucune modification enregistrée pour cette commande</CardDescription>
+          <CardTitle>Historique de la commande</CardTitle>
+          <CardDescription>Aucune modification enregistrée pour cette commande.</CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
+  // Sort by date descending (most recent first)
+  const sorted = [...history].sort(
+    (a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime(),
+  );
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Historique des modifications
+          <Clock className="h-5 w-5 text-[#C5A065]" />
+          Historique de la commande
         </CardTitle>
         <CardDescription>
           {orderNumber && `Commande ${orderNumber} • `}
-          {history.length} modification{history.length > 1 ? 's' : ''} enregistrée{history.length > 1 ? 's' : ''}
+          {history.length} événement{history.length > 1 ? 's' : ''}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={filter} onValueChange={setFilter} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="all">
-              Tout ({changeTypeCounts.all})
-            </TabsTrigger>
-            <TabsTrigger value="created">
-              <FileText className="h-4 w-4 mr-1" />
-              {changeTypeCounts.created}
-            </TabsTrigger>
-            <TabsTrigger value="status_changed">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              {changeTypeCounts.status_changed}
-            </TabsTrigger>
-            <TabsTrigger value="payment_updated">
-              <DollarSign className="h-4 w-4 mr-1" />
-              {changeTypeCounts.payment_updated}
-            </TabsTrigger>
-            <TabsTrigger value="items_modified">
-              <Package className="h-4 w-4 mr-1" />
-              {changeTypeCounts.items_modified}
-            </TabsTrigger>
-            <TabsTrigger value="updated">
-              <FileEdit className="h-4 w-4 mr-1" />
-              {changeTypeCounts.updated}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={filter} className="mt-4">
-            <ScrollArea className="h-125 w-full pr-4">
-              <div className="space-y-4">
-                {filteredHistory.map((change, index) => {
-                  const config = changeTypeConfig[change.changeType];
-                  const Icon = config.icon;
-
-                  return (
-                    <div
-                      key={index}
-                      className="border-l-4 border-gray-200 pl-4 py-3 hover:border-[#C5A065] transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-2 rounded-full ${config.color}`}>
-                            <Icon className={`h-4 w-4 ${config.iconColor}`} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900">
-                                {formatFieldName(change.field)}
-                              </span>
-                              <Badge variant="outline" className={config.color}>
-                                {config.label}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                              <Clock className="h-3 w-3" />
-                              <span>
-                                {new Date(change.changedAt).toLocaleString('fr-CA', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
-                              {change.changedBy && (
-                                <>
-                                  <User className="h-3 w-3 ml-2" />
-                                  <span>{change.changedBy}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {change.notes && (
-                        <div className="mt-2 text-sm text-gray-700 bg-gray-50 p-3 rounded">
-                          {change.notes}
-                        </div>
-                      )}
-
-                      {change.changeType !== 'created' && (
-                        <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
-                          <div className="bg-red-50 p-3 rounded border border-red-100">
-                            <div className="font-medium text-red-900 mb-1">Ancienne valeur</div>
-                            <div className="text-red-700 whitespace-pre-wrap wrap-break-word">
-                              {formatValue(change.oldValue, change.field)}
-                            </div>
-                          </div>
-                          <div className="bg-green-50 p-3 rounded border border-green-100">
-                            <div className="font-medium text-green-900 mb-1">Nouvelle valeur</div>
-                            <div className="text-green-700 whitespace-pre-wrap wrap-break-word">
-                              {formatValue(change.newValue, change.field)}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+          {sorted.map((change, idx) => {
+            const desc = describeChange(change);
+            const Icon = desc.icon;
+            const date = new Date(change.changedAt).toLocaleString('fr-CA', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+            return (
+              <div
+                key={idx}
+                className="flex gap-3 p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+              >
+                <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${desc.color}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{desc.title}</p>
+                  {desc.details.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {desc.details.map((d, i) => (
+                        <li key={i} className="text-xs text-gray-600">
+                          {d}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">{date}</p>
+                </div>
               </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );

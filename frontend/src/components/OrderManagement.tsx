@@ -2664,6 +2664,9 @@ export function OrderManagement() {
                 if (formData.date) {
                   payload.deliveryDate = formData.date;
                 }
+                if (formData.pickupTime) {
+                  payload.deliveryTimeSlot = formData.pickupTime;
+                }
               }
 
               const result = await orderAPI.createOrder(payload);
@@ -2862,6 +2865,9 @@ export function OrderManagement() {
                 };
                 if (formData.date) {
                   payload.deliveryDate = formData.date;
+                }
+                if (formData.pickupTime) {
+                  payload.deliveryTimeSlot = formData.pickupTime;
                 }
               }
 

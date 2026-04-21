@@ -1429,6 +1429,7 @@ export async function sendContactEmail(data: {
   cvFilename?: string;
   cvBuffer?: Buffer;
   cvMimetype?: string;
+  recipient?: string;
 }): Promise<void> {
   const isCareer = data.subject === "Carrière";
 
@@ -1443,7 +1444,7 @@ export async function sendContactEmail(data: {
 
   const mailOptions = {
     from: DISPLAY_FROM,
-    to: "mariusetfanny@bellnet.ca",
+    to: data.recipient || "mariusetfanny@bellnet.ca",
     subject: `📩 Nouveau message — ${data.subject}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">

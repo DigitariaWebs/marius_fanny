@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { sendContactEmail } from "../utils/mail.js";
+import { Settings } from "../models/Settings.js";
 
 /**
  * POST /api/contact
@@ -17,6 +18,10 @@ export async function submitContact(req: Request, res: Response) {
   const file = (req as any).file as Express.Multer.File | undefined;
 
   try {
+    // Look up the configured contact email from settings (fallback to default)
+    const settings = await Settings.findOne({}).lean().catch(() => null);
+    const recipient = (settings as any)?.contactEmail || "mariusetfanny@bellnet.ca";
+
     await sendContactEmail({
       firstName,
       lastName,
@@ -26,6 +31,7 @@ export async function submitContact(req: Request, res: Response) {
       cvFilename: file?.originalname,
       cvBuffer: file?.buffer,
       cvMimetype: file?.mimetype,
+      recipient,
     });
 
     res.json({ success: true, message: "Message envoyé avec succès!" });

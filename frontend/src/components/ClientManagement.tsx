@@ -1063,7 +1063,10 @@ function ClientManagement() {
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="font-medium text-(--bakery-text)">
-                            {order.orderNumber}
+                            {(() => {
+                              const m = (order.orderNumber || "").trim().match(/^MF-\d{8}-(\d{1,4})$/i);
+                              return m ? `#${m[1].padStart(4, "0")}` : order.orderNumber;
+                            })()}
                           </p>
                           <div className="flex items-center gap-2 mt-1 text-sm text-(--bakery-text-secondary)">
                             <Calendar className="w-4 h-4" />
@@ -1143,7 +1146,10 @@ function ClientManagement() {
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="font-medium text-(--bakery-text)">
-                            {order.orderNumber}
+                            {(() => {
+                              const m = (order.orderNumber || "").trim().match(/^MF-\d{8}-(\d{1,4})$/i);
+                              return m ? `#${m[1].padStart(4, "0")}` : order.orderNumber;
+                            })()}
                           </p>
                           <div className="flex items-center gap-2 mt-1 text-sm text-(--bakery-text-secondary)">
                             <Calendar className="w-4 h-4" />

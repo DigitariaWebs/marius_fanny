@@ -903,7 +903,19 @@ export const getProductionList = async (
           customerName: `${order.clientInfo.firstName} ${order.clientInfo.lastName}`,
           customerPhone: order.clientInfo.phone,
           deliveryDate: order.deliveryDate || (order.pickupDate ? order.pickupDate.toISOString().split('T')[0] : order.orderDate.toISOString().split('T')[0]),
-          deliveryTimeSlot: order.deliveryTimeSlot || "Non spécifié",
+          // Derive time from deliveryTimeSlot, or from pickupDate's hours if not set
+          deliveryTimeSlot: (() => {
+            if (order.deliveryTimeSlot && order.deliveryTimeSlot.trim()) return order.deliveryTimeSlot;
+            if (order.pickupDate) {
+              const d = new Date(order.pickupDate);
+              const h = d.getHours();
+              const m = d.getMinutes();
+              if (h > 0 || m > 0) {
+                return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+              }
+            }
+            return "—";
+          })(),
           deliveryType: order.deliveryType,
           pickupLocation: order.pickupLocation,
           orderStatus: order.status,

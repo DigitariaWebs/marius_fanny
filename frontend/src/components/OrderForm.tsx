@@ -592,11 +592,28 @@ export default function OrderForm({
     }));
   };
 
-  const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
-    const h = Math.floor(i / 2).toString().padStart(2, "0");
-    const m = i % 2 === 0 ? "00" : "30";
-    return `${h}:${m}`;
-  });
+  // Generate time slots between two hours (inclusive start, inclusive end), 30-min increments
+  const generateSlots = (startHour: number, endHour: number) => {
+    const slots: string[] = [];
+    for (let h = startHour; h <= endHour; h++) {
+      slots.push(`${String(h).padStart(2, "0")}:00`);
+      if (h < endHour) {
+        slots.push(`${String(h).padStart(2, "0")}:30`);
+      }
+    }
+    return slots;
+  };
+
+  // Location-based opening hours:
+  // - Laval: 8h → 18h
+  // - Montréal: 8h → 19h
+  // For delivery, same hours as Laval (8h → 18h)
+  const TIME_SLOTS = (() => {
+    const location = formData.pickupLocation;
+    if (formData.deliveryType === "delivery") return generateSlots(8, 18);
+    if (location === "Montreal") return generateSlots(8, 19);
+    return generateSlots(8, 18); // Laval default
+  })();
 
   const removeItem = (id: string) => {
     if (formData.items.length > 1) {
@@ -795,15 +812,18 @@ export default function OrderForm({
     if (!formData.date) {
       newErrors.date = "La date est requise";
     }
-    if (formData.deliveryType === "pickup" && !formData.pickupTime) {
-      newErrors.pickupTime = "L'heure de ramassage est requise";
+    if ((formData.deliveryType === "pickup" || formData.deliveryType === "delivery") && !formData.pickupTime) {
+      newErrors.pickupTime =
+        formData.deliveryType === "delivery"
+          ? "L'heure de livraison est requise"
+          : "L'heure de ramassage est requise";
     }
     if (
-      formData.deliveryType === "pickup" &&
+      (formData.deliveryType === "pickup" || formData.deliveryType === "delivery") &&
       formData.pickupTime &&
       !/^([01]\d|2[0-3]):(00|30)$/.test(formData.pickupTime)
     ) {
-      newErrors.pickupTime = "L'heure doit etre au format HH:MM avec minutes 00 ou 30";
+      newErrors.pickupTime = "L'heure doit être au format HH:MM avec minutes 00 ou 30";
     }
 
     if (formData.deliveryType === "pickup") {
@@ -919,16 +939,16 @@ export default function OrderForm({
             )}
           </div>
 
-          {formData.deliveryType === "pickup" && (
+          {(formData.deliveryType === "pickup" || formData.deliveryType === "delivery") && (
             <div className="w-40">
               <Label htmlFor="pickupTime" className="text-xs text-gray-600">
-                HEURE RAMASSAGE:
+                {formData.deliveryType === "delivery" ? "HEURE LIVRAISON:" : "HEURE RAMASSAGE:"}
               </Label>
               <Input
                 id="pickupTime"
                 type="text"
                 list="time-slots-list"
-                placeholder="HH:MM (ex: 10:30)"
+                placeholder="HH:MM"
                 value={formData.pickupTime}
                 onChange={(e) => handleInputChange("pickupTime", e.target.value)}
                 onFocus={(e) => e.currentTarget.select()}
@@ -2002,7 +2022,7 @@ export default function OrderForm({
                                           ? "Fermer"
                                           : currentValue.trim()
                                             ? "Modifier"
-                                            : "Ajouter";
+                                            : "Note";
 
                                         return (
                                           <div className="flex items-center gap-2">

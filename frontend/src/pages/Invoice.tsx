@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Printer, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { normalizedApiUrl } from "../lib/AuthClient";
 
 interface OrderData {
@@ -71,6 +71,14 @@ export default function Invoice() {
     fetchOrder();
   }, [orderId]);
 
+  // Auto-trigger print dialog once the invoice is loaded and rendered
+  useEffect(() => {
+    if (!loading && order && !error) {
+      const timer = setTimeout(() => window.print(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, order, error]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -116,15 +124,9 @@ export default function Invoice() {
         <div className="no-print flex justify-end gap-2 mb-6">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-[#337957] text-white rounded-lg hover:bg-[#2d6b4a] transition-colors"
-          >
-            <Printer size={18} /> Imprimer
-          </button>
-          <button
-            onClick={() => window.print()}
             className="flex items-center gap-2 px-4 py-2 bg-[#C5A065] text-white rounded-lg hover:bg-[#b8935a] transition-colors"
           >
-            <Download size={18} /> Enregistrer en PDF
+            <Download size={18} /> Télécharger la facture
           </button>
         </div>
 
