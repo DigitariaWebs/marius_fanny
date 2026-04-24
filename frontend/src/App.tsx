@@ -32,6 +32,7 @@ import StaffManagement from "./pages/Stuff";
 import Checkout from "./pages/Checkout";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
 import Invoice from "./pages/Invoice";
+import Quote from "./pages/Quote";
 import { RoleBasedRedirect } from "./components/RoleBasedRedirect";
 
 // Utils
@@ -345,6 +346,7 @@ const App: React.FC = () => {
             }
           />
           <Route path="/facture/:orderId" element={<Invoice />} />
+          <Route path="/soumission/:quoteId" element={<Quote />} />
           <Route path="/staff/delivery" element={<DeliveryDashboard />} />
           <Route path="/staff/cuisinier" element={<CuisinierDashboard />} />
           <Route path="/staff/patissier" element={<PatissierDashboard />} />

@@ -1628,3 +1628,117 @@ export async function sendOrderBalanceEmail(data: {
   await sendEmail(mailOptions);
   console.log(`✅ Email de balance envoyé à ${data.clientEmail} pour commande #${data.orderNumber}`);
 }
+
+/**
+ * Send a quote (estimation) email with accept/refuse link
+ */
+export async function sendQuoteEmail(data: {
+  to: string;
+  clientName: string;
+  quoteNumber: string;
+  quoteId: string;
+  items: Array<{ productName: string; quantity: number; unitPrice: number; amount: number }>;
+  subtotal: number;
+  taxAmount: number;
+  deliveryFee: number;
+  total: number;
+  expiresAt: Date;
+}): Promise<void> {
+  const quoteUrl = `${FRONTEND_URL}/soumission/${data.quoteId}`;
+  const expiryFormatted = new Date(data.expiresAt).toLocaleDateString("fr-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const itemsHtml = data.items
+    .map(
+      (item) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #2D2A26;">${item.productName}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #2D2A26; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #2D2A26; text-align: right;">${item.unitPrice.toFixed(2)}$</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #2D2A26; text-align: right;">${item.amount.toFixed(2)}$</td>
+      </tr>`,
+    )
+    .join("");
+
+  const mailOptions = {
+    from: DISPLAY_FROM,
+    to: data.to,
+    subject: `Soumission ${data.quoteNumber} — Marius & Fanny`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #F9F7F2; border-radius: 10px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <img src="${LOGO_URL}" alt="Marius & Fanny" style="max-width: 180px; height: auto;" />
+        </div>
+
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="display: inline-block; background-color: #C5A065; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold;">
+              📄 SOUMISSION
+            </div>
+          </div>
+
+          <h2 style="color: #2D2A26; text-align: center; margin-bottom: 20px;">Bonjour ${data.clientName}</h2>
+
+          <p style="color: #555; line-height: 1.6; text-align: center; margin-bottom: 30px;">
+            Voici votre soumission personnalisée de <strong>Marius &amp; Fanny</strong>.<br>
+            Veuillez l'accepter ou la refuser en cliquant sur le bouton ci-dessous.
+          </p>
+
+          <div style="background-color: #F9F7F2; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <p style="color: #999; margin: 0 0 5px 0; font-size: 12px;">Numéro de soumission</p>
+            <p style="color: #C5A065; font-size: 24px; font-weight: bold; margin: 0; font-family: monospace;">${data.quoteNumber}</p>
+            <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">Valable jusqu'au ${expiryFormatted}</p>
+          </div>
+
+          <h3 style="color: #2D2A26; border-bottom: 2px solid #C5A065; padding-bottom: 10px;">Détails</h3>
+
+          <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #F9F7F2;">
+                <th style="padding: 10px; text-align: left; color: #2D2A26;">Produit</th>
+                <th style="padding: 10px; text-align: center; color: #2D2A26;">Qté</th>
+                <th style="padding: 10px; text-align: right; color: #2D2A26;">Prix</th>
+                <th style="padding: 10px; text-align: right; color: #2D2A26;">Montant</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+
+          <div style="text-align: right; margin-top: 20px;">
+            <p style="color: #555; margin: 5px 0;"><span style="display:inline-block;width:150px;">Sous-total:</span> <strong>${data.subtotal.toFixed(2)}$</strong></p>
+            <p style="color: #555; margin: 5px 0;"><span style="display:inline-block;width:150px;">Taxes (TPS+TVQ):</span> <strong>${data.taxAmount.toFixed(2)}$</strong></p>
+            <p style="color: #999; margin: 2px 0 10px 0; font-size: 11px;"><span style="display:inline-block;width:150px;">&nbsp;</span>TPS: 144652641RT001 &nbsp; TVQ: 1201862732TQ0001</p>
+            ${data.deliveryFee > 0 ? `<p style="color: #555; margin: 5px 0;"><span style="display:inline-block;width:150px;">Livraison:</span> <strong>${data.deliveryFee.toFixed(2)}$</strong></p>` : ""}
+            <p style="color: #C5A065; font-size: 20px; margin: 15px 0 0 0; padding-top: 10px; border-top: 2px solid #C5A065;">
+              <span style="display:inline-block;width:150px;">Total estimé:</span>
+              <strong>${data.total.toFixed(2)}$</strong>
+            </p>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${quoteUrl}"
+               style="display: inline-block; padding: 14px 40px; background-color: #337957; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+              Voir ma soumission
+            </a>
+          </div>
+
+          <p style="color: #999; text-align: center; margin-top: 20px; font-size: 12px;">
+            Cliquez sur le bouton pour voir le détail et <strong>accepter</strong> ou <strong>refuser</strong> la soumission.
+          </p>
+
+          ${buildCancellationPolicySection()}
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
+          <p>© 2026 Marius & Fanny. Tous droits réservés.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  await sendEmail(mailOptions);
+  console.log(`✅ Soumission ${data.quoteNumber} envoyée à ${data.to}`);
+}

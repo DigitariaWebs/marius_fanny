@@ -22,6 +22,7 @@ import {
   ChefHat,
   Clock,
   TicketPercent,
+  FileText,
 } from "lucide-react";
 import StaffManagement from "./StaffManagement";
 import ClientManagement from "./ClientManagement";
@@ -30,6 +31,7 @@ import { ProductManagement } from "./ProductManagement";
 import { CategoryManagement } from "./CategoryManagement";
 import SettingsManagement from "./SettingsManagement";
 import DeliveryAssignment from "./DeliveryAssignment";
+import QuoteManagement from "./QuoteManagement";
 import ProductionList from "./ProductionList";
 import InventaireJournalier from "./InventaireJournalier";
 import PromoManagement from "./PromoManagement";
@@ -62,7 +64,7 @@ type ViewMode =
   | "products"
   | "promos"
   | "categories"
-  | "delivery"
+  | "quotes"
   | "settings"
   | "production"
   | "inventaire"
@@ -309,11 +311,11 @@ export default function AdminDashboard() {
                 }}
               />
               <NavItem
-                icon={<Truck size={20} />}
-                label="Livraisons"
-                active={viewMode === "delivery"}
+                icon={<FileText size={20} />}
+                label="Soumissions"
+                active={viewMode === "quotes"}
                 onClick={() => {
-                  setViewMode("delivery");
+                  setViewMode("quotes");
                   setIsMobileMenuOpen(false);
                 }}
               />
@@ -535,8 +537,8 @@ export default function AdminDashboard() {
         {/* VUE CATÉGORIES */}
         {viewMode === "categories" && <CategoryManagement />}
 
-        {/* VUE LIVRAISONS */}
-        {viewMode === "delivery" && <DeliveryAssignment />}
+        {/* VUE SOUMISSIONS */}
+        {viewMode === "quotes" && <QuoteManagement />}
 
         {/* VUE PARAMÈTRES */}
         {viewMode === "settings" && (

@@ -15,6 +15,7 @@ import promoRoutes from "./promo.routes.js";
 import paymentReminderRoutes from "./paymentReminder.routes.js";
 import settingsRoutes from "./settings.routes.js";
 import contactRoutes from "./contact.routes.js";
+import quoteRoutes from "./quote.routes.js";
 
 const router = Router();
 
@@ -57,5 +58,6 @@ router.use("/promos", promoRoutes);
 router.use("/payment-reminders", paymentReminderRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/contact", contactRoutes);
+router.use("/quotes", quoteRoutes);
 
 export default router;
