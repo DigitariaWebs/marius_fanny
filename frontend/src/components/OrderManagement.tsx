@@ -2699,7 +2699,11 @@ export function OrderManagement() {
                 },
                 orderDate: now,
                 pickupDate: formData.date
-                  ? new Date(`${formData.date}T${formData.pickupTime || "00:00"}:00`).toISOString()
+                  ? (() => {
+                      const m = (formData.pickupTime || "").match(/^(\d{2}):(\d{2})/);
+                      const hhmm = m ? `${m[1]}:${m[2]}` : "00:00";
+                      return new Date(`${formData.date}T${hhmm}:00`).toISOString();
+                    })()
                   : now,
                 pickupLocation: formData.pickupLocation,
                 deliveryType: formData.deliveryType,
