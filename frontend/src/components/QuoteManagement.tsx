@@ -114,9 +114,10 @@ export default function QuoteManagement() {
   const fetchClients = async () => {
     try {
       const res = await clientAPI.getClients(1, 500);
-      setClients(res.clients || []);
-    } catch {
-      // ignore
+      console.log("[QuoteManagement] clients fetched:", res?.clients?.length || 0);
+      setClients(res?.clients || []);
+    } catch (e) {
+      console.error("[QuoteManagement] fetchClients failed:", e);
     }
   };
 
