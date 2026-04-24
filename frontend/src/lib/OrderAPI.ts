@@ -42,7 +42,15 @@ class OrderAPI {
       const errorData = await response
         .json()
         .catch(() => ({ error: "An error occurred" }));
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+      // Build a descriptive error message including validation details
+      let msg = errorData.error || errorData.message || `HTTP ${response.status}`;
+      if (Array.isArray(errorData.details) && errorData.details.length > 0) {
+        const fields = errorData.details
+          .map((d: any) => `${d.field || "?"}: ${d.message || d.code || ""}`.trim())
+          .join(" | ");
+        msg = `${msg} — ${fields}`;
+      }
+      throw new Error(msg);
     }
 
     return response.json();

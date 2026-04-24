@@ -418,12 +418,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
           <div className="w-16 h-1 bg-gold mx-auto rounded-full mt-3"></div>
         </header>
 
-        {/* Sous-catégories si existantes */}
+        {/* Sous-catégories en grille (vue d'ensemble) */}
         {childCategories.length > 0 && !subCategory && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
             {childCategories.map(child => (
-              <div 
-                key={child.id} 
+              <div
+                key={child.id}
                 onClick={() => setSubCategory({id: child.id, title: child.name})}
                 className="cursor-pointer group relative h-24 rounded-lg overflow-hidden border border-stone-100"
               >
@@ -433,6 +433,28 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Sous-catégories en barre (visible quand une sous-catégorie est sélectionnée) */}
+        {childCategories.length > 0 && subCategory && (
+          <div className="flex flex-wrap gap-2 mb-8 pb-4 border-b border-stone-200">
+            {childCategories.map(child => {
+              const isActive = subCategory.id === child.id;
+              return (
+                <button
+                  key={child.id}
+                  onClick={() => setSubCategory({id: child.id, title: child.name})}
+                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide transition-colors ${
+                    isActive
+                      ? "bg-[#337957] text-white shadow-md"
+                      : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                  }`}
+                >
+                  {child.name}
+                </button>
+              );
+            })}
           </div>
         )}
 

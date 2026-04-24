@@ -4,15 +4,12 @@ import { z } from "zod";
 export const addressSchema = z.object({
   street: z.string().min(1, "L'adresse est requise"),
   city: z.string().min(1, "La ville est requise"),
-  province: z.string().min(2, "La province est requise").max(2),
+  // Accept full names ("Québec") or 2-letter codes ("QC")
+  province: z.string().min(2, "La province est requise").max(50),
   postalCode: z
     .string()
     .min(3, "Le code postal doit contenir au moins 3 caractères")
-    .max(7, "Le code postal ne peut pas dépasser 7 caractères")
-    .regex(
-      /^[A-Z]\d[A-Z](\s?\d[A-Z]\d)?$/i,
-      "Format de code postal invalide (ex: H7X ou H2L 3Y5)",
-    ),
+    .max(10, "Le code postal ne peut pas dépasser 10 caractères"),
 });
 
 // Order item schema

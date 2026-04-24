@@ -277,6 +277,8 @@ export const getPayment = async (req: Request, res: Response) => {
     // Note: Single payment retrieval not directly supported in SDK
     const response = await squareClient.payments.list({
       locationId: squareConfig.locationId,
+      sortField: "CREATED_AT",
+      sortOrder: "DESC",
     });
 
     let payment = null;
@@ -324,6 +326,8 @@ export const listPayments = async (req: Request, res: Response) => {
       locationId: squareConfig.locationId,
       beginTime: beginTime as string,
       endTime: endTime as string,
+      sortField: "CREATED_AT",
+      sortOrder: "DESC",
     });
 
     const payments = [];
