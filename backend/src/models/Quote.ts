@@ -108,8 +108,8 @@ const QuoteSchema = new Schema<IQuote>(
   { timestamps: true },
 );
 
-// Auto-generate quote number: Q-YYYYMMDD-XXXX
-QuoteSchema.pre("save", async function () {
+// Auto-generate quote number BEFORE validation: Q-YYYYMMDD-XXXX
+QuoteSchema.pre("validate", async function () {
   if (this.isNew && !this.quoteNumber) {
     const today = new Date();
     const datePart = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
