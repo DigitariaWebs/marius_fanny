@@ -211,7 +211,18 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
     const allNodes = flattenTree(categoryTree);
     const currentNode = allNodes.find(c => c.name.toLowerCase() === currentName);
     const children = currentNode?.children || [];
-    setChildCategories(children);
+
+    // If we're on a sub-category that has no children, show its SIBLINGS
+    // (i.e. the other sub-categories under the same parent) so the user can
+    // navigate between them without going back.
+    let categoriesToDisplay = children;
+    if (subCategory && children.length === 0 && currentNode?.parentId) {
+      const parent = allNodes.find(c => c.id === currentNode.parentId);
+      if (parent?.children && parent.children.length > 0) {
+        categoriesToDisplay = parent.children;
+      }
+    }
+    setChildCategories(categoriesToDisplay);
 
     if (products.length === 0) return;
 
