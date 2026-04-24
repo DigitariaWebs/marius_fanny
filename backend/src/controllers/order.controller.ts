@@ -1838,8 +1838,8 @@ export const updateDeliveryStatus = async (
 
     if (customerPhone && (deliveryStatus === "in_transit" || deliveryStatus === "arrived")) {
       const smsMessages: Record<string, string> = {
-        in_transit: `Marius et Fanny: Votre livreur est en route pour la commande #${shortNumber}. Bonne dégustation!`,
-        arrived: `Marius et Fanny: Votre livreur est arrivé pour la commande #${shortNumber}. Bon appétit!`,
+        in_transit: `Votre livreur est arrivé pour la commande #${shortNumber} il vous attend à l'entrée principale.`,
+        arrived: `Merci de ne pas appeler ce numéro.`,
       };
 
       const statusLabel = deliveryStatus === "in_transit" ? "EN ROUTE" : "ARRIVÉ";

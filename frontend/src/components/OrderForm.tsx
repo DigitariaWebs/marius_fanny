@@ -236,6 +236,24 @@ export default function OrderForm({
     fetchProducts();
   }, []);
 
+  // When editing, auto-bind selectedClient from initialData so the 4 client
+  // fields stay locked (prevents the name-swap bug).
+  useEffect(() => {
+    if (selectedClient) return;
+    const targetEmail = (initialData?.email || "").trim().toLowerCase();
+    const targetId = initialData?.clientId;
+    if (!targetEmail && !targetId) return;
+    const match = clients.find(
+      (c) =>
+        (targetId && c.id === targetId) ||
+        (targetEmail && (c.email || "").trim().toLowerCase() === targetEmail),
+    );
+    if (match) {
+      setSelectedClient(match);
+      setEmailSearch(match.email);
+    }
+  }, [clients, initialData?.email, initialData?.clientId, selectedClient]);
+
   useEffect(() => {
     if (formData.deliveryType === "pickup") {
       setFormData((prev) => ({

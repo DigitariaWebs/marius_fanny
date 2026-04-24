@@ -1089,19 +1089,21 @@ export function OrderManagement() {
     return isPaid && isSquareChannel && order.status !== "cancelled";
   };
 
-  const sendPaymentLink = async (order: OrderWithPacking, balanceOnly?: number) => {
+  const sendPaymentLink = async (
+    order: OrderWithPacking,
+    balanceOnly?: number,
+    channelOverride?: "email" | "sms",
+  ) => {
+    const channel = channelOverride || order.paymentLinkChannel || "email";
     // If balanceOnly is provided, create a simple invoice for just the balance
     const invoicePayload: any = balanceOnly && balanceOnly > 0
       ? {
           orderId: order.id,
           orderNumber: order.orderNumber,
           customerEmail: order.client.email,
-          customerPhone:
-            (order.paymentLinkChannel || "email") === "sms"
-              ? order.client.phone
-              : undefined,
+          customerPhone: channel === "sms" ? order.client.phone : undefined,
           customerName: `${order.client.firstName} ${order.client.lastName}`.trim(),
-          deliveryChannel: order.paymentLinkChannel || "email",
+          deliveryChannel: channel,
           items: [
             {
               name: `Solde commande ${order.orderNumber}`,
@@ -1119,12 +1121,9 @@ export function OrderManagement() {
           orderId: order.id,
           orderNumber: order.orderNumber,
           customerEmail: order.client.email,
-          customerPhone:
-            (order.paymentLinkChannel || "email") === "sms"
-              ? order.client.phone
-              : undefined,
+          customerPhone: channel === "sms" ? order.client.phone : undefined,
           customerName: `${order.client.firstName} ${order.client.lastName}`.trim(),
-          deliveryChannel: order.paymentLinkChannel || "email",
+          deliveryChannel: channel,
           items: order.items.map((item) => ({
             name: item.product?.name ?? item.productId.toString(),
             quantity: item.quantity,
@@ -1578,7 +1577,7 @@ export function OrderManagement() {
 
           <p className="text-sm text-stone-600 text-center">Comment le client souhaite-t-il payer le solde ?</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               disabled={isSendingBalanceLink}
               onClick={() => {
@@ -1604,8 +1603,7 @@ export function OrderManagement() {
                 if (!order) return;
                 setIsSendingBalanceLink(true);
                 try {
-                  // Send payment link for BALANCE ONLY, not full total
-                  await sendPaymentLink(order, balancePaymentModal.amount);
+                  await sendPaymentLink(order, balancePaymentModal.amount, "email");
                   setBalancePaymentModal({ open: false, order: null, amount: 0, clientName: "" });
                   setEditNotification({
                     type: "balance",
@@ -1613,9 +1611,9 @@ export function OrderManagement() {
                     clientName: balancePaymentModal.clientName,
                   });
                   setTimeout(() => setEditNotification(null), 5000);
-                  alert(`Lien de paiement envoyé à ${order.client.email}`);
+                  alert(`Lien de paiement envoyé par email à ${order.client.email}`);
                 } catch (e: any) {
-                  alert(`Erreur: ${e?.message || "Impossible d'envoyer le lien"}`);
+                  alert(`Erreur: ${e?.message || "Impossible d'envoyer l'email"}`);
                 } finally {
                   setIsSendingBalanceLink(false);
                 }
@@ -1625,10 +1623,53 @@ export function OrderManagement() {
               {isSendingBalanceLink ? (
                 <div className="w-6 h-6 border-2 border-[#337957] border-t-transparent rounded-full animate-spin" />
               ) : (
-                <Send className="w-7 h-7 text-[#337957]" />
+                <Mail className="w-7 h-7 text-[#337957]" />
               )}
-              <span className="font-bold text-sm text-stone-800">Envoyer un lien</span>
-              <span className="text-xs text-stone-500">Par email ou SMS</span>
+              <span className="font-bold text-sm text-stone-800">Par email</span>
+              <span className="text-xs text-stone-500 truncate max-w-full">
+                {balancePaymentModal.order?.client.email || "—"}
+              </span>
+            </button>
+
+            <button
+              disabled={
+                isSendingBalanceLink || !balancePaymentModal.order?.client.phone
+              }
+              onClick={async () => {
+                const order = balancePaymentModal.order;
+                if (!order) return;
+                if (!order.client.phone) {
+                  alert("Ce client n'a pas de numéro de téléphone enregistré.");
+                  return;
+                }
+                setIsSendingBalanceLink(true);
+                try {
+                  await sendPaymentLink(order, balancePaymentModal.amount, "sms");
+                  setBalancePaymentModal({ open: false, order: null, amount: 0, clientName: "" });
+                  setEditNotification({
+                    type: "balance",
+                    amount: balancePaymentModal.amount,
+                    clientName: balancePaymentModal.clientName,
+                  });
+                  setTimeout(() => setEditNotification(null), 5000);
+                  alert(`Lien de paiement envoyé par SMS à ${order.client.phone}`);
+                } catch (e: any) {
+                  alert(`Erreur SMS: ${e?.message || "Impossible d'envoyer le SMS"}`);
+                } finally {
+                  setIsSendingBalanceLink(false);
+                }
+              }}
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-stone-200 hover:border-[#2563eb] hover:bg-[#2563eb]/5 transition-all text-center disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSendingBalanceLink ? (
+                <div className="w-6 h-6 border-2 border-[#2563eb] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Phone className="w-7 h-7 text-[#2563eb]" />
+              )}
+              <span className="font-bold text-sm text-stone-800">Par SMS</span>
+              <span className="text-xs text-stone-500 truncate max-w-full">
+                {balancePaymentModal.order?.client.phone || "Aucun téléphone"}
+              </span>
             </button>
           </div>
         </div>
