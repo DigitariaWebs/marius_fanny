@@ -57,6 +57,7 @@ interface OrderGroup {
   orderId: string;
   orderNumber: string;
   deliveryTimeSlot: string;
+  deliveryType: "pickup" | "delivery";
   allergies: string[];
   items: ProductionItem[];
   done: boolean;
@@ -368,6 +369,7 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
           orderId: item.orderId || item.orderNumber,
           orderNumber: item.orderNumber,
           deliveryTimeSlot: item.deliveryTimeSlot,
+          deliveryType: item.deliveryType,
           allergies: [],
           items: [],
           done: false,
@@ -467,7 +469,9 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
                 )}
                 <span className="flex items-center gap-1">
                   <Clock size={13} />
-                  <span>{group.deliveryTimeSlot || '—'}</span>
+                  <span className="font-semibold">
+                    {group.deliveryType === "delivery" ? "Livraison" : "Ramassage"}: {group.deliveryTimeSlot || '—'}
+                  </span>
                 </span>
               </div>
             </div>
@@ -638,6 +642,12 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
                 })
                 .filter(Boolean) as string[];
               const optionPreview = optionLines.slice(0, 3);
+              const timeLines = uniqueOrders.map((item) => ({
+                key: item.orderId || item.orderNumber,
+                order: formatOrderNumber(item.orderNumber),
+                time: item.deliveryTimeSlot || "—",
+                type: item.deliveryType === "delivery" ? "Livraison" : "Ramassage",
+              }));
               
               return (
                 <tr key={group.productId} className="hover:bg-stone-50/50 transition-colors">
@@ -701,6 +711,30 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
                               +{optionLines.length - optionPreview.length} autre(s)
                             </div>
                           )}
+                        </div>
+                      </div>
+                    )}
+                    {timeLines.length > 0 && (
+                      <div className="mt-2 text-[12px] text-stone-700">
+                        <div className="font-bold text-[11px] uppercase tracking-wider text-stone-400 mb-1">
+                          Heures
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {timeLines.map((t) => (
+                            <span
+                              key={t.key}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] ${
+                                t.type === "Livraison"
+                                  ? "bg-yellow-50 text-yellow-900 border-yellow-200"
+                                  : "bg-blue-50 text-blue-900 border-blue-200"
+                              }`}
+                              title={`${t.type} #${t.order}`}
+                            >
+                              <Clock size={11} />
+                              <span className="font-semibold">#{t.order}</span>
+                              <span>{t.time}</span>
+                            </span>
+                          ))}
                         </div>
                       </div>
                     )}

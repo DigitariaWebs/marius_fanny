@@ -151,6 +151,22 @@ export const createPayment = async (req: Request, res: Response) => {
     const payment = response.payment;
     const processingTime = Date.now() - startTime;
 
+    // Square can return non-final states (PENDING, APPROVED, FAILED). Treat
+    // anything other than COMPLETED as a failure so the order isn't marked paid.
+    if (payment?.status !== "COMPLETED") {
+      console.error(
+        `❌ [PAYMENT] Non-final status returned by Square: ${payment?.status} (paymentId: ${payment?.id})`,
+      );
+      return res.status(502).json({
+        success: false,
+        error: `Paiement non complété (statut Square: ${payment?.status || "inconnu"})`,
+        data: {
+          paymentId: payment?.id,
+          status: payment?.status,
+        },
+      });
+    }
+
     console.log(
       `✅ [PAYMENT] Payment successful! ID: ${payment?.id}, Status: ${payment?.status}, Amount: ${payment?.amountMoney?.amount} cents, Processing time: ${processingTime}ms`,
     );
@@ -415,6 +431,19 @@ export const refundPayment = async (req: Request, res: Response) => {
     const refund = response.refund;
     const processingTime = Date.now() - startTime;
 
+    // Accept COMPLETED (instant) and PENDING (async, will webhook back).
+    // REJECTED/FAILED is a hard failure — don't mark the order refunded.
+    if (refund?.status && !["COMPLETED", "PENDING"].includes(refund.status)) {
+      console.error(
+        `❌ [REFUND] Square returned terminal non-success status: ${refund.status} (refundId: ${refund.id})`,
+      );
+      return res.status(502).json({
+        success: false,
+        error: `Remboursement refusé par Square (statut: ${refund.status})`,
+        data: { refundId: refund.id, status: refund.status },
+      });
+    }
+
     console.log(
       `✅ [REFUND] Refund successful! ID: ${refund?.id}, Status: ${refund?.status}, Amount: ${refund?.amountMoney?.amount} cents, Processing time: ${processingTime}ms`,
     );
@@ -431,6 +460,8 @@ export const refundPayment = async (req: Request, res: Response) => {
             }
           : undefined,
         cappedToAvailableAmount: requestedAmountInCents !== amountInCents,
+        requestedAmountCents: requestedAmountInCents,
+        refundedAmountCents: amountInCents,
       },
     });
   } catch (error: any) {
@@ -939,6 +970,15 @@ export const refundOrderPayment = async (req: Request, res: Response) => {
 
     const refund = refundResponse?.refund;
 
+    // Don't cancel the order if Square rejected the refund.
+    if (refund?.status && !["COMPLETED", "PENDING"].includes(refund.status)) {
+      return res.status(502).json({
+        success: false,
+        error: `Remboursement refusé par Square (statut: ${refund.status})`,
+        data: { orderId: String(order._id), refundId: refund.id, status: refund.status },
+      });
+    }
+
     order.status = "cancelled";
     order.paymentStatus = "unpaid";
     order.balancePaid = false;
@@ -1068,6 +1108,15 @@ export const refundBalance = async (req: Request, res: Response) => {
     });
 
     const refund = refundResponse?.refund;
+
+    // Don't update the order if Square rejected the refund.
+    if (refund?.status && !["COMPLETED", "PENDING"].includes(refund.status)) {
+      return res.status(502).json({
+        success: false,
+        error: `Remboursement refusé par Square (statut: ${refund.status})`,
+        data: { orderId: String(order._id), refundId: refund.id, status: refund.status },
+      });
+    }
 
     // Update amountPaid to match new total
     order.amountPaid = order.total;

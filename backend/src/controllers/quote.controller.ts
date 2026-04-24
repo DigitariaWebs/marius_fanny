@@ -311,14 +311,14 @@ export async function acceptQuote(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: "Cette soumission a expiré" });
     }
 
-    // Build address only when delivery AND all fields are present
+    // Build address only when delivery AND required fields are present
+    // (province is optional — defaults to "QC" at the DB layer)
     const addr = quote.deliveryAddress as any;
     const hasValidAddress =
       quote.deliveryType === "delivery" &&
       addr &&
       addr.street &&
       addr.city &&
-      addr.province &&
       addr.postalCode;
 
     const orderData: any = {
@@ -363,7 +363,7 @@ export async function acceptQuote(req: Request, res: Response) {
       orderData.deliveryAddress = {
         street: addr.street,
         city: addr.city,
-        province: addr.province,
+        province: addr.province || "QC",
         postalCode: addr.postalCode,
       };
     }

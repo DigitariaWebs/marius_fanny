@@ -903,15 +903,23 @@ export const getProductionList = async (
           customerName: `${order.clientInfo.firstName} ${order.clientInfo.lastName}`,
           customerPhone: order.clientInfo.phone,
           deliveryDate: order.deliveryDate || (order.pickupDate ? order.pickupDate.toISOString().split('T')[0] : order.orderDate.toISOString().split('T')[0]),
-          // Derive time from deliveryTimeSlot, or from pickupDate's hours if not set
+          // Derive time from deliveryTimeSlot, or from pickupDate interpreted
+          // in America/Toronto (server may run in UTC on Vercel).
           deliveryTimeSlot: (() => {
             if (order.deliveryTimeSlot && order.deliveryTimeSlot.trim()) return order.deliveryTimeSlot;
             if (order.pickupDate) {
-              const d = new Date(order.pickupDate);
-              const h = d.getHours();
-              const m = d.getMinutes();
-              if (h > 0 || m > 0) {
-                return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+              try {
+                const formatted = new Intl.DateTimeFormat("fr-CA", {
+                  timeZone: "America/Toronto",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                }).format(new Date(order.pickupDate));
+                // fr-CA returns "14:30" style — strip any stray whitespace
+                const clean = formatted.trim();
+                if (clean && clean !== "00:00") return clean;
+              } catch {
+                /* fall through */
               }
             }
             return "—";

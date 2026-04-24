@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IAddress {
   street: string;
   city: string;
-  province: string;
+  province?: string;
   postalCode: string;
 }
 
@@ -114,8 +114,8 @@ const AddressSchema = new Schema<IAddress>(
     },
     province: {
       type: String,
-      required: true,
       trim: true,
+      default: "QC",
     },
     postalCode: {
       type: String,

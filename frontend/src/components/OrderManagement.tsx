@@ -2654,18 +2654,21 @@ export function OrderManagement() {
                 payload.pickupDate = new Date(pickupDateTime).toISOString();
               }
 
+              // Save deliveryTimeSlot for BOTH pickup and delivery so production
+              // views display the chosen time reliably (avoids UTC hour drift).
+              if (formData.pickupTime) {
+                payload.deliveryTimeSlot = formData.pickupTime;
+              }
+
               if (formData.deliveryType === "delivery" && formData.deliveryAddress) {
                 payload.deliveryAddress = {
                   street: formData.deliveryAddress.street,
                   city: formData.deliveryAddress.city,
-                  province: formData.deliveryAddress.province,
+                  province: formData.deliveryAddress.province || "QC",
                   postalCode: formData.deliveryAddress.postalCode,
                 };
                 if (formData.date) {
                   payload.deliveryDate = formData.date;
-                }
-                if (formData.pickupTime) {
-                  payload.deliveryTimeSlot = formData.pickupTime;
                 }
               }
 
@@ -2856,18 +2859,21 @@ export function OrderManagement() {
                 payload.pickupDate = new Date(pickupDateTime).toISOString();
               }
 
+              // Save deliveryTimeSlot for BOTH pickup and delivery so production
+              // views display the chosen time reliably (avoids UTC hour drift).
+              if (formData.pickupTime) {
+                payload.deliveryTimeSlot = formData.pickupTime;
+              }
+
               if (formData.deliveryType === "delivery" && formData.deliveryAddress) {
                 payload.deliveryAddress = {
                   street: formData.deliveryAddress.street,
                   city: formData.deliveryAddress.city,
-                  province: formData.deliveryAddress.province,
+                  province: formData.deliveryAddress.province || "QC",
                   postalCode: formData.deliveryAddress.postalCode,
                 };
                 if (formData.date) {
                   payload.deliveryDate = formData.date;
-                }
-                if (formData.pickupTime) {
-                  payload.deliveryTimeSlot = formData.pickupTime;
                 }
               }
 

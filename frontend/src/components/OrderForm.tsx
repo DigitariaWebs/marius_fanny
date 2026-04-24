@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Check, ChevronsUpDown, Package } from "lucide-react";
+import { Plus, Trash2, Check, ChevronsUpDown, Package, StickyNote, Lock } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -37,6 +37,7 @@ import {
   validateMinimumOrder,
   DELIVERY_ZONES,
 } from "../utils/deliveryZones";
+import { getAvailableTimeSlots } from "../utils/timeSlots";
 import { calculatePriceWithOptions } from "../utils/customOptions";
 import { getImageUrl } from "../utils/api";
 
@@ -183,6 +184,11 @@ export default function OrderForm({
     isValid: boolean;
   } | null>(null);
   const [minimumOrderError, setMinimumOrderError] = useState<string>("");
+  const [deliveryPostalOpen, setDeliveryPostalOpen] = useState(false);
+  const [billingPostalOpen, setBillingPostalOpen] = useState(false);
+  const [expandedNoteItemIds, setExpandedNoteItemIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -592,28 +598,17 @@ export default function OrderForm({
     }));
   };
 
-  // Generate time slots between two hours (inclusive start, inclusive end), 30-min increments
-  const generateSlots = (startHour: number, endHour: number) => {
-    const slots: string[] = [];
-    for (let h = startHour; h <= endHour; h++) {
-      slots.push(`${String(h).padStart(2, "0")}:00`);
-      if (h < endHour) {
-        slots.push(`${String(h).padStart(2, "0")}:30`);
-      }
-    }
-    return slots;
-  };
-
-  // Location-based opening hours:
-  // - Laval: 8h → 18h
-  // - Montréal: 8h → 19h
-  // For delivery, same hours as Laval (8h → 18h)
-  const TIME_SLOTS = (() => {
-    const location = formData.pickupLocation;
-    if (formData.deliveryType === "delivery") return generateSlots(8, 18);
-    if (location === "Montreal") return generateSlots(8, 19);
-    return generateSlots(8, 18); // Laval default
-  })();
+  // Delivery/pickup time slots — matches the public Checkout page so admins
+  // pick from the same options customers see.
+  const TIME_SLOTS = React.useMemo(
+    () =>
+      getAvailableTimeSlots(
+        formData.date,
+        formData.deliveryType,
+        formData.pickupLocation,
+      ),
+    [formData.date, formData.deliveryType, formData.pickupLocation],
+  );
 
   const removeItem = (id: string) => {
     if (formData.items.length > 1) {
@@ -821,9 +816,10 @@ export default function OrderForm({
     if (
       (formData.deliveryType === "pickup" || formData.deliveryType === "delivery") &&
       formData.pickupTime &&
-      !/^([01]\d|2[0-3]):(00|30)$/.test(formData.pickupTime)
+      // Accept single "HH:MM" (pickup) or "HH:MM - HH:MM" (delivery range)
+      !/^([01]\d|2[0-3]):[0-5]\d(\s*-\s*([01]\d|2[0-3]):[0-5]\d)?$/.test(formData.pickupTime)
     ) {
-      newErrors.pickupTime = "L'heure doit être au format HH:MM avec minutes 00 ou 30";
+      newErrors.pickupTime = "Format invalide (ex: 14:00 ou 08:00 - 09:00)";
     }
 
     if (formData.deliveryType === "pickup") {
@@ -839,9 +835,6 @@ export default function OrderForm({
       if (!formData.deliveryAddress?.city.trim()) {
         newErrors.deliveryCity = "La ville est requise";
       }
-      if (!formData.deliveryAddress?.province.trim()) {
-        newErrors.deliveryProvince = "La province est requise";
-      }
     }
 
     if (formData.deliveryType === "delivery" && !formData.billingAddress?.sameAsDelivery) {
@@ -850,9 +843,6 @@ export default function OrderForm({
       }
       if (!formData.billingAddress?.city.trim()) {
         newErrors.billingCity = "La ville de facturation est requise";
-      }
-      if (!formData.billingAddress?.province.trim()) {
-        newErrors.billingProvince = "La province de facturation est requise";
       }
       if (!formData.billingAddress?.postalCode.trim()) {
         newErrors.billingPostalCode = "Le code postal de facturation est requis";
@@ -1004,15 +994,16 @@ export default function OrderForm({
           <Label htmlFor="email" className="text-xs text-gray-600">
             EMAIL:
           </Label>
-          <Popover open={emailOpen} onOpenChange={setEmailOpen}>
+          <Popover open={emailOpen && !selectedClient} onOpenChange={(o) => !selectedClient && setEmailOpen(o)}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 role="combobox"
                 aria-expanded={emailOpen}
+                disabled={!!selectedClient}
                 className={`w-full justify-start text-left font-normal ${
                   errors.email ? "border-red-500" : ""
-                }`}
+                } ${selectedClient ? "bg-gray-50 text-gray-600 cursor-not-allowed opacity-100" : ""}`}
               >
                 {emailSearch || "Rechercher un client..."}
               </Button>
@@ -1062,7 +1053,8 @@ export default function OrderForm({
             type="text"
             value={formData.firstName}
             onChange={(e) => handleInputChange("firstName", e.target.value)}
-            className={errors.firstName ? "border-red-500" : ""}
+            readOnly={!!selectedClient}
+            className={`${errors.firstName ? "border-red-500" : ""} ${selectedClient ? "bg-gray-50 text-gray-600 cursor-not-allowed" : ""}`}
             placeholder="Prénom"
           />
           {errors.firstName && (
@@ -1079,7 +1071,8 @@ export default function OrderForm({
             type="text"
             value={formData.lastName}
             onChange={(e) => handleInputChange("lastName", e.target.value)}
-            className={errors.lastName ? "border-red-500" : ""}
+            readOnly={!!selectedClient}
+            className={`${errors.lastName ? "border-red-500" : ""} ${selectedClient ? "bg-gray-50 text-gray-600 cursor-not-allowed" : ""}`}
             placeholder="Nom de famille"
           />
           {errors.lastName && (
@@ -1096,7 +1089,8 @@ export default function OrderForm({
             type="tel"
             value={formData.phone}
             onChange={(e) => handleInputChange("phone", e.target.value)}
-            className={errors.phone ? "border-red-500" : ""}
+            readOnly={!!selectedClient}
+            className={`${errors.phone ? "border-red-500" : ""} ${selectedClient ? "bg-gray-50 text-gray-600 cursor-not-allowed" : ""}`}
             placeholder="(___) ___-____"
           />
           {errors.phone && (
@@ -1106,9 +1100,32 @@ export default function OrderForm({
 
         <div className="col-span-2">
           {selectedClient && (
-            <div className="text-xs bg-green-50 text-green-700 p-2 rounded-md">
-              Client existant: {selectedClient.firstName}{" "}
-              {selectedClient.lastName}
+            <div className="text-xs bg-green-50 text-green-700 p-2 rounded-md flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5" />
+                Client existant verrouillé: {selectedClient.firstName}{" "}
+                {selectedClient.lastName}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[11px] text-green-800 hover:bg-green-100"
+                onClick={() => {
+                  setSelectedClient(null);
+                  setEmailSearch("");
+                  setFormData((prev) => ({
+                    ...prev,
+                    clientId: undefined,
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    phone: "",
+                  }));
+                }}
+              >
+                Changer de client
+              </Button>
             </div>
           )}
           {!selectedClient && emailSearch && (
@@ -1311,37 +1328,7 @@ export default function OrderForm({
               )}
             </div>
 
-            <div>
-              <Label htmlFor="province" className="text-xs text-gray-600">
-                PROVINCE:
-              </Label>
-              <Input
-                id="province"
-                type="text"
-                value={formData.deliveryAddress?.province || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    deliveryAddress: {
-                      ...prev.deliveryAddress,
-                      street: prev.deliveryAddress?.street || "",
-                      city: prev.deliveryAddress?.city || "",
-                      province: e.target.value,
-                      postalCode: prev.deliveryAddress?.postalCode || "",
-                    },
-                  }))
-                }
-                className={errors.deliveryProvince ? "border-red-500" : ""}
-                placeholder="Québec"
-              />
-              {errors.deliveryProvince && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.deliveryProvince}
-                </p>
-              )}
-            </div>
-
-            <div>
+            <div className="relative">
               <Label
                 htmlFor="deliveryPostalCode"
                 className="text-xs text-gray-600"
@@ -1352,6 +1339,8 @@ export default function OrderForm({
                 id="deliveryPostalCode"
                 type="text"
                 value={formData.deliveryAddress?.postalCode || ""}
+                onFocus={() => setDeliveryPostalOpen(true)}
+                onBlur={() => setTimeout(() => setDeliveryPostalOpen(false), 150)}
                 onChange={(e) => {
                   const postalCode = e.target.value.toUpperCase();
                   const zoneInfo = calculateDeliveryFee(postalCode);
@@ -1371,15 +1360,71 @@ export default function OrderForm({
                       ...prev.deliveryAddress,
                       street: prev.deliveryAddress?.street || "",
                       city: prev.deliveryAddress?.city || "",
-                      province: prev.deliveryAddress?.province || "",
+                      province: prev.deliveryAddress?.province || "QC",
                       postalCode,
                     },
                     deliveryFee: zoneInfo.isValid ? zoneInfo.fee : 0,
                   }));
+                  setDeliveryPostalOpen(true);
                 }}
                 className={errors.deliveryPostalCode ? "border-red-500" : ""}
                 placeholder="H1A 1A1"
+                autoComplete="off"
               />
+              {deliveryPostalOpen && (formData.deliveryAddress?.postalCode || "").length >= 1 && (
+                (() => {
+                  const q = (formData.deliveryAddress?.postalCode || "").toUpperCase();
+                  const matches = DELIVERY_ZONES.flatMap((zone) =>
+                    zone.postalCodes
+                      .filter((pc) => pc.startsWith(q))
+                      .map((pc) => ({ pc, zone })),
+                  );
+                  if (matches.length === 0) return null;
+                  return (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {matches.map(({ pc, zone }) => (
+                        <button
+                          key={`${zone.name}-${pc}`}
+                          type="button"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-stone-50"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            const zoneInfo = calculateDeliveryFee(pc);
+                            setDeliveryZoneInfo(
+                              zoneInfo.isValid
+                                ? {
+                                    zoneName: zoneInfo.zoneName,
+                                    fee: zoneInfo.fee,
+                                    minimumOrder: zoneInfo.minimumOrder,
+                                    isValid: true,
+                                  }
+                                : null,
+                            );
+                            setFormData((prev) => ({
+                              ...prev,
+                              deliveryAddress: {
+                                ...prev.deliveryAddress,
+                                street: prev.deliveryAddress?.street || "",
+                                city: prev.deliveryAddress?.city || "",
+                                province: prev.deliveryAddress?.province || "QC",
+                                postalCode: pc,
+                              },
+                              deliveryFee: zoneInfo.isValid ? zoneInfo.fee : 0,
+                            }));
+                            setDeliveryPostalOpen(false);
+                          }}
+                        >
+                          <span className="font-semibold">{pc}</span>{" "}
+                          <span className="text-xs text-stone-500">
+                            — {zone.deliveryFee.toFixed(2)}$ (min.{" "}
+                            {zone.minimumOrder.toFixed(2)}$)
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
               {errors.deliveryPostalCode && (
                 <p className="text-xs text-red-500 mt-1">
                   {errors.deliveryPostalCode}
@@ -1575,41 +1620,7 @@ export default function OrderForm({
               )}
             </div>
 
-            <div>
-              <Label
-                htmlFor="billingProvince"
-                className="text-xs text-gray-600"
-              >
-                PROVINCE:
-              </Label>
-              <Input
-                id="billingProvince"
-                type="text"
-                value={formData.billingAddress?.province || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    billingAddress: {
-                      ...prev.billingAddress,
-                      street: prev.billingAddress?.street || "",
-                      city: prev.billingAddress?.city || "",
-                      province: e.target.value,
-                      postalCode: prev.billingAddress?.postalCode || "",
-                      sameAsDelivery: false,
-                    },
-                  }))
-                }
-                className={errors.billingProvince ? "border-red-500" : ""}
-                placeholder="Québec"
-              />
-              {errors.billingProvince && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.billingProvince}
-                </p>
-              )}
-            </div>
-
-            <div>
+            <div className="relative">
               <Label
                 htmlFor="billingPostalCode"
                 className="text-xs text-gray-600"
@@ -1620,22 +1631,67 @@ export default function OrderForm({
                 id="billingPostalCode"
                 type="text"
                 value={formData.billingAddress?.postalCode || ""}
-                onChange={(e) =>
+                onFocus={() => setBillingPostalOpen(true)}
+                onBlur={() => setTimeout(() => setBillingPostalOpen(false), 150)}
+                onChange={(e) => {
+                  const pc = e.target.value.toUpperCase();
                   setFormData((prev) => ({
                     ...prev,
                     billingAddress: {
                       ...prev.billingAddress,
                       street: prev.billingAddress?.street || "",
                       city: prev.billingAddress?.city || "",
-                      province: prev.billingAddress?.province || "",
-                      postalCode: e.target.value.toUpperCase(),
+                      province: prev.billingAddress?.province || "QC",
+                      postalCode: pc,
                       sameAsDelivery: false,
                     },
-                  }))
-                }
+                  }));
+                  setBillingPostalOpen(true);
+                }}
                 className={errors.billingPostalCode ? "border-red-500" : ""}
                 placeholder="H1A 1A1"
+                autoComplete="off"
               />
+              {billingPostalOpen && (formData.billingAddress?.postalCode || "").length >= 1 && (
+                (() => {
+                  const q = (formData.billingAddress?.postalCode || "").toUpperCase();
+                  const matches = DELIVERY_ZONES.flatMap((zone) =>
+                    zone.postalCodes
+                      .filter((pc) => pc.startsWith(q))
+                      .map((pc) => ({ pc, zone })),
+                  );
+                  if (matches.length === 0) return null;
+                  return (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {matches.map(({ pc, zone }) => (
+                        <button
+                          key={`billing-${zone.name}-${pc}`}
+                          type="button"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-stone-50"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setFormData((prev) => ({
+                              ...prev,
+                              billingAddress: {
+                                ...prev.billingAddress,
+                                street: prev.billingAddress?.street || "",
+                                city: prev.billingAddress?.city || "",
+                                province: prev.billingAddress?.province || "QC",
+                                postalCode: pc,
+                                sameAsDelivery: false,
+                              },
+                            }));
+                            setBillingPostalOpen(false);
+                          }}
+                        >
+                          <span className="font-semibold">{pc}</span>{" "}
+                          <span className="text-xs text-stone-500">— {zone.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
               {errors.billingPostalCode && (
                 <p className="text-xs text-red-500 mt-1">
                   {errors.billingPostalCode}
@@ -1981,17 +2037,58 @@ export default function OrderForm({
                         )}
                       </TableCell>
                       <TableCell className="align-top pt-3">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(item.id)}
-                          className="h-8 w-8 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setExpandedNoteItemIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(item.id)) next.delete(item.id);
+                                else next.add(item.id);
+                                return next;
+                              })
+                            }
+                            className={`h-8 w-8 ${
+                              expandedNoteItemIds.has(item.id) || item.notes
+                                ? "text-amber-600 hover:text-amber-700"
+                                : "text-gray-400 hover:text-gray-600"
+                            }`}
+                            title="Ajouter une note"
+                          >
+                            <StickyNote className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeItem(item.id)}
+                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
+                    {expandedNoteItemIds.has(item.id) && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="bg-amber-50/50 py-2">
+                          <div className="flex items-start gap-2">
+                            <StickyNote className="w-4 h-4 text-amber-600 mt-1 shrink-0" />
+                            <Input
+                              type="text"
+                              value={item.notes || ""}
+                              onChange={(e) =>
+                                handleItemChange(item.id, "notes", e.target.value)
+                              }
+                              placeholder="Note pour cet article (ex: sans sucre, livré plié, etc.)"
+                              className="h-8 text-sm flex-1"
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {(item.productId || item.isCustom) && (
                       <TableRow className={item.isCustom ? "bg-purple-50" : ""}>
                         <TableCell colSpan={6} className="bg-gray-50 py-2">

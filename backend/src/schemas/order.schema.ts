@@ -5,7 +5,8 @@ export const addressSchema = z.object({
   street: z.string().min(1, "L'adresse est requise"),
   city: z.string().min(1, "La ville est requise"),
   // Accept full names ("Québec") or 2-letter codes ("QC")
-  province: z.string().min(2, "La province est requise").max(50),
+  // Province is optional — defaults to "QC" at the DB layer
+  province: z.string().max(50).optional(),
   postalCode: z
     .string()
     .min(3, "Le code postal doit contenir au moins 3 caractères")
