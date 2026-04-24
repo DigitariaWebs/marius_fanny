@@ -418,41 +418,26 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({
           <div className="w-16 h-1 bg-gold mx-auto rounded-full mt-3"></div>
         </header>
 
-        {/* Sous-catégories en grille (vue d'ensemble) */}
-        {childCategories.length > 0 && !subCategory && (
+        {/* Sous-catégories (toujours visibles, avec surbrillance sur la sélection active) */}
+        {childCategories.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-            {childCategories.map(child => (
-              <div
-                key={child.id}
-                onClick={() => setSubCategory({id: child.id, title: child.name})}
-                className="cursor-pointer group relative h-24 rounded-lg overflow-hidden border border-stone-100"
-              >
-                <img src={getImageUrl(child.image)} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt=""/>
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold uppercase">{child.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Sous-catégories en barre (visible quand une sous-catégorie est sélectionnée) */}
-        {childCategories.length > 0 && subCategory && (
-          <div className="flex flex-wrap gap-2 mb-8 pb-4 border-b border-stone-200">
             {childCategories.map(child => {
-              const isActive = subCategory.id === child.id;
+              const isActive = subCategory?.id === child.id;
               return (
-                <button
+                <div
                   key={child.id}
                   onClick={() => setSubCategory({id: child.id, title: child.name})}
-                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide transition-colors ${
+                  className={`cursor-pointer group relative h-24 rounded-lg overflow-hidden transition-all ${
                     isActive
-                      ? "bg-[#337957] text-white shadow-md"
-                      : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                      ? "ring-4 ring-[#337957] shadow-lg scale-[1.02]"
+                      : "border border-stone-100 hover:shadow-md"
                   }`}
                 >
-                  {child.name}
-                </button>
+                  <img src={getImageUrl(child.image)} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt=""/>
+                  <div className={`absolute inset-0 flex items-center justify-center ${isActive ? "bg-[#337957]/60" : "bg-black/40"}`}>
+                    <span className="text-white text-xs font-bold uppercase">{child.name}</span>
+                  </div>
+                </div>
               );
             })}
           </div>
