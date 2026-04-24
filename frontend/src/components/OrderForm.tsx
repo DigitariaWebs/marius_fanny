@@ -193,35 +193,6 @@ export default function OrderForm({
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [activePosCategory, setActivePosCategory] = useState<string>("all");
-  const [expandedTextOptionInputs, setExpandedTextOptionInputs] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
-
-  const isTextOptionExpanded = (
-    itemId: string,
-    optionName: string,
-    currentValue: string,
-  ) => {
-    const stored = expandedTextOptionInputs[itemId]?.[optionName];
-    if (stored !== undefined) return stored;
-    return Boolean(currentValue && currentValue.trim().length > 0);
-  };
-
-  const toggleTextOptionExpanded = (
-    itemId: string,
-    optionName: string,
-    next?: boolean,
-  ) => {
-    setExpandedTextOptionInputs((prev) => ({
-      ...prev,
-      [itemId]: {
-        ...(prev[itemId] || {}),
-        [optionName]:
-          typeof next === "boolean" ? next : !(prev[itemId]?.[optionName] ?? false),
-      },
-    }));
-  };
-
   const preparationWarnings = useMemo(() => {
     if (!formData.date) return [] as { itemId: string; label: string }[];
 
@@ -2071,99 +2042,48 @@ export default function OrderForm({
                         </div>
                       </TableCell>
                     </TableRow>
-                    {expandedNoteItemIds.has(item.id) && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="bg-amber-50/50 py-2">
-                          <div className="flex items-start gap-2">
-                            <StickyNote className="w-4 h-4 text-amber-600 mt-1 shrink-0" />
-                            <Input
-                              type="text"
-                              value={item.notes || ""}
-                              onChange={(e) =>
-                                handleItemChange(item.id, "notes", e.target.value)
-                              }
-                              placeholder="Note pour cet article (ex: sans sucre, livré plié, etc.)"
-                              className="h-8 text-sm flex-1"
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {(item.productId || item.isCustom) && (
+                    {(item.productId || item.isCustom) && (() => {
+                      const noteOptions = (product?.customOptions || []).filter(
+                        (option) =>
+                          option.type === "text" ||
+                          isAllergyOptionName(option.name) ||
+                          isClientNoteOptionName(option.name),
+                      );
+                      const hasSavedNoteValue = noteOptions.some((o) =>
+                        String(item.selectedOptions?.[o.name] || "").trim().length > 0,
+                      );
+                      const showNoteRow =
+                        noteOptions.length > 0 &&
+                        (expandedNoteItemIds.has(item.id) || hasSavedNoteValue);
+                      if (!showNoteRow) return null;
+                      return (
                       <TableRow className={item.isCustom ? "bg-purple-50" : ""}>
                         <TableCell colSpan={6} className="bg-gray-50 py-2">
                           <div className="space-y-3">
-                            {product?.customOptions && product.customOptions.length > 0 && (
+                            {noteOptions.length > 0 && (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {product.customOptions
-                                  .filter(
-                                    (option) =>
-                                      option.type === "text" ||
-                                      isAllergyOptionName(option.name) ||
-                                      isClientNoteOptionName(option.name),
-                                  )
-                                  .map((option) => (
+                                {noteOptions.map((option) => (
                                   <div key={`${item.id}-${option.name}`}>
                                     {option.type === "text" &&
                                     (isAllergyOptionName(option.name) ||
                                       isClientNoteOptionName(option.name)) ? (
-                                      (() => {
-                                        const currentValue =
-                                          item.selectedOptions?.[option.name] || "";
-                                        const expanded = isTextOptionExpanded(
-                                          item.id,
-                                          option.name,
-                                          currentValue,
-                                        );
-                                        const actionLabel = expanded
-                                          ? "Fermer"
-                                          : currentValue.trim()
-                                            ? "Modifier"
-                                            : "Note";
-
-                                        return (
-                                          <div className="flex items-center gap-2">
-                                            <Label className="text-[11px] text-gray-600 shrink-0 min-w-[70px]">
-                                              {option.name}
-                                            </Label>
-                                            {expanded ? (
-                                              <Input
-                                                value={currentValue}
-                                                onChange={(e) =>
-                                                  handleOptionChange(
-                                                    item.id,
-                                                    option.name,
-                                                    e.target.value,
-                                                  )
-                                                }
-                                                placeholder="..."
-                                                className="h-7 text-xs flex-1"
-                                              />
-                                            ) : currentValue.trim() ? (
-                                              <div className="text-[11px] text-gray-700 truncate flex-1">
-                                                {currentValue}
-                                              </div>
-                                            ) : (
-                                              <div className="flex-1 text-[11px] text-gray-400 italic">aucune note</div>
-                                            )}
-                                            <Button
-                                              type="button"
-                                              variant="outline"
-                                              size="sm"
-                                              className="h-7 px-2 text-[11px] shrink-0"
-                                              onClick={() =>
-                                                toggleTextOptionExpanded(
-                                                  item.id,
-                                                  option.name,
-                                                  !expanded,
-                                                )
-                                              }
-                                            >
-                                              {actionLabel}
-                                            </Button>
-                                          </div>
-                                        );
-                                      })()
+                                      <div className="flex items-center gap-2">
+                                        <Label className="text-[11px] text-gray-600 shrink-0 min-w-[70px]">
+                                          {option.name}
+                                        </Label>
+                                        <Input
+                                          value={item.selectedOptions?.[option.name] || ""}
+                                          onChange={(e) =>
+                                            handleOptionChange(
+                                              item.id,
+                                              option.name,
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder={`Écrire ${option.name.toLowerCase()}...`}
+                                          className="h-7 text-xs flex-1"
+                                        />
+                                      </div>
                                     ) : (
                                       <div className="flex items-center gap-2">
                                         <Label className="text-[11px] text-gray-600 shrink-0 min-w-[70px]">
@@ -2219,7 +2139,8 @@ export default function OrderForm({
                           </div>
                         </TableCell>
                       </TableRow>
-                    )}
+                      );
+                    })()}
                   </React.Fragment>
                 );
               })}

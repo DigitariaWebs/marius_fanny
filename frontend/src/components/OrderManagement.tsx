@@ -2650,7 +2650,11 @@ export function OrderManagement() {
               };
 
               if (formData.date) {
-                const pickupDateTime = `${formData.date}T${formData.pickupTime || "00:00"}:00`;
+                // Delivery time slot can be a range like "08:00 - 09:00";
+                // only the HH:MM prefix is valid inside an ISO datetime.
+                const startTime = (formData.pickupTime || "").match(/^(\d{2}):(\d{2})/);
+                const hhmm = startTime ? `${startTime[1]}:${startTime[2]}` : "00:00";
+                const pickupDateTime = `${formData.date}T${hhmm}:00`;
                 payload.pickupDate = new Date(pickupDateTime).toISOString();
               }
 
@@ -2855,7 +2859,11 @@ export function OrderManagement() {
               };
 
               if (formData.date) {
-                const pickupDateTime = `${formData.date}T${formData.pickupTime || "00:00"}:00`;
+                // Delivery time slot can be a range like "08:00 - 09:00";
+                // only the HH:MM prefix is valid inside an ISO datetime.
+                const startTime = (formData.pickupTime || "").match(/^(\d{2}):(\d{2})/);
+                const hhmm = startTime ? `${startTime[1]}:${startTime[2]}` : "00:00";
+                const pickupDateTime = `${formData.date}T${hhmm}:00`;
                 payload.pickupDate = new Date(pickupDateTime).toISOString();
               }
 

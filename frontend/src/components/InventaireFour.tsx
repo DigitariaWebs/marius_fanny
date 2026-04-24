@@ -19,9 +19,6 @@ const PRODUITS_FOUR_DEFAUT = [
   "Éclair chantilly", "Éclair chocolat", "Éclair pistache", "Millefeuille",
   "Tartelette fraise", "Tartelette fruits", "Crème brulée", "Tarte fraise",
   "Tarte fruits", "Tropézienne", "Trop. fraise", "Mini pâtisserie",
-  "Carotte ind.", "Cake carotte", "st honoré 12 pers", "paris-brest 6p",
-  "paris-brest 12p", "st honore 6 p", "GALETTE DES ROIS", "Pithivier 6 pers",
-  "Pithivier 10 pers", "Pithivier chocolat", "Couronne briochée"
 ];
 
 function todayISO(): string {

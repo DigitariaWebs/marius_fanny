@@ -1502,6 +1502,12 @@ export const updateOrder = async (
       if (updateData.balancePaid && !order.balancePaidAt) {
         order.balancePaidAt = new Date();
       }
+      // A fully paid balance implies the deposit is paid too; otherwise the
+      // pre-save hook would downgrade paymentStatus back to "unpaid".
+      if (updateData.balancePaid && !order.depositPaid) {
+        order.depositPaid = true;
+        if (!order.depositPaidAt) order.depositPaidAt = new Date();
+      }
       changes.push({
         changedAt: new Date(),
         changedBy: userId,
@@ -1513,12 +1519,17 @@ export const updateOrder = async (
       });
     }
 
-    // Update amountPaid when payment status changes
-    if (updateData.depositPaid || updateData.balancePaid) {
+    // Update amountPaid + paymentStatus explicitly so they don't silently
+    // drift if the pre-save hook is bypassed by a later code path.
+    if (updateData.depositPaid !== undefined || updateData.balancePaid !== undefined) {
       if (order.depositPaid && order.balancePaid) {
         order.amountPaid = order.total;
+        order.paymentStatus = "paid";
       } else if (order.depositPaid) {
         order.amountPaid = order.depositAmount;
+        order.paymentStatus = "deposit_paid";
+      } else {
+        order.paymentStatus = "unpaid";
       }
     }
 
