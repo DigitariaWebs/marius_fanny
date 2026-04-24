@@ -338,7 +338,11 @@ export default function QuoteManagement() {
             </p>
           </div>
           <button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => {
+              if (clients.length === 0) fetchClients();
+              if (products.length === 0) fetchProducts();
+              setIsCreateModalOpen(true);
+            }}
             className="flex items-center gap-2 bg-[#C5A065] hover:bg-[#2D2A26] text-white font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:shadow-lg text-sm md:text-base whitespace-nowrap"
           >
             <Plus size={20} />
