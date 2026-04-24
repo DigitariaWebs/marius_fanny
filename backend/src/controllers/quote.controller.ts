@@ -311,9 +311,23 @@ export async function acceptQuote(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: "Cette soumission a expiré" });
     }
 
-    // Create the order from the quote
-    const order = new Order({
-      clientInfo: quote.clientInfo,
+    // Build address only when delivery AND all fields are present
+    const addr = quote.deliveryAddress as any;
+    const hasValidAddress =
+      quote.deliveryType === "delivery" &&
+      addr &&
+      addr.street &&
+      addr.city &&
+      addr.province &&
+      addr.postalCode;
+
+    const orderData: any = {
+      clientInfo: {
+        firstName: quote.clientInfo.firstName,
+        lastName: quote.clientInfo.lastName || "",
+        email: quote.clientInfo.email,
+        phone: quote.clientInfo.phone || "",
+      },
       items: quote.items.map((i) => ({
         productId: i.productId,
         productName: i.productName,
@@ -331,8 +345,7 @@ export async function acceptQuote(req: Request, res: Response) {
       total: quote.total,
       depositAmount: quote.total,
       deliveryType: quote.deliveryType,
-      pickupLocation: quote.pickupLocation,
-      deliveryAddress: quote.deliveryAddress,
+      pickupLocation: quote.pickupLocation || "Montreal",
       billingKind: quote.billingKind,
       billingOrganization: quote.billingOrganization,
       paymentType: "full",
@@ -344,7 +357,18 @@ export async function acceptQuote(req: Request, res: Response) {
       deliveryStatus: "pending",
       orderDate: new Date(),
       notes: quote.notes,
-    });
+    };
+
+    if (hasValidAddress) {
+      orderData.deliveryAddress = {
+        street: addr.street,
+        city: addr.city,
+        province: addr.province,
+        postalCode: addr.postalCode,
+      };
+    }
+
+    const order = new Order(orderData);
     await order.save();
 
     quote.status = "accepted";
