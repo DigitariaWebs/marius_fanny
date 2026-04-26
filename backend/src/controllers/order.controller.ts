@@ -854,6 +854,34 @@ export const getProductionList = async (
 
     const orders = await Order.find(query).sort({ createdAt: -1 });
 
+    // One-shot backfill: legacy orders may have a pickupDate but no
+    // deliveryTimeSlot, which made the production list show "—". Derive the
+    // time from pickupDate (in America/Toronto) and persist it so the field
+    // is correct everywhere going forward.
+    const backfillUpdates: Promise<unknown>[] = [];
+    for (const order of orders) {
+      if ((!order.deliveryTimeSlot || !order.deliveryTimeSlot.trim()) && order.pickupDate) {
+        try {
+          const formatted = new Intl.DateTimeFormat("fr-CA", {
+            timeZone: "America/Toronto",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }).format(new Date(order.pickupDate));
+          const clean = formatted.trim();
+          if (clean && clean !== "00:00") {
+            order.deliveryTimeSlot = clean;
+            backfillUpdates.push(order.save().catch(() => null));
+          }
+        } catch {
+          /* skip */
+        }
+      }
+    }
+    if (backfillUpdates.length > 0) {
+      await Promise.all(backfillUpdates);
+    }
+
     // Get all unique product IDs from orders
     const productIds = [...new Set(orders.flatMap(order => 
       order.items.map(item => item.productId)
