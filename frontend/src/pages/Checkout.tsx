@@ -533,11 +533,17 @@ const Checkout: React.FC = () => {
           deliveryType: state.deliveryType,
           pickupDate:
             state.deliveryType === "pickup" && deliveryDate
-              ? new Date(`${deliveryDate}T${deliveryTime || "00:00"}:00`).toISOString()
+              ? (() => {
+                  const m = (deliveryTime || "").match(/^(\d{2}):(\d{2})/);
+                  const hhmm = m ? `${m[1]}:${m[2]}` : "00:00";
+                  return new Date(`${deliveryDate}T${hhmm}:00`).toISOString();
+                })()
               : undefined,
           pickupLocation: state.pickupLocation || "Laval",
           deliveryDate: state.deliveryType === "delivery" ? deliveryDate : undefined,
-          deliveryTimeSlot: state.deliveryType === "delivery" ? deliveryTime : undefined,
+          // Save deliveryTimeSlot for BOTH pickup and delivery so the production
+          // list displays the chosen time reliably (no timezone fallback needed).
+          deliveryTimeSlot: deliveryTime || undefined,
           deliveryAddress:
             state.deliveryType === "delivery"
               ? {
