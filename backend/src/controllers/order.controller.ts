@@ -857,25 +857,46 @@ export const getProductionList = async (
     // One-shot backfill: legacy orders may have a pickupDate but no
     // deliveryTimeSlot, which made the production list show "—". Derive the
     // time from pickupDate (in America/Toronto) and persist it so the field
-    // is correct everywhere going forward.
+    // is correct everywhere going forward. Use a direct $set to skip the
+    // full-document validation and pre-save hooks that can otherwise abort.
     const backfillUpdates: Promise<unknown>[] = [];
     for (const order of orders) {
-      if ((!order.deliveryTimeSlot || !order.deliveryTimeSlot.trim()) && order.pickupDate) {
-        try {
-          const formatted = new Intl.DateTimeFormat("fr-CA", {
-            timeZone: "America/Toronto",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }).format(new Date(order.pickupDate));
-          const clean = formatted.trim();
-          if (clean && clean !== "00:00") {
-            order.deliveryTimeSlot = clean;
-            backfillUpdates.push(order.save().catch(() => null));
-          }
-        } catch {
-          /* skip */
+      const slotMissing = !order.deliveryTimeSlot || !order.deliveryTimeSlot.trim();
+      if (!slotMissing) continue;
+      if (!order.pickupDate) {
+        console.log(`⏰ [BACKFILL] Skip ${order.orderNumber}: no pickupDate`);
+        continue;
+      }
+      try {
+        const formatted = new Intl.DateTimeFormat("fr-CA", {
+          timeZone: "America/Toronto",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(new Date(order.pickupDate));
+        const clean = formatted.trim();
+        if (!clean) {
+          console.log(`⏰ [BACKFILL] Skip ${order.orderNumber}: empty formatted time`);
+          continue;
         }
+        // Save whatever the timezone conversion gives, including 00:00 — the
+        // admin can correct it via the order edit form if needed, and "00:00"
+        // is at least visible info versus a dash.
+        order.deliveryTimeSlot = clean;
+        backfillUpdates.push(
+          Order.updateOne(
+            { _id: order._id },
+            { $set: { deliveryTimeSlot: clean } },
+          )
+            .then(() =>
+              console.log(`⏰ [BACKFILL] ${order.orderNumber} → ${clean}`),
+            )
+            .catch((e) =>
+              console.log(`⏰ [BACKFILL] ${order.orderNumber} save FAILED: ${e?.message}`),
+            ),
+        );
+      } catch (e: any) {
+        console.log(`⏰ [BACKFILL] ${order.orderNumber} format error: ${e?.message}`);
       }
     }
     if (backfillUpdates.length > 0) {
