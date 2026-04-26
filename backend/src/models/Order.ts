@@ -96,6 +96,9 @@ export interface IOrder extends Document {
   };
   notes?: string;
   changeHistory: IOrderChange[]; // Track all changes to the order
+  reminderSentWeek?: Date;
+  reminderSent48h?: Date;
+  reminderSentOverdue?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -407,6 +410,9 @@ const OrderSchema = new Schema<IOrder>(
       type: String,
       trim: true,
     },
+    reminderSentWeek: { type: Date },
+    reminderSent48h: { type: Date },
+    reminderSentOverdue: { type: Date },
     changeHistory: {
       type: [
         {

@@ -1,0 +1,41 @@
+name: Daily payment reminders
+
+# Hits the backend cron endpoint once a day so unpaid government /
+# representative orders trigger their 1-week / 48h / overdue emails
+# automatically — no admin click required.
+#
+# Required GitHub repository secrets:
+#   - REMINDERS_URL    e.g. https://marius-fanny-backend.vercel.app/api/payment-reminders/cron
+#   - CRON_SECRET      same value set on Vercel as CRON_SECRET env var
+
+on:
+  schedule:
+    # 13:00 UTC = 09:00 America/Toronto (EDT, summer)
+    #              08:00 America/Toronto (EST, winter)
+    # Daily.
+    - cron: "0 13 * * *"
+  workflow_dispatch: {} # allows manual run from the GitHub UI
+
+jobs:
+  run-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/payment-reminders/cron
+        env:
+          REMINDERS_URL: ${{ secrets.REMINDERS_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$REMINDERS_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing REMINDERS_URL or CRON_SECRET repository secrets." >&2
+            exit 1
+          fi
+          response=$(curl -sS -o /tmp/body.txt -w "%{http_code}" \
+            -X POST "$REMINDERS_URL" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --max-time 60)
+          echo "HTTP $response"
+          cat /tmp/body.txt
+          if [ "$response" -lt 200 ] || [ "$response" -ge 300 ]; then
+            exit 1
+          fi
