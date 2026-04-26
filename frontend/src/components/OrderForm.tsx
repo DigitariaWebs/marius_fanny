@@ -919,25 +919,42 @@ export default function OrderForm({
           </div>
 
           {(formData.deliveryType === "pickup" || formData.deliveryType === "delivery") && (
-            <div className="w-40">
+            <div className={formData.deliveryType === "delivery" ? "w-56" : "w-40"}>
               <Label htmlFor="pickupTime" className="text-xs text-gray-600">
                 {formData.deliveryType === "delivery" ? "HEURE LIVRAISON:" : "HEURE RAMASSAGE:"}
               </Label>
-              <Input
-                id="pickupTime"
-                type="text"
-                list="time-slots-list"
-                placeholder="HH:MM"
-                value={formData.pickupTime}
-                onChange={(e) => handleInputChange("pickupTime", e.target.value)}
-                onFocus={(e) => e.currentTarget.select()}
-                className={errors.pickupTime ? "border-red-500" : ""}
-              />
-              <datalist id="time-slots-list">
-                {TIME_SLOTS.map((slot) => (
-                  <option key={slot} value={slot} />
-                ))}
-              </datalist>
+              <Select
+                value={formData.pickupTime || undefined}
+                onValueChange={(value) => handleInputChange("pickupTime", value)}
+                disabled={!formData.date || TIME_SLOTS.length === 0}
+              >
+                <SelectTrigger
+                  id="pickupTime"
+                  className={errors.pickupTime ? "border-red-500" : ""}
+                >
+                  <SelectValue
+                    placeholder={
+                      !formData.date
+                        ? "Choisir une date d'abord"
+                        : "Choisir une heure"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Preserve any legacy / out-of-grid value loaded from initialData */}
+                  {formData.pickupTime &&
+                    !TIME_SLOTS.includes(formData.pickupTime) && (
+                      <SelectItem value={formData.pickupTime}>
+                        {formData.pickupTime} (existant)
+                      </SelectItem>
+                    )}
+                  {TIME_SLOTS.map((slot) => (
+                    <SelectItem key={slot} value={slot}>
+                      {slot}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.pickupTime && (
                 <p className="text-xs text-red-500 mt-1">{errors.pickupTime}</p>
               )}
