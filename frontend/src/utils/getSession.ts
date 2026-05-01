@@ -17,6 +17,13 @@ export async function getSessionUniversal(): Promise<{ user: any; session?: any 
         credentials: "omit",
       });
       console.log("[getSession] bearer fetch status:", response.status);
+      // Capture rotated bearer token so the session stays warm without
+      // requiring a logout / login when better-auth issues a new token.
+      const rotated = response.headers.get("set-auth-token");
+      if (rotated) {
+        localStorage.setItem("bearer_token", rotated);
+        console.log("[getSession] bearer token rotated");
+      }
       if (response.ok) {
         const data = await response.json();
         console.log("[getSession] bearer data:", data);

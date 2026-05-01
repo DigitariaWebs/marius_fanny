@@ -131,6 +131,33 @@ const App: React.FC = () => {
     return () => window.removeEventListener("cart:updated", handleCartUpdate);
   }, []);
 
+  // Keep the auth session warm: every 10 minutes we ping get-session so
+  // better-auth rotates the bearer token before it goes stale. Also runs
+  // when the tab regains focus (catches the "left tab open overnight"
+  // case the admin reported).
+  useEffect(() => {
+    let cancelled = false;
+    const ping = async () => {
+      if (cancelled) return;
+      if (!localStorage.getItem("bearer_token")) return; // nothing to refresh
+      try {
+        const { getSessionUniversal } = await import("./utils/getSession");
+        await getSessionUniversal();
+      } catch {
+        /* ignore — request errors will surface via API calls */
+      }
+    };
+    ping();
+    const intervalId = window.setInterval(ping, 10 * 60 * 1000);
+    const onFocus = () => ping();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
   const buildOptionsSignature = (options?: Record<string, string>) => {
     if (!options || Object.keys(options).length === 0) return "";
     return Object.entries(options)

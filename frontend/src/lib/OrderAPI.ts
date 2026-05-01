@@ -26,16 +26,26 @@ class OrderAPI {
       credentials: "include",
     });
 
+    // Capture any rotated bearer token sent back by better-auth so the
+    // session stays warm and the user doesn't have to logout / login.
+    const rotated = response.headers.get("set-auth-token");
+    if (rotated) {
+      localStorage.setItem("bearer_token", rotated);
+    }
+
     if (response.status === 401) {
       if (retryOn401) {
         try {
-          await authClient.getSession();
+          // Refresh via universal session helper (covers both cookie and
+          // bearer paths and persists any new token).
+          const { getSessionUniversal } = await import("../utils/getSession");
+          await getSessionUniversal();
           return this.request<T>(endpoint, options, false);
         } catch {
-          // silently ignore auth errors
+          // fall through to error
         }
       }
-      return undefined as any;
+      throw new Error("Session expirée — veuillez vous reconnecter");
     }
 
     if (!response.ok) {
