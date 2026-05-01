@@ -19,19 +19,7 @@ interface OrderWithBilling {
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
   status: string;
   total: number;
-  reminderSentWeek?: Date;
-  reminderSent48h?: Date;
-  reminderSentOverdue?: Date;
 }
-
-// A reminder of the same kind shouldn't fire twice within this window.
-// Daily cron + 20h cooldown means each kind sends at most once per due-date.
-const REMINDER_COOLDOWN_HOURS = 20;
-const isCooledDown = (sentAt?: Date) => {
-  if (!sentAt) return true;
-  const elapsedMs = Date.now() - new Date(sentAt).getTime();
-  return elapsedMs >= REMINDER_COOLDOWN_HOURS * 60 * 60 * 1000;
-};
 
 const BILLING_KIND_LABELS: Record<string, string> = {
   gouvernement: "gouvernemental",
@@ -91,80 +79,60 @@ export async function processPaymentReminders(req: Request, res: Response) {
       try {
         // Check if order is overdue
         if (daysUntilDue < 0) {
-          if (!isCooledDown(order.reminderSentOverdue)) {
-            console.log(`   ⏭️ Skip overdue email — already sent recently`);
-          } else {
-            await sendPaymentOverdueEmail(
-              order.clientInfo.email,
-              fullName,
-              order.orderNumber,
-              order.total,
-              Math.abs(daysUntilDue),
-              billingKindLabel
-            );
-            remindersSentOverdue++;
-
-            // Cancel the order + persist the reminder timestamp
-            await Order.findByIdAndUpdate(order._id, {
-              status: "cancelled",
-              reminderSentOverdue: new Date(),
-              $push: {
-                changeHistory: {
-                  changedAt: new Date(),
-                  field: "status",
-                  oldValue: order.status,
-                  newValue: "cancelled",
-                  changeType: "status_changed",
-                  notes: "Commande annulée automatiquement - paiement en retard"
-                }
+          // Order is overdue - send final reminder
+          await sendPaymentOverdueEmail(
+            order.clientInfo.email,
+            fullName,
+            order.orderNumber,
+            order.total,
+            Math.abs(daysUntilDue),
+            billingKindLabel
+          );
+          remindersSentOverdue++;
+          
+          // Cancel the order
+          await Order.findByIdAndUpdate(order._id, {
+            status: "cancelled",
+            $push: {
+              changeHistory: {
+                changedAt: new Date(),
+                field: "status",
+                oldValue: order.status,
+                newValue: "cancelled",
+                changeType: "status_changed",
+                notes: "Commande annulée automatiquement - paiement en retard"
               }
-            });
-
-            console.log(`   ⚠️ Order CANCELLED - payment overdue by ${Math.abs(daysUntilDue)} days`);
-            ordersCancelled++;
-          }
+            }
+          });
+          
+          console.log(`   ⚠️ Order CANCELLED - payment overdue by ${Math.abs(daysUntilDue)} days`);
+          ordersCancelled++;
         }
         // Check if 48 hours before due date
         else if (daysUntilDue <= 2 && daysUntilDue > 0) {
-          if (!isCooledDown(order.reminderSent48h)) {
-            console.log(`   ⏭️ Skip 48h email — already sent recently`);
-          } else {
-            await sendPaymentReminderEmail(
-              order.clientInfo.email,
-              fullName,
-              order.orderNumber,
-              order.total,
-              daysUntilDue,
-              billingKindLabel,
-              "48 heures"
-            );
-            await Order.updateOne(
-              { _id: order._id },
-              { $set: { reminderSent48h: new Date() } },
-            );
-            remindersSent48h++;
-          }
+          await sendPaymentReminderEmail(
+            order.clientInfo.email,
+            fullName,
+            order.orderNumber,
+            order.total,
+            daysUntilDue,
+            billingKindLabel,
+            "48 heures"
+          );
+          remindersSent48h++;
         }
         // Check if 1 week before due date
         else if (daysUntilDue <= 7 && daysUntilDue > 2) {
-          if (!isCooledDown(order.reminderSentWeek)) {
-            console.log(`   ⏭️ Skip 1-week email — already sent recently`);
-          } else {
-            await sendPaymentReminderEmail(
-              order.clientInfo.email,
-              fullName,
-              order.orderNumber,
-              order.total,
-              daysUntilDue,
-              billingKindLabel,
-              "une semaine"
-            );
-            await Order.updateOne(
-              { _id: order._id },
-              { $set: { reminderSentWeek: new Date() } },
-            );
-            remindersSentWeek++;
-          }
+          await sendPaymentReminderEmail(
+            order.clientInfo.email,
+            fullName,
+            order.orderNumber,
+            order.total,
+            daysUntilDue,
+            billingKindLabel,
+            "une semaine"
+          );
+          remindersSentWeek++;
         }
       } catch (error) {
         console.error(`   ❌ Error processing order ${order.orderNumber}:`, error);
