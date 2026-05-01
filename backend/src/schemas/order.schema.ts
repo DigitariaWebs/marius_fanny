@@ -140,7 +140,7 @@ export const validateDeliverySchema = z.object({
 // Query parameters for listing orders
 export const orderQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
-  limit: z.coerce.number().int().positive().max(100).optional().default(20),
+  limit: z.coerce.number().int().positive().max(500).optional().default(20),
   status: z
     .enum([
       "pending",

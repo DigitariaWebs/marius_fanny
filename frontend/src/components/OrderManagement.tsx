@@ -987,25 +987,20 @@ export function OrderManagement() {
   const exportOrdersToExcel = async () => {
     const XLSX = await import("xlsx");
 
-    // Format an item as a single readable line:
-    //   "2x Croissant amandes — Grandeur: 6 personnes (note: sans lactose)"
+    // Format an item as a single readable line — product name only (no prices):
+    //   "2x Croissant amandes (Grandeur: 6 personnes)"
     const formatItemLine = (item: any): string => {
       const product =
         item.product?.name ||
         item.productName ||
         (item.productId != null ? `Produit #${item.productId}` : "Produit");
       const qty = item.quantity ?? 1;
-      const unit = typeof item.unitPrice === "number" ? ` @ ${item.unitPrice.toFixed(2)}$` : "";
       const optsObj = item.selectedOptions || item.options || {};
       const opts = Object.entries(optsObj)
         .filter(([, v]) => String(v ?? "").trim().length > 0)
         .map(([k, v]) => `${k}: ${v}`)
         .join(", ");
-      const note = String(item.notes || "").trim();
-      const tail = [opts, note ? `note: ${note}` : ""]
-        .filter(Boolean)
-        .join(" — ");
-      return `${qty}x ${product}${unit}${tail ? ` — ${tail}` : ""}`;
+      return opts ? `${qty}x ${product} (${opts})` : `${qty}x ${product}`;
     };
 
     const data = filteredOrders.map((o) => {
@@ -2514,13 +2509,23 @@ export function OrderManagement() {
                   {selectedOrder.refunds && selectedOrder.refunds.length > 0 && (() => {
                     const last = selectedOrder.refunds[selectedOrder.refunds.length - 1];
                     const amount = (last.amountCents || 0) / 100;
+                    // No paymentId means it was a manual in-store refund (cash/debit
+                    // returned at the counter), not a Square reversal.
+                    const isInStore = !last.paymentId;
+                    const title = isInStore
+                      ? "Remboursement en magasin"
+                      : "Remboursement Square";
+                    const wrapperClass = isInStore
+                      ? "border rounded-lg p-4 bg-amber-50 border-amber-200"
+                      : "border rounded-lg p-4 bg-red-50 border-red-200";
+                    const badgeClass = isInStore
+                      ? "px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium"
+                      : "px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium";
                     return (
-                      <div className="border rounded-lg p-4 bg-red-50 border-red-200">
+                      <div className={wrapperClass}>
                         <div className="flex justify-between items-start gap-4">
                           <div>
-                            <div className="font-semibold text-gray-900">
-                              Remboursement Square
-                            </div>
+                            <div className="font-semibold text-gray-900">{title}</div>
                             <div className="text-sm text-gray-700 mt-1">
                               Effectué par <span className="font-bold">{last.employeeName}</span>
                             </div>
@@ -2528,14 +2533,16 @@ export function OrderManagement() {
                               <div>Date: {formatDate(last.refundedAt)}</div>
                               <div>Montant: {formatCurrency(amount)}</div>
                               {last.reason && <div>Raison: {last.reason}</div>}
-                              {last.refundId && <div>Refund ID: {last.refundId}</div>}
+                              {!isInStore && last.refundId && (
+                                <div>Refund ID: {last.refundId}</div>
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
-                              Remboursé
+                            <span className={badgeClass}>
+                              {isInStore ? "Remboursé en magasin" : "Remboursé"}
                             </span>
-                            {last.refundStatus && (
+                            {!isInStore && last.refundStatus && (
                               <div className="text-xs text-gray-500 mt-1">
                                 Statut: {last.refundStatus}
                               </div>

@@ -193,12 +193,31 @@ const PatissierDashboard: React.FC = () => {
   useEffect(() => {
     if (activeModule !== "livraisons") return;
     let cancelled = false;
+
+    // Format a Date instance as YYYY-MM-DD in America/Toronto so a pickup
+    // saved as "23:00 EDT" (which becomes 03:00 UTC the next day) still
+    // matches the date the customer actually picked.
+    const torontoDateStr = (input: any): string => {
+      if (!input) return "";
+      try {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Toronto",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date(input));
+      } catch {
+        return "";
+      }
+    };
+
     const run = async () => {
       setDeliveryLoading(true);
       try {
         const token = localStorage.getItem("bearer_token");
+        // limit=500 matches the bumped Zod cap on the backend.
         const res = await fetch(
-          `${API_URL}/api/orders?deliveryType=delivery&limit=200`,
+          `${API_URL}/api/orders?deliveryType=delivery&limit=500`,
           {
             credentials: "include",
             headers: token
@@ -212,14 +231,14 @@ const PatissierDashboard: React.FC = () => {
         }
         const json = await res.json();
         const items: any[] = json?.data?.items || [];
-        // Keep only orders scheduled for the selected date
         const filtered = items.filter((o) => {
-          const date =
-            o.deliveryDate ||
-            (o.pickupDate ? String(o.pickupDate).split("T")[0] : "");
-          return date === deliveryDate;
+          // Prefer deliveryDate (already a YYYY-MM-DD string), fall back to
+          // pickupDate which is an ISO string and needs Toronto-tz formatting.
+          const candidate = (o.deliveryDate && String(o.deliveryDate).trim())
+            ? String(o.deliveryDate).slice(0, 10)
+            : torontoDateStr(o.pickupDate);
+          return candidate === deliveryDate;
         });
-        // Sort by time slot ascending so pâtissier sees morning deliveries first
         filtered.sort((a, b) =>
           String(a.deliveryTimeSlot || "").localeCompare(
             String(b.deliveryTimeSlot || ""),
