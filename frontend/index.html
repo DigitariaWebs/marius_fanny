@@ -10,12 +10,20 @@
   <body>
     <div id="root"></div>
     <script>
-      // Patch fetch BEFORE any module loads — injects bearer token for auth
+      // Patch fetch BEFORE any module loads:
+      //   1. Inject bearer token for backend (vercel.app) requests.
+      //   2. Auto-retry transient network errors (Vercel cold starts /
+      //      brief deploy gaps) so the UI doesn't show CORS-like
+      //      errors while the function spins up.
       (function() {
         var _f = window.fetch.bind(window);
+        var sleep = function(ms) { return new Promise(function(r) { setTimeout(r, ms); }); };
+
         window.fetch = function(input, init) {
           var url = typeof input === 'string' ? input : (input && input.url) || '';
-          if (url.indexOf('vercel.app') !== -1) {
+          var isBackend = url.indexOf('vercel.app') !== -1;
+
+          if (isBackend) {
             var t = localStorage.getItem('bearer_token');
             if (t) {
               var h = new Headers(init && init.headers);
@@ -23,7 +31,25 @@
               init = Object.assign({}, init, { headers: h });
             }
           }
-          return _f(input, init);
+
+          // Network-error retry (TypeError: Failed to fetch). Only retries
+          // backend calls; only retries when no response was received at all
+          // — once the server returns a status code we don't second-guess it.
+          if (!isBackend) return _f(input, init);
+
+          var attempt = 0;
+          var delays = [800, 2000, 4000]; // ~7s total ceiling
+          var run = function() {
+            return _f(input, init).catch(function(err) {
+              var transient = err && err.name === 'TypeError';
+              if (transient && attempt < delays.length) {
+                var d = delays[attempt++];
+                return sleep(d).then(run);
+              }
+              throw err;
+            });
+          };
+          return run();
         };
       })();
     </script>
