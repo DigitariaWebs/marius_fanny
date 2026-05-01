@@ -232,6 +232,9 @@ const PatissierDashboard: React.FC = () => {
         const json = await res.json();
         const items: any[] = json?.data?.items || [];
         const filtered = items.filter((o) => {
+          // Belt-and-suspenders: only keep delivery orders even though the
+          // backend was already supposed to filter on deliveryType=delivery.
+          if (o.deliveryType !== "delivery") return false;
           // Prefer deliveryDate (already a YYYY-MM-DD string), fall back to
           // pickupDate which is an ISO string and needs Toronto-tz formatting.
           const candidate = (o.deliveryDate && String(o.deliveryDate).trim())

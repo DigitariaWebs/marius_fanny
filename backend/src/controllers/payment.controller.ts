@@ -1501,6 +1501,14 @@ export async function createInvoiceForExistingOrder(
   orderId: string,
   channel: "email" | "sms" = "email",
 ): Promise<{ invoiceId: string | null; publicUrl: string | null }> {
+  // Pre-flight checks so we surface a clear reason instead of a Square SDK
+  // stack trace 50 lines down.
+  if (!squareConfig.locationId) {
+    throw new Error(
+      "SQUARE_LOCATION_ID manquant côté serveur — impossible d'émettre la facture",
+    );
+  }
+
   const order = await Order.findById(orderId);
   if (!order) throw new Error(`Order ${orderId} not found`);
 
@@ -1517,6 +1525,9 @@ export async function createInvoiceForExistingOrder(
     unitPrice: it.unitPrice,
   }));
 
+  if (!customerEmail) {
+    throw new Error("Email client manquant sur la commande");
+  }
   const normalizedPhone = normalizeSquarePhoneNumber(customerPhone);
   if (channel === "sms" && !normalizedPhone) {
     throw new Error("Numero de telephone valide requis pour l'envoi SMS");

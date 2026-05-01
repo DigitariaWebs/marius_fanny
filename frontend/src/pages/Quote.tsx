@@ -191,10 +191,15 @@ export default function Quote() {
               </p>
             )}
             {result.paymentLinkError && (
-              <p className="text-xs text-amber-700 mt-2">
-                ⚠️ Le lien de paiement n'a pas pu être envoyé automatiquement —
-                l'équipe vous contactera pour finaliser le paiement.
-              </p>
+              <>
+                <p className="text-xs text-amber-700 mt-2">
+                  ⚠️ Le lien de paiement n'a pas pu être envoyé automatiquement —
+                  l'équipe vous contactera pour finaliser le paiement.
+                </p>
+                <p className="text-[10px] text-amber-600 mt-1 font-mono">
+                  Détail technique : {result.paymentLinkError}
+                </p>
+              </>
             )}
           </div>
         )}

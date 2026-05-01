@@ -422,9 +422,18 @@ export async function acceptQuote(req: Request, res: Response) {
         );
       } catch (linkErr: any) {
         paymentLinkError = linkErr?.message || "Echec envoi lien de paiement";
+        // Log the FULL error (including Square SDK details) so we can
+        // diagnose from Vercel logs. The errors[] field holds Square's
+        // structured error response when present.
         console.error(
           `⚠️ [QUOTE-ACCEPT] Auto payment link failed for ${order.orderNumber}:`,
-          paymentLinkError,
+          {
+            message: paymentLinkError,
+            stack: linkErr?.stack,
+            errors: linkErr?.errors,
+            statusCode: linkErr?.statusCode,
+            body: linkErr?.body,
+          },
         );
       }
     }

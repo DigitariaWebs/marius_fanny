@@ -431,10 +431,10 @@ export function OrderManagement() {
             className="px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800"
             title={
               inStoreRefund.reason ||
-              `Remboursé en magasin par ${who || "?"}`
+              `Remboursé via magasin par ${who || "?"}`
             }
           >
-            Remboursé en magasin{who ? ` par ${who}` : ""}
+            Remboursé via magasin{who ? ` par ${who}` : ""}
           </span>
         );
       }
@@ -2513,7 +2513,7 @@ export function OrderManagement() {
                     // returned at the counter), not a Square reversal.
                     const isInStore = !last.paymentId;
                     const title = isInStore
-                      ? "Remboursement en magasin"
+                      ? "Remboursement via magasin"
                       : "Remboursement Square";
                     const wrapperClass = isInStore
                       ? "border rounded-lg p-4 bg-amber-50 border-amber-200"
@@ -2540,7 +2540,7 @@ export function OrderManagement() {
                           </div>
                           <div className="text-right">
                             <span className={badgeClass}>
-                              {isInStore ? "Remboursé en magasin" : "Remboursé"}
+                              {isInStore ? "Remboursé via magasin" : "Remboursé"}
                             </span>
                             {!isInStore && last.refundStatus && (
                               <div className="text-xs text-gray-500 mt-1">
