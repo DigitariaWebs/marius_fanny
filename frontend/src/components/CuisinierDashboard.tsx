@@ -214,10 +214,15 @@ const CuisinierDashboard: React.FC = () => {
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      navigate("/se-connecter");
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Logout network call failed (continuing anyway):", error);
     }
+    try {
+      localStorage.removeItem("bearer_token");
+    } catch {
+      /* ignore */
+    }
+    navigate("/se-connecter");
   };
 
   const groupedProducts: GroupedProduct[] = Object.values(

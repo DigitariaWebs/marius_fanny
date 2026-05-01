@@ -365,12 +365,20 @@ const PatissierDashboard: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    // Always clear local credentials and redirect, even if the network
+    // call to /api/auth/sign-out times out (e.g. Vercel cold-start).
+    // Otherwise the user gets stuck on the dashboard.
     try {
       await authClient.signOut();
-      navigate("/se-connecter");
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Logout network call failed (continuing anyway):", error);
     }
+    try {
+      localStorage.removeItem("bearer_token");
+    } catch {
+      /* ignore */
+    }
+    navigate("/se-connecter");
   };
 
   // Group products — one entry per productId with total quantity

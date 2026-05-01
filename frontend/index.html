@@ -38,7 +38,8 @@
           if (!isBackend) return _f(input, init);
 
           var attempt = 0;
-          var delays = [800, 2000, 4000]; // ~7s total ceiling
+          // Cover Vercel cold starts (30s) + a couple of follow-ups.
+          var delays = [500, 1500, 3000, 5000, 8000, 12000];
           var run = function() {
             return _f(input, init).catch(function(err) {
               var transient = err && err.name === 'TypeError';
