@@ -61,6 +61,8 @@ interface QuoteData {
   billingKind?: "standard" | "representant" | "gouvernement";
   billingOrganization?: string;
   notes?: string;
+  paymentMethod?: "in_store" | "payment_link";
+  paymentLinkChannel?: "email" | "sms";
   status: "pending" | "accepted" | "refused" | "expired" | "cancelled";
   expiresAt: string;
   createdAt: string;
@@ -181,6 +183,8 @@ export default function QuoteManagement() {
         deliveryFee: formData.deliveryFee,
         billingKind: formData.billingKind || "standard",
         notes: formData.notes,
+        paymentMethod: formData.paymentMethod || "in_store",
+        paymentLinkChannel: formData.paymentLinkChannel || "email",
       };
       if (formData.deliveryType === "delivery" && formData.deliveryAddress) {
         payload.deliveryAddress = formData.deliveryAddress;
@@ -241,6 +245,8 @@ export default function QuoteManagement() {
         deliveryFee: formData.deliveryFee,
         billingKind: formData.billingKind || "standard",
         notes: formData.notes,
+        paymentMethod: formData.paymentMethod || "in_store",
+        paymentLinkChannel: formData.paymentLinkChannel || "email",
       };
       if (formData.deliveryType === "delivery" && formData.deliveryAddress) {
         payload.deliveryAddress = formData.deliveryAddress;
@@ -316,8 +322,12 @@ export default function QuoteManagement() {
     total: q.total,
     depositAmount: q.total,
     balance: 0,
-    paymentMethod: "in_store" as const,
-    paymentLinkChannel: "email" as const,
+    paymentMethod: ((q as any).paymentMethod === "payment_link" ? "payment_link" : "in_store") as
+      | "in_store"
+      | "payment_link",
+    paymentLinkChannel: ((q as any).paymentLinkChannel === "sms" ? "sms" : "email") as
+      | "email"
+      | "sms",
     billingKind: q.billingKind || "standard",
     billingOrganization: q.billingOrganization,
   });

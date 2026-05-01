@@ -35,6 +35,8 @@ export interface IQuote extends Document {
   billingKind?: "standard" | "representant" | "gouvernement";
   billingOrganization?: string;
   notes?: string;
+  paymentMethod?: "in_store" | "payment_link";
+  paymentLinkChannel?: "email" | "sms";
   status: "pending" | "accepted" | "refused" | "expired" | "cancelled";
   expiresAt: Date;
   acceptedAt?: Date;
@@ -93,6 +95,16 @@ const QuoteSchema = new Schema<IQuote>(
     },
     billingOrganization: { type: String, trim: true },
     notes: { type: String, trim: true },
+    paymentMethod: {
+      type: String,
+      enum: ["in_store", "payment_link"],
+      default: "in_store",
+    },
+    paymentLinkChannel: {
+      type: String,
+      enum: ["email", "sms"],
+      default: "email",
+    },
     status: {
       type: String,
       enum: ["pending", "accepted", "refused", "expired", "cancelled"],

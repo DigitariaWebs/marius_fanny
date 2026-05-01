@@ -1109,13 +1109,23 @@ export const getOrders = async (
 
     // Access rules by role
     if (req.user) {
+      const productionRoles = new Set([
+        "admin",
+        "vendeur",
+        "patissier",
+        "cuisinier",
+        "four",
+      ]);
       if (req.user.role === "deliveryDriver") {
         // Delivery drivers need access to delivery orders dashboard data.
         query.deliveryType = "delivery";
-      } else if (req.user.role !== "admin" && req.user.role !== "vendeur") {
-        // Regular users only see their own orders.
+      } else if (!productionRoles.has(String(req.user.role || ""))) {
+        // Regular customers only see their own orders.
         query.userId = req.user.id;
       }
+      // Production-side staff (patissier/cuisinier/four) get the same
+      // read access as admin/vendeur — they need to plan production and
+      // see what's leaving on delivery.
     }
 
     // Execute query with pagination

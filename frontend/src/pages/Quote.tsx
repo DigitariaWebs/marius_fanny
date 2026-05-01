@@ -48,7 +48,13 @@ export default function Quote() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [result, setResult] = useState<{ type: "accepted" | "refused"; orderNumber?: string } | null>(null);
+  const [result, setResult] = useState<{
+    type: "accepted" | "refused";
+    orderNumber?: string;
+    paymentLinkSent?: boolean;
+    paymentLinkChannel?: "email" | "sms";
+    paymentLinkError?: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -78,7 +84,13 @@ export default function Quote() {
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Erreur lors de l'acceptation");
       }
-      setResult({ type: "accepted", orderNumber: data.data?.orderNumber });
+      setResult({
+        type: "accepted",
+        orderNumber: data.data?.orderNumber,
+        paymentLinkSent: !!data.data?.paymentLinkSent,
+        paymentLinkChannel: data.data?.paymentLinkChannel,
+        paymentLinkError: data.data?.paymentLinkError,
+      });
       if (quote) setQuote({ ...quote, status: "accepted" });
     } catch (e: any) {
       alert(e?.message || "Erreur lors de l'acceptation de la soumission");
@@ -172,6 +184,18 @@ export default function Quote() {
               Votre commande {result.orderNumber ? `#${result.orderNumber.split("-").pop()}` : ""} a été créée.
               L'équipe de Marius & Fanny vous contactera bientôt.
             </p>
+            {result.paymentLinkSent && (
+              <p className="text-sm text-green-700 mt-2 font-semibold">
+                💳 Un lien de paiement vient de vous être envoyé
+                {result.paymentLinkChannel === "sms" ? " par SMS" : " par courriel"}.
+              </p>
+            )}
+            {result.paymentLinkError && (
+              <p className="text-xs text-amber-700 mt-2">
+                ⚠️ Le lien de paiement n'a pas pu être envoyé automatiquement —
+                l'équipe vous contactera pour finaliser le paiement.
+              </p>
+            )}
           </div>
         )}
         {result?.type === "refused" && (

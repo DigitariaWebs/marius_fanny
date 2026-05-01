@@ -4,6 +4,7 @@ import { User } from "../models/User.js";
 import Order from "../models/Order.js";
 import { sendQuoteEmail } from "../utils/mail.js";
 import { AuthRequest } from "../middleware/auth.js";
+import { createInvoiceForExistingOrder } from "./payment.controller.js";
 
 const TAX_RATE = 0.14975;
 
@@ -54,6 +55,8 @@ export async function createQuote(req: AuthRequest, res: Response) {
       billingKind = "standard",
       billingOrganization,
       notes,
+      paymentMethod,
+      paymentLinkChannel,
     } = req.body;
 
     if (!clientInfo?.email || !clientInfo?.firstName) {
@@ -117,6 +120,8 @@ export async function createQuote(req: AuthRequest, res: Response) {
       billingKind,
       billingOrganization,
       notes,
+      paymentMethod: paymentMethod === "payment_link" ? "payment_link" : "in_store",
+      paymentLinkChannel: paymentLinkChannel === "sms" ? "sms" : "email",
       expiresAt,
       createdBy: req.user?.id,
     });
@@ -230,7 +235,19 @@ export async function updateQuote(req: AuthRequest, res: Response) {
       });
     }
 
-    const { clientInfo, items, deliveryType, pickupLocation, deliveryAddress, deliveryFee, notes, billingKind, billingOrganization } = req.body;
+    const {
+      clientInfo,
+      items,
+      deliveryType,
+      pickupLocation,
+      deliveryAddress,
+      deliveryFee,
+      notes,
+      billingKind,
+      billingOrganization,
+      paymentMethod,
+      paymentLinkChannel,
+    } = req.body;
 
     if (clientInfo) quote.clientInfo = { ...quote.clientInfo, ...clientInfo };
     if (Array.isArray(items)) {
@@ -256,6 +273,12 @@ export async function updateQuote(req: AuthRequest, res: Response) {
     if (notes !== undefined) quote.notes = notes;
     if (billingKind) quote.billingKind = billingKind;
     if (billingOrganization !== undefined) quote.billingOrganization = billingOrganization;
+    if (paymentMethod === "in_store" || paymentMethod === "payment_link") {
+      quote.paymentMethod = paymentMethod;
+    }
+    if (paymentLinkChannel === "email" || paymentLinkChannel === "sms") {
+      quote.paymentLinkChannel = paymentLinkChannel;
+    }
 
     // Recompute totals after any change
     const totals = computeTotals(quote.items, quote.deliveryFee);
@@ -357,6 +380,8 @@ export async function acceptQuote(req: Request, res: Response) {
       deliveryStatus: "pending",
       orderDate: new Date(),
       notes: quote.notes,
+      paymentMethod: quote.paymentMethod || "in_store",
+      paymentLinkChannel: quote.paymentLinkChannel || "email",
     };
 
     if (hasValidAddress) {
@@ -376,9 +401,44 @@ export async function acceptQuote(req: Request, res: Response) {
     quote.orderId = order._id.toString();
     await quote.save();
 
+    // If the original soumission asked for "lien de paiement", auto-issue
+    // a Square invoice and notify the customer on the chosen channel.
+    // Skip for government clients (they pay by cheque/transfer per the
+    // existing convention) and for in-store payment.
+    let paymentLinkSent = false;
+    let paymentLinkError: string | undefined;
+    if (
+      quote.paymentMethod === "payment_link" &&
+      quote.billingKind !== "gouvernement"
+    ) {
+      try {
+        await createInvoiceForExistingOrder(
+          order._id.toString(),
+          quote.paymentLinkChannel === "sms" ? "sms" : "email",
+        );
+        paymentLinkSent = true;
+        console.log(
+          `✅ [QUOTE-ACCEPT] Payment link auto-sent (${quote.paymentLinkChannel}) for order ${order.orderNumber}`,
+        );
+      } catch (linkErr: any) {
+        paymentLinkError = linkErr?.message || "Echec envoi lien de paiement";
+        console.error(
+          `⚠️ [QUOTE-ACCEPT] Auto payment link failed for ${order.orderNumber}:`,
+          paymentLinkError,
+        );
+      }
+    }
+
     res.json({
       success: true,
-      data: { quote, orderId: order._id.toString(), orderNumber: order.orderNumber },
+      data: {
+        quote,
+        orderId: order._id.toString(),
+        orderNumber: order.orderNumber,
+        paymentLinkSent,
+        paymentLinkChannel: paymentLinkSent ? quote.paymentLinkChannel : undefined,
+        paymentLinkError,
+      },
     });
   } catch (error: any) {
     console.error("acceptQuote error:", error);

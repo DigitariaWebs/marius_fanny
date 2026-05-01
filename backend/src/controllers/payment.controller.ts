@@ -1491,3 +1491,156 @@ export const squareWebhook = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Server-side helper: build a Square invoice for an existing Order, publish it,
+ * and notify the customer via the chosen channel. Used by both the public
+ * Quote-acceptance flow and any other place that needs to issue a payment
+ * link without going through the HTTP createInvoice endpoint.
+ */
+export async function createInvoiceForExistingOrder(
+  orderId: string,
+  channel: "email" | "sms" = "email",
+): Promise<{ invoiceId: string | null; publicUrl: string | null }> {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error(`Order ${orderId} not found`);
+
+  const customerEmail = order.clientInfo.email;
+  const customerName = `${order.clientInfo.firstName} ${order.clientInfo.lastName}`.trim();
+  const customerPhone = order.clientInfo.phone;
+  const orderNumber = order.orderNumber;
+  const total = order.total;
+  const taxAmount = order.taxAmount || 0;
+  const deliveryFee = order.deliveryFee || 0;
+  const items = order.items.map((it) => ({
+    name: it.productName,
+    quantity: it.quantity,
+    unitPrice: it.unitPrice,
+  }));
+
+  const normalizedPhone = normalizeSquarePhoneNumber(customerPhone);
+  if (channel === "sms" && !normalizedPhone) {
+    throw new Error("Numero de telephone valide requis pour l'envoi SMS");
+  }
+
+  const lineItems: any[] = items.map((item) => ({
+    name: item.name,
+    quantity: item.quantity.toString(),
+    itemType: "ITEM",
+    basePriceMoney: {
+      amount: BigInt(Math.round(item.unitPrice * 100)),
+      currency: "CAD",
+    },
+  }));
+  if (taxAmount > 0) {
+    lineItems.push({
+      name: "TPS + TVQ",
+      quantity: "1",
+      itemType: "ITEM",
+      basePriceMoney: { amount: BigInt(Math.round(taxAmount * 100)), currency: "CAD" },
+    });
+  }
+  if (deliveryFee > 0) {
+    lineItems.push({
+      name: "Frais de livraison",
+      quantity: "1",
+      itemType: "ITEM",
+      basePriceMoney: { amount: BigInt(Math.round(deliveryFee * 100)), currency: "CAD" },
+    });
+  }
+
+  const invoiceDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const orderResp = await squareClient.orders.create({
+    idempotencyKey: randomUUID(),
+    order: {
+      locationId: squareConfig.locationId,
+      referenceId: orderId,
+      lineItems,
+    },
+  });
+  const squareOrderId = (orderResp as any)?.order?.id;
+  if (!squareOrderId) throw new Error("Square order id missing");
+
+  const customerResp = await squareClient.customers.create({
+    givenName: customerName.split(" ")[0] || customerName,
+    familyName: customerName.split(" ").slice(1).join(" ") || undefined,
+    emailAddress: customerEmail,
+    ...(normalizedPhone ? { phoneNumber: normalizedPhone } : {}),
+    referenceId: orderId,
+  });
+  const squareCustomerId = (customerResp as any)?.customer?.id;
+  if (!squareCustomerId) throw new Error("Square customer id missing");
+
+  const invoiceResp = await squareClient.invoices.create({
+    idempotencyKey: randomUUID(),
+    invoice: {
+      locationId: squareConfig.locationId,
+      orderId: squareOrderId,
+      invoiceNumber: `${orderId}-${Date.now()}`,
+      title: `Commande ${orderNumber}`,
+      description: `Facture pour la commande ${orderNumber}`,
+      primaryRecipient: { customerId: squareCustomerId },
+      paymentRequests: [
+        { requestType: "BALANCE", dueDate: invoiceDueDate, automaticPaymentSource: "NONE" },
+      ],
+      deliveryMethod: "SHARE_MANUALLY",
+      acceptedPaymentMethods: {
+        card: true,
+        squareGiftCard: false,
+        bankAccount: false,
+        buyNowPayLater: false,
+      },
+    },
+  });
+  const invoice = (invoiceResp as any)?.invoice;
+  if (!invoice?.id) throw new Error("Invoice id missing after create");
+
+  const publishResp = await squareClient.invoices.publish({
+    invoiceId: invoice.id,
+    version: invoice.version!,
+    idempotencyKey: randomUUID(),
+  });
+  const publicUrl =
+    (publishResp as any)?.invoice?.publicUrl || invoice.publicUrl || null;
+
+  if (!publicUrl) throw new Error("Public invoice URL missing after publish");
+
+  if (channel === "sms") {
+    await sendSms({
+      to: normalizedPhone!,
+      body: `Marius et Fanny: votre lien de paiement pour la commande #${(orderNumber || orderId).split("-").pop()}: ${publicUrl}`,
+    });
+  } else {
+    const pickupDate = order.pickupDate ? new Date(order.pickupDate) : undefined;
+    await sendInvoiceOrderConfirmation(
+      customerEmail,
+      customerName,
+      orderNumber,
+      items.map((item) => ({
+        productName: item.name,
+        quantity: item.quantity,
+        amount: item.unitPrice * item.quantity,
+      })),
+      total - taxAmount - deliveryFee,
+      taxAmount,
+      deliveryFee,
+      total,
+      publicUrl,
+      new Date(),
+      pickupDate,
+      order.deliveryTimeSlot,
+      order.deliveryType,
+      order.notes,
+      orderId,
+    );
+  }
+
+  // Persist the invoice id so the dashboard shows the payment link badge
+  order.squareInvoiceId = invoice.id;
+  await order.save();
+
+  return { invoiceId: invoice.id, publicUrl };
+}
+
