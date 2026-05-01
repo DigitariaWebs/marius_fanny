@@ -650,7 +650,11 @@ export const createInvoice = async (req: Request, res: Response) => {
       givenName: customerName.split(" ")[0] || customerName,
       familyName: customerName.split(" ").slice(1).join(" ") || undefined,
       emailAddress: customerEmail,
-      ...(normalizedPhone ? { phoneNumber: normalizedPhone } : {}),
+      // Only attach phone when actually delivering by SMS — Square rejects
+      // borderline numbers with INVALID_PHONE_NUMBER otherwise.
+      ...(deliveryChannel === "sms" && normalizedPhone
+        ? { phoneNumber: normalizedPhone }
+        : {}),
       referenceId: orderId,
     });
 
@@ -1532,6 +1536,11 @@ export async function createInvoiceForExistingOrder(
   if (channel === "sms" && !normalizedPhone) {
     throw new Error("Numero de telephone valide requis pour l'envoi SMS");
   }
+  // Only attach the phone to the Square customer when we actually need it
+  // (SMS delivery). Email channel doesn't need a phone, and Square is strict
+  // about phone format so passing a borderline number causes
+  // INVALID_PHONE_NUMBER errors.
+  const phoneForSquare = channel === "sms" ? normalizedPhone : null;
 
   const lineItems: any[] = items.map((item) => ({
     name: item.name,
@@ -1578,7 +1587,7 @@ export async function createInvoiceForExistingOrder(
     givenName: customerName.split(" ")[0] || customerName,
     familyName: customerName.split(" ").slice(1).join(" ") || undefined,
     emailAddress: customerEmail,
-    ...(normalizedPhone ? { phoneNumber: normalizedPhone } : {}),
+    ...(phoneForSquare ? { phoneNumber: phoneForSquare } : {}),
     referenceId: orderId,
   });
   const squareCustomerId = (customerResp as any)?.customer?.id;

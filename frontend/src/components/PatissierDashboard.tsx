@@ -211,20 +211,39 @@ const PatissierDashboard: React.FC = () => {
       }
     };
 
+    const fetchWithFreshToken = async () => {
+      const token = localStorage.getItem("bearer_token");
+      const res = await fetch(
+        `${API_URL}/api/orders?deliveryType=delivery&limit=500`,
+        {
+          credentials: "include",
+          headers: token
+            ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+            : { "Content-Type": "application/json" },
+        },
+      );
+      // Capture any rotated bearer token from better-auth so the next call is fresh.
+      const rotated = res.headers.get("set-auth-token");
+      if (rotated) localStorage.setItem("bearer_token", rotated);
+      return res;
+    };
+
     const run = async () => {
       setDeliveryLoading(true);
       try {
-        const token = localStorage.getItem("bearer_token");
         // limit=500 matches the bumped Zod cap on the backend.
-        const res = await fetch(
-          `${API_URL}/api/orders?deliveryType=delivery&limit=500`,
-          {
-            credentials: "include",
-            headers: token
-              ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-              : { "Content-Type": "application/json" },
-          },
-        );
+        let res = await fetchWithFreshToken();
+        // If the bearer token was stale, refresh the session once and retry —
+        // avoids the "logout/login fixes it" pattern.
+        if (res.status === 401) {
+          try {
+            const { getSessionUniversal } = await import("../utils/getSession");
+            await getSessionUniversal();
+            res = await fetchWithFreshToken();
+          } catch {
+            /* fall through */
+          }
+        }
         if (!res.ok) {
           if (!cancelled) setDeliveryOrders([]);
           return;
