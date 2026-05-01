@@ -1044,6 +1044,107 @@ export const refundOrderPayment = async (req: Request, res: Response) => {
 };
 
 /**
+ * Record an in-store refund (cash / debit returned at the counter).
+ * No Square call — this is purely bookkeeping.
+ * POST /api/payments/refund-order-in-store
+ */
+export const refundOrderInStore = async (req: Request, res: Response) => {
+  try {
+    const { orderId, employeeName, amount, reason } = req.body as {
+      orderId?: string;
+      employeeName?: string;
+      amount?: number;
+      reason?: string;
+    };
+
+    if (!orderId || !employeeName || !employeeName.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "orderId et employeeName sont requis",
+      });
+    }
+
+    const employeeId = req.user?.id;
+    const employeeLabel = `${employeeName.trim()} (ID: ${employeeId ?? "inconnu"})`;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Commande non trouvee" });
+    }
+
+    // Only in-store-paid orders should use this path; orders with a Square
+    // payment must go through refundOrderPayment so Square actually refunds.
+    if (order.squarePaymentId || order.squareInvoiceId) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Cette commande a un paiement Square — utiliser le remboursement Square plutot",
+      });
+    }
+
+    const alreadyRefunded =
+      Array.isArray((order as any).refunds) && (order as any).refunds.length > 0;
+    if (alreadyRefunded) {
+      return res.status(400).json({
+        success: false,
+        error: "Cette commande a deja une entree de remboursement",
+      });
+    }
+
+    const refundAmount =
+      typeof amount === "number" && amount > 0 ? amount : order.total;
+    const refundAmountCents = Math.round(refundAmount * 100);
+    const finalReason = reason?.trim() || `Remboursement en magasin (commande ${order.orderNumber})`;
+
+    order.status = "cancelled";
+    order.paymentStatus = "unpaid";
+    order.balancePaid = false;
+    order.balancePaidAt = undefined;
+    (order as any).refunds = [
+      ...(((order as any).refunds as any[]) || []),
+      {
+        refundedAt: new Date(),
+        employeeName: employeeName.trim(),
+        employeeId: employeeId || undefined,
+        // paymentId intentionally omitted — flags this as an in-store refund
+        amountCents: refundAmountCents,
+        reason: finalReason,
+      },
+    ];
+    order.changeHistory.push({
+      changedAt: new Date(),
+      changedBy: employeeId,
+      field: "paymentStatus",
+      oldValue: "paid",
+      newValue: "unpaid",
+      changeType: "payment_updated",
+      notes: `In-store refund recorded by ${employeeLabel} (${refundAmount.toFixed(2)}$)`,
+    } as any);
+    await order.save();
+
+    return res.json({
+      success: true,
+      data: {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        refundAmountCents,
+        refundEntry:
+          (order as any).refunds && (order as any).refunds.length > 0
+            ? (order as any).refunds[(order as any).refunds.length - 1]
+            : undefined,
+      },
+      message: "Remboursement en magasin enregistre",
+    });
+  } catch (error: any) {
+    console.error("❌ [REFUND-IN-STORE] Error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Erreur lors de l'enregistrement du remboursement",
+    });
+  }
+};
+
+/**
  * Partial refund for balance difference (order modification)
  * POST /api/payments/refund-balance
  */

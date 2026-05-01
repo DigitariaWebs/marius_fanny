@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  ChefHat, 
-  Package, 
+import {
+  ChefHat,
+  Package,
   ClipboardList,
-  CheckCircle2, 
+  CheckCircle2,
   AlertCircle,
   Calendar,
   Search,
@@ -17,7 +17,9 @@ import {
   Menu,
   X,
   MapPin,
-  Phone
+  Phone,
+  Truck,
+  Clock
 } from "lucide-react";
 import { authClient } from "../lib/AuthClient";
 import { dailyInventoryAPI, type DailyInventoryEntry } from "../lib/DailyInventoryAPI";
@@ -139,7 +141,10 @@ const PatissierDashboard: React.FC = () => {
     getLocalDateYYYYMMDD()
   );
   const [viewMode, setViewMode] = useState<"list" | "orders">("list");
-  const [activeModule, setActiveModule] = useState<"production" | "inventaire" | "inventaire-frais">("production");
+  const [activeModule, setActiveModule] = useState<"production" | "inventaire" | "inventaire-frais" | "livraisons">("production");
+  const [deliveryOrders, setDeliveryOrders] = useState<any[]>([]);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState(getLocalDateYYYYMMDD());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
@@ -183,6 +188,55 @@ const PatissierDashboard: React.FC = () => {
   useEffect(() => {
     fetchReadOnlyInventories();
   }, [selectedDate]);
+
+  // Fetch delivery orders when the Livraisons module is opened or its date changes
+  useEffect(() => {
+    if (activeModule !== "livraisons") return;
+    let cancelled = false;
+    const run = async () => {
+      setDeliveryLoading(true);
+      try {
+        const token = localStorage.getItem("bearer_token");
+        const res = await fetch(
+          `${API_URL}/api/orders?deliveryType=delivery&limit=200`,
+          {
+            credentials: "include",
+            headers: token
+              ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+              : { "Content-Type": "application/json" },
+          },
+        );
+        if (!res.ok) {
+          if (!cancelled) setDeliveryOrders([]);
+          return;
+        }
+        const json = await res.json();
+        const items: any[] = json?.data?.items || [];
+        // Keep only orders scheduled for the selected date
+        const filtered = items.filter((o) => {
+          const date =
+            o.deliveryDate ||
+            (o.pickupDate ? String(o.pickupDate).split("T")[0] : "");
+          return date === deliveryDate;
+        });
+        // Sort by time slot ascending so pâtissier sees morning deliveries first
+        filtered.sort((a, b) =>
+          String(a.deliveryTimeSlot || "").localeCompare(
+            String(b.deliveryTimeSlot || ""),
+          ),
+        );
+        if (!cancelled) setDeliveryOrders(filtered);
+      } catch {
+        if (!cancelled) setDeliveryOrders([]);
+      } finally {
+        if (!cancelled) setDeliveryLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeModule, deliveryDate]);
 
   const fetchProductionData = async () => {
     setLoading(true);
@@ -407,6 +461,15 @@ const PatissierDashboard: React.FC = () => {
                   setIsMobileMenuOpen(false);
                 }}
               />
+              <NavItem
+                icon={<Truck size={20} />}
+                label="Livraisons"
+                active={activeModule === "livraisons"}
+                onClick={() => {
+                  setActiveModule("livraisons");
+                  setIsMobileMenuOpen(false);
+                }}
+              />
             </div>
           </div>
         </nav>
@@ -443,6 +506,125 @@ const PatissierDashboard: React.FC = () => {
 
         {activeModule === "production" && (
           <ProductionList filterByType="patisserie" />
+        )}
+
+        {activeModule === "livraisons" && (
+          <div className="p-4 md:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div>
+                <h2
+                  className="text-4xl md:text-5xl mb-1"
+                  style={{ fontFamily: '"Great Vibes", cursive', color: "#C5A065" }}
+                >
+                  Livraisons du jour
+                </h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-500">
+                  Lecture seule — pour anticiper l'emballage
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Calendar size={18} className="text-stone-500" />
+                <input
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm"
+                />
+              </div>
+            </div>
+
+            {deliveryLoading ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-stone-200">
+                <RefreshCw className="w-6 h-6 mx-auto mb-3 text-[#C5A065] animate-spin" />
+                <p className="text-stone-500 text-sm">Chargement des livraisons…</p>
+              </div>
+            ) : deliveryOrders.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-stone-200">
+                <Truck size={48} className="mx-auto mb-4 text-stone-400" />
+                <h3 className="text-xl font-serif text-stone-500 mb-2">
+                  Aucune livraison ce jour
+                </h3>
+                <p className="text-stone-400 text-sm">
+                  Aucune commande à livrer pour le {deliveryDate}.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {deliveryOrders.map((order) => {
+                  const orderShort = String(order.orderNumber || "").split("-").pop() || order.orderNumber;
+                  const addr = order.deliveryAddress || {};
+                  const itemsCount = (order.items || []).reduce(
+                    (s: number, it: any) => s + (it.quantity || 0),
+                    0,
+                  );
+                  return (
+                    <div
+                      key={order._id || order.id}
+                      className="bg-white rounded-xl border border-stone-200 border-l-4 border-l-yellow-400 p-4 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="text-xs font-bold text-[#C5A065] uppercase tracking-wider">
+                            #{orderShort}
+                          </div>
+                          <div className="font-semibold text-[#2D2A26]">
+                            {order.clientInfo?.firstName} {order.clientInfo?.lastName}
+                          </div>
+                        </div>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border bg-yellow-100 text-yellow-900 border-yellow-200">
+                          <Clock size={11} />
+                          {order.deliveryTimeSlot || "—"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-sm text-stone-700">
+                        <div className="flex items-start gap-2">
+                          <MapPin size={14} className="text-stone-400 mt-0.5 shrink-0" />
+                          <span>
+                            {[addr.street, addr.city, addr.postalCode]
+                              .filter(Boolean)
+                              .join(", ") || "Adresse non renseignée"}
+                          </span>
+                        </div>
+                        {order.clientInfo?.phone && (
+                          <div className="flex items-center gap-2 text-stone-600">
+                            <Phone size={14} className="text-stone-400" />
+                            <span>{order.clientInfo.phone}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-stone-600 pt-2 border-t border-stone-100">
+                          <Package size={14} className="text-stone-400" />
+                          <span>
+                            {itemsCount} article{itemsCount > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      {(order.items || []).length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-stone-100">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+                            Contenu
+                          </div>
+                          <ul className="text-xs text-stone-700 space-y-0.5">
+                            {(order.items || []).slice(0, 6).map((it: any, idx: number) => (
+                              <li key={idx} className="truncate">
+                                {it.quantity}× {it.productName || `Produit #${it.productId}`}
+                              </li>
+                            ))}
+                            {(order.items || []).length > 6 && (
+                              <li className="text-stone-400">
+                                +{(order.items || []).length - 6} autre(s)…
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
 
         {false && (

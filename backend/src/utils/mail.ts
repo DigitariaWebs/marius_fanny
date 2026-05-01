@@ -20,7 +20,9 @@ const FROM_EMAIL = resend
 const DISPLAY_FROM = `"Marius & Fanny" <${process.env.EMAIL_USER || FROM_EMAIL}>`;
 
 // Public logo URL (hosted on Cloudinary)
-const LOGO_URL = "https://res.cloudinary.com/deyjooxbi/image/upload/v1773330080/branding/marius_fanny_logo.avif";
+// Use f_jpg so the logo renders in every email client (AVIF is rejected by
+// Outlook, several webmails, and older Apple Mail versions).
+const LOGO_URL = "https://res.cloudinary.com/deyjooxbi/image/upload/f_jpg/v1773330080/branding/marius_fanny_logo.jpg";
 
 // Google review link for post-order feedback.
 const GOOGLE_REVIEW_PLACE_ID_LAVAL = (process.env.GOOGLE_REVIEW_PLACE_ID_LAVAL || "").trim();

@@ -117,6 +117,11 @@ export function OrderManagement() {
   const [balanceRefundOrder, setBalanceRefundOrder] = useState<OrderWithPacking | null>(null);
   const [balanceRefundEmployee, setBalanceRefundEmployee] = useState("");
   const [isBalanceRefundModalOpen, setIsBalanceRefundModalOpen] = useState(false);
+  const [storeRefundOrder, setStoreRefundOrder] = useState<OrderWithPacking | null>(null);
+  const [storeRefundEmployee, setStoreRefundEmployee] = useState("");
+  const [storeRefundReason, setStoreRefundReason] = useState("");
+  const [isStoreRefundModalOpen, setIsStoreRefundModalOpen] = useState(false);
+  const [isProcessingStoreRefund, setIsProcessingStoreRefund] = useState(false);
   const [isProcessingReminders, setIsProcessingReminders] = useState(false);
   const [reminderResult, setReminderResult] = useState<{
     success: boolean;
@@ -408,6 +413,28 @@ export function OrderManagement() {
         return (
           <span className="px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
             Balance: {balance.toFixed(2)}$
+          </span>
+        );
+      }
+    }
+
+    // In-store refund badge — refunds[] entry without paymentId means it
+    // wasn't refunded through Square, but recorded as cash/debit at the counter.
+    if (order && Array.isArray((order as any).refunds)) {
+      const inStoreRefund = ((order as any).refunds as any[]).find(
+        (r) => r && !r.paymentId,
+      );
+      if (inStoreRefund) {
+        const who = String(inStoreRefund.employeeName || "").trim();
+        return (
+          <span
+            className="px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800"
+            title={
+              inStoreRefund.reason ||
+              `Remboursé en magasin par ${who || "?"}`
+            }
+          >
+            Remboursé en magasin{who ? ` par ${who}` : ""}
           </span>
         );
       }
@@ -959,21 +986,73 @@ export function OrderManagement() {
   // Export orders to Excel (.xlsx)
   const exportOrdersToExcel = async () => {
     const XLSX = await import("xlsx");
-    const data = filteredOrders.map((o) => ({
-      "Commande": formatOrderNumber(o.orderNumber),
-      "Date": new Date(o.orderDate).toLocaleDateString("fr-CA"),
-      "Client": `${o.client.firstName} ${o.client.lastName}`,
-      "Email": o.client.email,
-      "Téléphone": o.client.phone,
-      "Type": o.deliveryType === "delivery" ? "Livraison" : `Ramassage ${o.pickupLocation}`,
-      "Statut": o.status,
-      "Paiement": o.paymentStatus,
-      "Sous-total": o.subtotal,
-      "Taxes": o.taxAmount,
-      "Livraison": o.deliveryFee,
-      "Total": o.total,
-    }));
+
+    // Format an item as a single readable line:
+    //   "2x Croissant amandes — Grandeur: 6 personnes (note: sans lactose)"
+    const formatItemLine = (item: any): string => {
+      const product =
+        item.product?.name ||
+        item.productName ||
+        (item.productId != null ? `Produit #${item.productId}` : "Produit");
+      const qty = item.quantity ?? 1;
+      const unit = typeof item.unitPrice === "number" ? ` @ ${item.unitPrice.toFixed(2)}$` : "";
+      const optsObj = item.selectedOptions || item.options || {};
+      const opts = Object.entries(optsObj)
+        .filter(([, v]) => String(v ?? "").trim().length > 0)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ");
+      const note = String(item.notes || "").trim();
+      const tail = [opts, note ? `note: ${note}` : ""]
+        .filter(Boolean)
+        .join(" — ");
+      return `${qty}x ${product}${unit}${tail ? ` — ${tail}` : ""}`;
+    };
+
+    const data = filteredOrders.map((o) => {
+      const items = Array.isArray(o.items) ? o.items : [];
+      // Newline-separated so each item is on its own line in Excel cells
+      // (Excel respects "\n" when wrap-text is on; default still readable).
+      const articles = items.map(formatItemLine).join("\n");
+      return {
+        "Commande": formatOrderNumber(o.orderNumber),
+        "Date": new Date(o.orderDate).toLocaleDateString("fr-CA"),
+        "Client": `${o.client.firstName} ${o.client.lastName}`,
+        "Email": o.client.email,
+        "Téléphone": o.client.phone,
+        "Type": o.deliveryType === "delivery" ? "Livraison" : `Ramassage ${o.pickupLocation}`,
+        "Statut": o.status,
+        "Paiement": o.paymentStatus,
+        "Articles": articles,
+        "Nb articles": items.reduce((s, it: any) => s + (it.quantity || 0), 0),
+        "Sous-total": o.subtotal,
+        "Taxes": o.taxAmount,
+        "Livraison": o.deliveryFee,
+        "Total": o.total,
+      };
+    });
     const ws = XLSX.utils.json_to_sheet(data);
+
+    // Set column widths so "Articles" is generously sized for readability
+    const COL_WIDTHS: Record<string, number> = {
+      Commande: 10,
+      Date: 12,
+      Client: 22,
+      Email: 28,
+      "Téléphone": 14,
+      Type: 18,
+      Statut: 14,
+      Paiement: 14,
+      Articles: 60,
+      "Nb articles": 8,
+      "Sous-total": 10,
+      Taxes: 10,
+      Livraison: 10,
+      Total: 10,
+    };
+    (ws as any)["!cols"] = Object.keys(data[0] || {}).map((key) => ({
+      wch: COL_WIDTHS[key] ?? 14,
+    }));
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Commandes");
     XLSX.writeFile(wb, `commandes_${new Date().toISOString().split("T")[0]}.xlsx`);
@@ -1087,6 +1166,81 @@ export function OrderManagement() {
       Boolean(order.squarePaymentId || order.squareInvoiceId);
 
     return isPaid && isSquareChannel && order.status !== "cancelled";
+  };
+
+  const canRefundInStore = (order: OrderWithPacking) => {
+    const isPaid = order.paymentStatus === "paid";
+    const isInStore =
+      order.paymentMethod === "in_store" &&
+      !order.squarePaymentId &&
+      !order.squareInvoiceId;
+    const alreadyRefunded =
+      Array.isArray((order as any).refunds) && (order as any).refunds.length > 0;
+    return isPaid && isInStore && !alreadyRefunded && order.status !== "cancelled";
+  };
+
+  const submitStoreRefund = async () => {
+    if (!storeRefundOrder || !storeRefundEmployee.trim()) return;
+    setIsProcessingStoreRefund(true);
+    try {
+      const response = await fetch(
+        `${normalizedApiUrl}/api/payments/refund-order-in-store`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            orderId: storeRefundOrder.id,
+            employeeName: storeRefundEmployee.trim(),
+            reason: storeRefundReason.trim() || undefined,
+          }),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Echec du remboursement en magasin");
+      }
+      const refundEntry = result?.data?.refundEntry
+        ? {
+            ...result.data.refundEntry,
+            refundedAt: String(
+              result.data.refundEntry.refundedAt || new Date().toISOString(),
+            ),
+          }
+        : {
+            refundedAt: new Date().toISOString(),
+            employeeName: storeRefundEmployee.trim(),
+            amountCents: Math.round(storeRefundOrder.total * 100),
+            reason:
+              storeRefundReason.trim() ||
+              `Remboursement en magasin (commande ${storeRefundOrder.orderNumber})`,
+          };
+      const updated = orders.map((o) => {
+        if (o.id !== storeRefundOrder.id) return o;
+        const nextRefunds = [...((o as any).refunds || []), refundEntry];
+        return {
+          ...o,
+          status: "cancelled" as const,
+          paymentStatus: "unpaid" as const,
+          balancePaid: false,
+          refunds: nextRefunds,
+        };
+      });
+      setOrders(updated);
+      setFilteredOrders(applyOrderFilters(updated));
+      if (selectedOrder?.id === storeRefundOrder.id) {
+        const next = updated.find((o) => o.id === storeRefundOrder.id);
+        if (next) setSelectedOrder(next);
+      }
+      setIsStoreRefundModalOpen(false);
+      setStoreRefundOrder(null);
+      setStoreRefundEmployee("");
+      setStoreRefundReason("");
+    } catch (err: any) {
+      alert(`Erreur remboursement: ${err?.message || err}`);
+    } finally {
+      setIsProcessingStoreRefund(false);
+    }
   };
 
   const sendPaymentLink = async (
@@ -1413,6 +1567,19 @@ export function OrderManagement() {
                   <DropdownMenuItem onClick={() => handleRefundClick(order)}>
                     <XCircle className="h-4 w-4 mr-2" />
                     Rembourser via Square
+                  </DropdownMenuItem>
+                )}
+                {canRefundInStore(order) && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setStoreRefundOrder(order);
+                      setStoreRefundEmployee("");
+                      setStoreRefundReason("");
+                      setIsStoreRefundModalOpen(true);
+                    }}
+                  >
+                    <Store className="h-4 w-4 mr-2" />
+                    Rembourser via magasin
                   </DropdownMenuItem>
                 )}
               </>
@@ -3409,6 +3576,92 @@ export function OrderManagement() {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* In-store full refund modal — for orders paid in boutique only */}
+      <Modal
+        open={isStoreRefundModalOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setIsStoreRefundModalOpen(false);
+            setStoreRefundOrder(null);
+            setStoreRefundEmployee("");
+            setStoreRefundReason("");
+          }
+        }}
+        type="form"
+        title="Remboursement en magasin"
+        description={
+          storeRefundOrder
+            ? `Commande ${formatOrderNumber(storeRefundOrder.orderNumber)} — ${storeRefundOrder.client.firstName} ${storeRefundOrder.client.lastName}`
+            : ""
+        }
+        icon={<Store className="h-6 w-6 text-amber-600" />}
+        actions={{
+          primary: {
+            label: isProcessingStoreRefund ? "Enregistrement..." : "Confirmer le remboursement",
+            onClick: submitStoreRefund,
+            disabled:
+              isProcessingStoreRefund ||
+              !storeRefundEmployee.trim() ||
+              !storeRefundOrder,
+            loading: isProcessingStoreRefund,
+          },
+          secondary: {
+            label: "Annuler",
+            onClick: () => {
+              setIsStoreRefundModalOpen(false);
+              setStoreRefundOrder(null);
+              setStoreRefundEmployee("");
+              setStoreRefundReason("");
+            },
+            disabled: isProcessingStoreRefund,
+          },
+        }}
+      >
+        {storeRefundOrder && (
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+              <p className="text-xs uppercase tracking-wider text-amber-600 mb-1">
+                Montant à rembourser en boutique
+              </p>
+              <p className="text-3xl font-black text-amber-700">
+                {formatCurrency(storeRefundOrder.total)}
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                Aucun appel à Square — l'argent est rendu en main propre. La
+                commande passera à <strong>annulée</strong>.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                Nom de la personne qui rembourse *
+              </label>
+              <input
+                type="text"
+                value={storeRefundEmployee}
+                onChange={(e) => setStoreRefundEmployee(e.target.value)}
+                placeholder="Entrez votre nom"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                Raison (optionnel)
+              </label>
+              <textarea
+                value={storeRefundReason}
+                onChange={(e) => setStoreRefundReason(e.target.value)}
+                placeholder="Ex: client a annulé sur place, produit défectueux, etc."
+                rows={2}
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm resize-none"
+              />
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );

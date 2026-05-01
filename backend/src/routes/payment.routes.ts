@@ -10,6 +10,7 @@ import {
   listPayments,
   refundPayment,
   refundOrderPayment,
+  refundOrderInStore,
   refundBalance,
   getSquareConfig,
   createInvoice,
@@ -68,6 +69,14 @@ router.post(
   requireAuth,
   requireAdmin,
   refundBalance,
+);
+
+// In-store refund (no Square call — bookkeeping only)
+router.post(
+  "/refund-order-in-store",
+  requireAuth,
+  requireAdmin,
+  refundOrderInStore,
 );
 
 /**
