@@ -568,22 +568,59 @@ export function OrderManagement() {
     });
   };
 
+  // Format the column "Heure de ramassage / livraison" so it ALWAYS shows
+  // the scheduled service date+time, never the order creation timestamp.
   const formatServiceTime = (order: OrderWithPacking) => {
-    if (order.deliveryType === "pickup") {
-      return formatDate(order.pickupDate || order.orderDate);
+    // 1. Extract a date string YYYY-MM-DD: prefer deliveryDate (saved as a
+    //    plain string), then derive from pickupDate in Toronto timezone.
+    let dateStr = "";
+    if (order.deliveryDate && String(order.deliveryDate).trim()) {
+      dateStr = String(order.deliveryDate).slice(0, 10);
+    } else if (order.pickupDate) {
+      try {
+        dateStr = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Toronto",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date(order.pickupDate));
+      } catch {
+        /* ignore */
+      }
     }
 
-    if (order.deliveryDate && order.deliveryTimeSlot) {
-      const deliveryDateLabel = new Date(order.deliveryDate).toLocaleDateString("fr-CA", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-      return `${deliveryDateLabel} (${order.deliveryTimeSlot})`;
+    // 2. Extract a time: prefer the saved slot string, otherwise pull
+    //    HH:MM from pickupDate in Toronto.
+    let timeStr = "";
+    if (order.deliveryTimeSlot && order.deliveryTimeSlot.trim()) {
+      timeStr = order.deliveryTimeSlot.trim();
+    } else if (order.pickupDate) {
+      try {
+        const hhmm = new Intl.DateTimeFormat("fr-CA", {
+          timeZone: "America/Toronto",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(new Date(order.pickupDate));
+        if (hhmm && hhmm !== "00:00") timeStr = hhmm;
+      } catch {
+        /* ignore */
+      }
     }
 
-    if (order.deliveryTimeSlot) return order.deliveryTimeSlot;
-    return formatDate(order.orderDate);
+    if (!dateStr && !timeStr) return "—";
+
+    // 3. Pretty-print the date as "1 mai 2026"
+    const prettyDate = dateStr
+      ? new Date(`${dateStr}T12:00:00`).toLocaleDateString("fr-CA", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "";
+
+    if (prettyDate && timeStr) return `${prettyDate} (${timeStr})`;
+    return prettyDate || timeStr;
   };
 
   const parseItemNotes = (notes?: string) => {
@@ -1401,7 +1438,7 @@ export function OrderManagement() {
     },
     {
       key: "serviceTime",
-      label: "Heure de ramassage",
+      label: "Date / heure",
       sortable: true,
       render: (order: OrderWithPacking) => formatServiceTime(order),
     },
