@@ -198,7 +198,7 @@ const Shop: React.FC<CategoryShowcaseProps> = ({ onCategoryClick, onAddToCart })
             <h2 className="text-4xl md:text-5xl" style={{ fontFamily: styles.fontScript, color: styles.gold }}>
               Notre Boutique
             </h2>
-            <p className="uppercase tracking-widest text-xs font-bold">Commandez avant midi pour le lendemain</p>
+            <p className="uppercase tracking-widest text-xs font-bold">Commandez avant 14h pour le lendemain</p>
           </div>
 
           {/* GRILLE COMPACTE */}

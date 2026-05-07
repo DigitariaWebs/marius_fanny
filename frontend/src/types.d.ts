@@ -154,6 +154,7 @@ export interface Order {
   balancePaid: boolean;
   balancePaidAt?: string;
   paymentStatus: "unpaid" | "deposit_paid" | "paid";
+  amountPaid?: number;
   paymentLinkChannel?: "email" | "sms";
   billingKind?: "standard" | "representant" | "gouvernement";
   billingOrganization?: string;

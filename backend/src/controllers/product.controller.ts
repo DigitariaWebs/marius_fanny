@@ -158,6 +158,12 @@ export async function updateProduct(req: AuthRequest, res: Response) {
         (product as any)[field] = updateData[field];
       }
     }
+    // Mongoose's change tracking on documentArrays of nested objects sometimes
+    // misses replacements (only the first element ends up persisted). Force
+    // the path dirty so the full array — including 2nd, 3rd... options — saves.
+    if (Object.prototype.hasOwnProperty.call(updateData, "customOptions")) {
+      product.markModified("customOptions");
+    }
     product.updatedAt = new Date();
 
     await product.save();

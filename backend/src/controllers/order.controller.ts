@@ -90,7 +90,7 @@ export const createOrder = async (
   try {
     const orderData = req.body;
 
-    // --- Noon cutoff: orders for tomorrow must be placed before 12:00 (Montreal time) ---
+    // --- Cutoff: orders for tomorrow must be placed before 14:00 (Montreal time) ---
     const toMontrealDate = (d: Date) => {
       const s = d.toLocaleDateString("en-CA", { timeZone: "America/Montreal" });
       return s; // "YYYY-MM-DD"
@@ -124,12 +124,12 @@ export const createOrder = async (
         });
       }
 
-      // If the order is for tomorrow and it's past noon, reject
-      if (targetDateStr === tomorrowStr && currentHour >= 12) {
+      // If the order is for tomorrow and it's past 14:00, reject
+      if (targetDateStr === tomorrowStr && currentHour >= 14) {
         return res.status(400).json({
           success: false,
           error:
-            "Les commandes pour demain doivent être passées avant 12h00. Veuillez choisir une date ultérieure.",
+            "Les commandes pour demain doivent être passées avant 14h00. Veuillez choisir une date ultérieure.",
         });
       }
 

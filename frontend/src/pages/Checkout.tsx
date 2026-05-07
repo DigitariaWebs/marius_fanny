@@ -192,9 +192,9 @@ const Checkout: React.FC = () => {
     readyDate.setDate(now.getDate() + Math.max(prepDays, 1));
     readyDate.setHours(0, 0, 0, 0);
 
-    // Business rule: Must order before noon for next day pickup
-    // After noon, minimum date is day after tomorrow
-    if (now.getHours() >= 12 && prepDays <= 1) {
+    // Business rule: Must order before 14h for next day pickup
+    // After 14h, minimum date is day after tomorrow
+    if (now.getHours() >= 14 && prepDays <= 1) {
       const dayAfterTomorrow = new Date(now);
       dayAfterTomorrow.setDate(now.getDate() + 2);
       dayAfterTomorrow.setHours(0, 0, 0, 0);
@@ -251,8 +251,8 @@ const Checkout: React.FC = () => {
 
       const now = new Date();
       const noonCutoffMessage =
-        maxPreparationTime === 24 && now.getHours() >= 12
-          ? " Note: Pour une livraison le lendemain, vous devez commander avant 12h (midi)."
+        maxPreparationTime === 24 && now.getHours() >= 14
+          ? " Note: Pour une livraison le lendemain, vous devez commander avant 14h00."
           : "";
 
       setDateValidationError(
@@ -990,7 +990,7 @@ const Checkout: React.FC = () => {
                       {maxPreparationTime === 24 && state.deliveryType === "delivery" && (
                         <p className="text-xs mt-2 text-stone-600 font-medium">
                           🕐 Pour une livraison le lendemain, commandez avant
-                          12h (midi)
+                          14h00
                         </p>
                       )}
                     </div>

@@ -997,13 +997,18 @@ export function OrderManagement() {
     const payload: any = {
       depositPaid: true,
       balancePaid: true,
+      amountPaid: order.total,
     };
 
+    // amountPaid must jump to total here, otherwise getPaymentBadge() still
+    // computes a positive balance and shows the orange "Balance: X$" pill
+    // instead of the green "Payé" pill.
     const updatedOrder: OrderWithPacking = {
       ...order,
       depositPaid: true,
       balancePaid: true,
       paymentStatus: "paid",
+      amountPaid: order.total,
       depositPaidAt: order.depositPaidAt || new Date().toISOString(),
       balancePaidAt: new Date().toISOString(),
     };
@@ -1201,14 +1206,21 @@ export function OrderManagement() {
   };
 
   const canRefundInStore = (order: OrderWithPacking) => {
-    const isPaid = order.paymentStatus === "paid";
+    // Allow in-store refund as long as something was actually paid (paid or
+    // partial deposit). The client may come back days later — even after the
+    // order was cancelled to remove it from the production list — to collect
+    // their cash refund, so we don't gate this on status !== "cancelled".
+    const hasPayment =
+      order.paymentStatus === "paid" ||
+      order.depositPaid === true ||
+      ((order as any).amountPaid || 0) > 0;
     const isInStore =
       order.paymentMethod === "in_store" &&
       !order.squarePaymentId &&
       !order.squareInvoiceId;
     const alreadyRefunded =
       Array.isArray((order as any).refunds) && (order as any).refunds.length > 0;
-    return isPaid && isInStore && !alreadyRefunded && order.status !== "cancelled";
+    return hasPayment && isInStore && !alreadyRefunded;
   };
 
   const submitStoreRefund = async () => {
@@ -1614,7 +1626,37 @@ export function OrderManagement() {
                     Rembourser via magasin
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Annuler la commande ${formatOrderNumber(order.orderNumber)} ?\n\nLes produits seront retirés de la liste de production. Le remboursement (en magasin) pourra être enregistré plus tard.`,
+                      )
+                    ) {
+                      handleUpdateStatus(order.id, "cancelled");
+                    }
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Annuler la commande
+                </DropdownMenuItem>
               </>
+            )}
+            {/* Allow in-store refund of an already-cancelled order so the
+                client can come back later for their cash refund. */}
+            {order.status === "cancelled" && canRefundInStore(order) && (
+              <DropdownMenuItem
+                onClick={() => {
+                  setStoreRefundOrder(order);
+                  setStoreRefundEmployee("");
+                  setStoreRefundReason("");
+                  setIsStoreRefundModalOpen(true);
+                }}
+              >
+                <Store className="h-4 w-4 mr-2" />
+                Rembourser via magasin
+              </DropdownMenuItem>
             )}
             {order.status === "completed" && (
               <DropdownMenuItem
