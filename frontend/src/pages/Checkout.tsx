@@ -642,7 +642,12 @@ const Checkout: React.FC = () => {
             : undefined,
         pickupLocation: state.pickupLocation || "Laval",
         deliveryDate: state.deliveryType === "delivery" ? deliveryDate : undefined,
-        deliveryTimeSlot: state.deliveryType === "delivery" ? deliveryTime : undefined,
+        // Save deliveryTimeSlot for BOTH pickup and delivery. The pickupDate
+        // ISO string is built in the browser's local timezone, so when the
+        // admin (or formatServiceTime) re-projects it into America/Toronto,
+        // the hour drifts. Storing the raw HH:MM string sidesteps any TZ
+        // math so the order list always shows the time the customer typed.
+        deliveryTimeSlot: deliveryTime || undefined,
         deliveryAddress:
           state.deliveryType === "delivery" && state.postalCode
             ? {

@@ -570,11 +570,22 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
   };
 
   const ListView = () => {
-    // Dédupliquer les items par orderId dans chaque groupe produit
+    // Dédupliquer les items par orderId + options dans chaque groupe produit.
+    // Une même commande peut contenir le même produit avec des options
+    // différentes (ex: 1× Boîte à lunch en Pita + 1× en Baguette) — il faut
+    // garder ces deux lignes pour ne pas perdre la 2ème option en production.
     const uniqueItemsForGroup = (items: ProductionItem[]) => {
       const seen = new Set<string>();
-      return items.filter(item => {
-        const key = item.orderId || item.orderNumber;
+      return items.filter((item) => {
+        const orderKey = item.orderId || item.orderNumber;
+        const opts = item.selectedOptions
+          ? Object.entries(item.selectedOptions)
+              .filter(([k]) => !isAllergyOptionName(k))
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([k, v]) => `${k}=${v}`)
+              .join("|")
+          : "";
+        const key = `${orderKey}::${opts}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -642,8 +653,8 @@ const ProductionList: React.FC<ProductionListProps> = ({ filterByType } = {}) =>
                 })
                 .filter(Boolean) as string[];
               const optionPreview = optionLines.slice(0, 3);
-              const timeLines = uniqueOrders.map((item) => ({
-                key: item.orderId || item.orderNumber,
+              const timeLines = uniqueOrders.map((item, idx) => ({
+                key: `${item.orderId || item.orderNumber}-${idx}`,
                 order: formatOrderNumber(item.orderNumber),
                 time: item.deliveryTimeSlot || "—",
                 type: item.deliveryType === "delivery" ? "Livraison" : "Ramassage",
