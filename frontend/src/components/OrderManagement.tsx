@@ -2999,6 +2999,11 @@ export function OrderManagement() {
                       return new Date(`${formData.date}T${hhmm}:00`).toISOString();
                     })()
                   : now,
+                // Mirror the payload: store the raw HH:MM the user typed so
+                // the order list shows the right time immediately (no need to
+                // refresh) — the pickupDate ISO would otherwise be re-projected
+                // into Toronto and drift hours when the admin is in another TZ.
+                deliveryTimeSlot: formData.pickupTime || undefined,
                 pickupLocation: formData.pickupLocation,
                 deliveryType: formData.deliveryType,
                 deliveryAddress: formData.deliveryAddress
@@ -3196,6 +3201,7 @@ export function OrderManagement() {
                   phone: formData.phone,
                 },
                 pickupDate: payload.pickupDate || selectedOrder.pickupDate,
+                deliveryTimeSlot: formData.pickupTime || selectedOrder.deliveryTimeSlot,
                 pickupLocation: formData.pickupLocation,
                 deliveryType: formData.deliveryType,
                 deliveryAddress:

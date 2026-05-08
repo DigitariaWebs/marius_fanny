@@ -162,53 +162,56 @@ const Checkout: React.FC = () => {
     ];
   };
 
+  // Read "now" through the bakery's clock (America/Montreal), not the
+  // customer's. Otherwise a user browsing from Tunisia at 18h00 Tunis
+  // (= 12h00 Montréal) would be told "trop tard, on est passé 14h" while
+  // the backend — which always uses Montréal time — would happily accept it.
+  const getMontrealNow = () => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Montreal",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date());
+    const get = (t: string) =>
+      parseInt(parts.find((p) => p.type === t)?.value || "0", 10);
+    return {
+      year: get("year"),
+      month: get("month"),
+      day: get("day"),
+      hour: get("hour"),
+    };
+  };
+
   // Calculate minimum delivery date based on preparation times
   const getMinimumDeliveryDate = () => {
+    const m = getMontrealNow();
+    // Build a local-midnight Date that represents today in Montréal —
+    // formatDateForInput later reads it via .getFullYear/.getMonth/.getDate
+    // (browser-local), so creating with `new Date(y, m-1, d)` yields the
+    // right calendar day in the input field regardless of TZ.
+    const buildLocalMidnight = (y: number, mm: number, d: number) =>
+      new Date(y, mm - 1, d, 0, 0, 0, 0);
+
     if (!state?.items || state.items.length === 0) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      return tomorrow;
+      const t = buildLocalMidnight(m.year, m.month, m.day + 1);
+      return t;
     }
 
-    // Find the longest preparation time in hours
     const maxPreparationHours = Math.max(
       ...state.items.map((item) => item.preparationTimeHours || 0),
     );
 
-    const now = new Date();
-
-    // Minimum is always tomorrow (can't order for today)
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-
-    // Convert preparation hours to full days (round up)
-    // e.g. 48h = 2 days, meaning customer must wait 2 full days
+    // 0h = same day, 24h = next day, 48h = day-after-tomorrow, etc.
     const prepDays = Math.ceil(maxPreparationHours / 24);
 
-    // The minimum date is today + prepDays (at least tomorrow)
-    const readyDate = new Date(now);
-    readyDate.setDate(now.getDate() + Math.max(prepDays, 1));
-    readyDate.setHours(0, 0, 0, 0);
-
-    // Business rule: Must order before 14h for next day pickup
-    // After 14h, minimum date is day after tomorrow
-    if (now.getHours() >= 14 && prepDays <= 1) {
-      const dayAfterTomorrow = new Date(now);
-      dayAfterTomorrow.setDate(now.getDate() + 2);
-      dayAfterTomorrow.setHours(0, 0, 0, 0);
-      if (readyDate < dayAfterTomorrow) {
-        readyDate.setTime(dayAfterTomorrow.getTime());
-      }
-    }
-
-    // Never allow ordering for today — minimum is tomorrow
-    if (readyDate < tomorrow) {
-      readyDate.setTime(tomorrow.getTime());
-    }
-
-    return readyDate;
+    // 14h Montréal cutoff: any order placed after 14h costs +1 lead day.
+    // (Date constructor handles month/year overflow when day > daysInMonth.)
+    const cutoffPenalty = m.hour >= 14 ? 1 : 0;
+    return buildLocalMidnight(m.year, m.month, m.day + prepDays + cutoffPenalty);
   };
 
   // Format date for input field (YYYY-MM-DD)
@@ -249,10 +252,9 @@ const Checkout: React.FC = () => {
       const productsRequiringTime = getProductsRequiringMaxPreparation();
       const productNames = productsRequiringTime.map((p) => p.name).join(", ");
 
-      const now = new Date();
       const noonCutoffMessage =
-        maxPreparationTime === 24 && now.getHours() >= 14
-          ? " Note: Pour une livraison le lendemain, vous devez commander avant 14h00."
+        getMontrealNow().hour >= 14
+          ? " Note: passé 14h00 (heure de Montréal), le délai de préparation est repoussé d'une journée."
           : "";
 
       setDateValidationError(

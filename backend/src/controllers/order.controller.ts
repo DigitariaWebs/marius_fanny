@@ -109,27 +109,73 @@ export const createOrder = async (
 
     if (targetDateStr) {
       const todayStr = toMontrealDate(now);
-      const todayDate = new Date(todayStr + "T00:00:00");
-      const tomorrowDate = new Date(todayDate);
-      tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-      const tomorrowStr = tomorrowDate.toISOString().split("T")[0];
       const currentHour = getMontrealHour(now);
 
-      // Reject orders for today
-      if (targetDateStr === todayStr) {
-        return res.status(400).json({
-          success: false,
-          error:
-            "Les commandes doivent être passées au minimum pour le lendemain.",
-        });
-      }
+      // Compute the minimum allowed pickup date based on the slowest product
+      // in the cart. Products are made-to-order, so each item carries its own
+      // preparationTimeHours; the order's lead time is the max across items.
+      // Items with no prep time (or 0) can ship same-day.
+      const productIds = Array.from(
+        new Set(
+          (orderData.items || [])
+            .map((i: any) => i.productId)
+            .filter((id: number) => typeof id === "number" && id > 0),
+        ),
+      );
+      const prepProducts = productIds.length
+        ? await Product.find({
+            id: { $in: productIds },
+            deletedAt: { $exists: false },
+          })
+            .select("id preparationTimeHours")
+            .lean()
+        : [];
+      const prepMap = new Map<number, number>(
+        prepProducts.map((p: any) => [p.id, Number(p.preparationTimeHours) || 0]),
+      );
+      const maxPrepHours = (orderData.items || []).reduce(
+        (max: number, item: any) => {
+          const h = prepMap.get(item.productId) || 0;
+          return h > max ? h : max;
+        },
+        0,
+      );
+      const prepDays = Math.ceil(maxPrepHours / 24);
 
-      // If the order is for tomorrow and it's past 14:00, reject
-      if (targetDateStr === tomorrowStr && currentHour >= 14) {
+      // Build the minimum date in Montreal time, then add the 14h-cutoff
+      // penalty (+1 day if ordering after 14:00 local time).
+      const [tY, tM, tD] = todayStr.split("-").map((s) => parseInt(s, 10));
+      const minDate = new Date(Date.UTC(tY, tM - 1, tD));
+      minDate.setUTCDate(minDate.getUTCDate() + prepDays);
+      if (currentHour >= 14) {
+        minDate.setUTCDate(minDate.getUTCDate() + 1);
+      }
+      const minDateStr = minDate.toISOString().split("T")[0];
+
+      if (targetDateStr < minDateStr) {
+        // Distinguish the "tomorrow blocked because past 14h" case for a
+        // clearer error message, since that's the most common rejection.
+        const tomorrowDate = new Date(Date.UTC(tY, tM - 1, tD));
+        tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+        const tomorrowStr = tomorrowDate.toISOString().split("T")[0];
+
+        if (
+          prepDays <= 1 &&
+          currentHour >= 14 &&
+          targetDateStr <= tomorrowStr
+        ) {
+          return res.status(400).json({
+            success: false,
+            error:
+              "Les commandes pour demain doivent être passées avant 14h00. Veuillez choisir une date ultérieure.",
+          });
+        }
         return res.status(400).json({
           success: false,
           error:
-            "Les commandes pour demain doivent être passées avant 14h00. Veuillez choisir une date ultérieure.",
+            prepDays >= 2
+              ? `Délai de préparation insuffisant : ${prepDays} jour(s) requis pour les produits sélectionnés.`
+              : "Date de ramassage trop proche. Veuillez choisir une autre date.",
         });
       }
 
