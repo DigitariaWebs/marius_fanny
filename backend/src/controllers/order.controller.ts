@@ -809,19 +809,25 @@ export const createOrder = async (
       const customerName = `${orderData.clientInfo.firstName} ${orderData.clientInfo.lastName}`;
 
       // Determine receipt mode:
-      // - Paid in store → "full" (receipt with summary)
-      // - Has Square payment ID (paid online) → "deposit" or "full" depending on type
-      // - Government client → "invoice" (no Square link, will pay by cheque/transfer)
-      // - Payment link (no payment yet) → SKIP email — payment.controller will send invoice email with link
+      // - Paid in store / has squarePaymentId → "full" (receipt with summary, payment confirmed)
+      // - Deposit-only paid via Square → "deposit" (shows deposit + remaining balance)
+      // - Everything else (government invoice, pending payment-link) → "invoice"
+      //   (order-confirmation style email; the payment link, if any, gets sent
+      //   separately by the Square invoice flow but the customer still needs a
+      //   branded "votre commande est enregistrée" message from us.)
       const isGovernment = billingKind === "gouvernement";
-      const isPaymentLinkFlow = !paidInStore && !orderData.squarePaymentId && !isGovernment;
 
-      if (isPaymentLinkFlow) {
-        console.log(`📧 [ORDER] Skipping confirmation email — payment link email will be sent by invoice flow`);
+      let receiptMode: "full" | "deposit" | "invoice";
+      if (paidInStore || (orderData.squarePaymentId && orderData.paymentType === "full")) {
+        receiptMode = "full";
+      } else if (orderData.squarePaymentId && orderData.paymentType === "deposit") {
+        receiptMode = "deposit";
       } else {
-      const receiptMode = paidInStore ? "full" : isGovernment ? "invoice" : (orderData.paymentType || "full");
+        receiptMode = "invoice";
+      }
+      void isGovernment;
 
-      await sendOrderReceipt(receiptMode as "full" | "deposit" | "invoice", {
+      await sendOrderReceipt(receiptMode, {
         email: orderData.clientInfo.email,
         name: customerName,
         orderNumber: order.orderNumber,
@@ -846,14 +852,14 @@ export const createOrder = async (
       });
 
       console.log(
-        `✅ Order receipt email sent to ${orderData.clientInfo.email}`,
+        `✅ Order receipt email (mode=${receiptMode}) sent to ${orderData.clientInfo.email}`,
       );
-      }
     } catch (emailError: any) {
       // Log email error but don't fail the order creation
       console.error(
-        `⚠️ Failed to send order receipt email:`,
-        emailError.message,
+        `⚠️ Failed to send order receipt email to ${orderData.clientInfo.email}:`,
+        emailError?.message || emailError,
+        emailError?.stack,
       );
     }
 
