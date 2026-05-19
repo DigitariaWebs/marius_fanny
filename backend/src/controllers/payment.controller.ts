@@ -886,8 +886,13 @@ const findSquarePaymentIdForOrder = async (order: any): Promise<string | null> =
 
   if (!squareOrderId) return null;
 
+  // sortField/sortOrder are required by Square's API — omitting them ships
+  // an empty string and triggers INVALID_ENUM_VALUE on sort_field, which
+  // surfaces in the admin as "Erreur lors du remboursement: 400".
   const payments = await squareClient.payments.list({
     locationId: squareConfig.locationId,
+    sortField: "CREATED_AT",
+    sortOrder: "DESC",
   });
 
   let matchedPaymentId: string | null = null;
