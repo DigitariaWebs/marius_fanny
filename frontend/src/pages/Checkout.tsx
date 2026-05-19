@@ -183,8 +183,17 @@ const Checkout: React.FC = () => {
       month: get("month"),
       day: get("day"),
       hour: get("hour"),
+      minute: get("minute"),
     };
   };
+
+  // We tell customers the cutoff is 14h00 but the real backend gate is
+  // 14h15 — that 15-minute buffer absorbs hesitation/clock skew and lets
+  // staff/regulars sneak in a last-minute order without showing two
+  // different times across the UI.
+  const CUTOFF_MINUTES = 14 * 60 + 15;
+  const isPastCutoff = (m: { hour: number; minute: number }) =>
+    m.hour * 60 + m.minute >= CUTOFF_MINUTES;
 
   // Calculate minimum delivery date based on preparation times
   const getMinimumDeliveryDate = () => {
@@ -208,9 +217,11 @@ const Checkout: React.FC = () => {
     // 0h = same day, 24h = next day, 48h = day-after-tomorrow, etc.
     const prepDays = Math.ceil(maxPreparationHours / 24);
 
-    // 14h Montréal cutoff: any order placed after 14h costs +1 lead day.
-    // (Date constructor handles month/year overflow when day > daysInMonth.)
-    const cutoffPenalty = m.hour >= 14 ? 1 : 0;
+    // 14h Montréal cutoff (actual gate: 14h15, with a hidden 15-minute
+    // margin so customers don't see two different times in the UI). Past
+    // the cutoff, the lead time is bumped by one day. Date constructor
+    // handles month/year overflow when day > daysInMonth.
+    const cutoffPenalty = isPastCutoff(m) ? 1 : 0;
     return buildLocalMidnight(m.year, m.month, m.day + prepDays + cutoffPenalty);
   };
 
@@ -252,10 +263,9 @@ const Checkout: React.FC = () => {
       const productsRequiringTime = getProductsRequiringMaxPreparation();
       const productNames = productsRequiringTime.map((p) => p.name).join(", ");
 
-      const noonCutoffMessage =
-        getMontrealNow().hour >= 14
-          ? " Note: passé 14h00 (heure de Montréal), le délai de préparation est repoussé d'une journée."
-          : "";
+      const noonCutoffMessage = isPastCutoff(getMontrealNow())
+        ? " Note: passé 14h00 (heure de Montréal), le délai de préparation est repoussé d'une journée."
+        : "";
 
       setDateValidationError(
         `❌ Date trop tôt! Les produits suivants nécessitent ${maxPreparationTime}h (${daysNeeded} jour${daysNeeded > 1 ? "s" : ""}) de préparation: ${productNames}. Date minimum: ${minDate.toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.${noonCutoffMessage}`,

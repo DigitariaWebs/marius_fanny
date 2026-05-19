@@ -98,6 +98,17 @@ export const createOrder = async (
     const getMontrealHour = (d: Date) => {
       return parseInt(d.toLocaleString("en-CA", { timeZone: "America/Montreal", hour: "numeric", hour12: false }));
     };
+    // Minutes-since-midnight (Montreal). Used so the *real* cutoff can sit
+    // a hair past the *displayed* cutoff — e.g. show "avant 14h00" to
+    // customers but accept up to 14:15 internally to absorb clock skew /
+    // user hesitation. Change CUTOFF_MINUTES below to retune the margin.
+    const getMontrealMinutes = (d: Date) => {
+      const hh = parseInt(d.toLocaleString("en-CA", { timeZone: "America/Montreal", hour: "2-digit", hour12: false }));
+      const mm = parseInt(d.toLocaleString("en-CA", { timeZone: "America/Montreal", minute: "2-digit" }));
+      return hh * 60 + mm;
+    };
+    // Displayed to users as 14h00; real backend cutoff is 14h15.
+    const CUTOFF_MINUTES = 14 * 60 + 15;
 
     const now = new Date();
     const targetDateStr =
@@ -109,7 +120,12 @@ export const createOrder = async (
 
     if (targetDateStr) {
       const todayStr = toMontrealDate(now);
+      const currentMinutes = getMontrealMinutes(now);
+      const pastCutoff = currentMinutes >= CUTOFF_MINUTES;
+      // Keep currentHour around for any downstream code that still references
+      // it; the cutoff decision now uses minutes for the 14h15 margin.
       const currentHour = getMontrealHour(now);
+      void currentHour;
 
       // Compute the minimum allowed pickup date based on the slowest product
       // in the cart. Products are made-to-order, so each item carries its own
@@ -143,11 +159,11 @@ export const createOrder = async (
       const prepDays = Math.ceil(maxPrepHours / 24);
 
       // Build the minimum date in Montreal time, then add the 14h-cutoff
-      // penalty (+1 day if ordering after 14:00 local time).
+      // penalty (+1 day if ordering past the cutoff).
       const [tY, tM, tD] = todayStr.split("-").map((s) => parseInt(s, 10));
       const minDate = new Date(Date.UTC(tY, tM - 1, tD));
       minDate.setUTCDate(minDate.getUTCDate() + prepDays);
-      if (currentHour >= 14) {
+      if (pastCutoff) {
         minDate.setUTCDate(minDate.getUTCDate() + 1);
       }
       const minDateStr = minDate.toISOString().split("T")[0];
@@ -161,7 +177,7 @@ export const createOrder = async (
 
         if (
           prepDays <= 1 &&
-          currentHour >= 14 &&
+          pastCutoff &&
           targetDateStr <= tomorrowStr
         ) {
           return res.status(400).json({
