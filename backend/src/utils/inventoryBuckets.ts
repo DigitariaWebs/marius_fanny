@@ -75,6 +75,36 @@ const canonicalName = (productName: string, list: string[]): string | undefined 
   return list.find((known) => normalizeProductName(known) === n);
 };
 
+/**
+ * Ligne de feuille correspondant à un produit dont le nom du site est PLUS LONG
+ * que celui de la ligne — le cas d'une ligne volontairement courte qui sert
+ * d'étiquette générique : « torsade pomme » pour « Torsade aux pommes fondantes
+ * et cannelle. ». La quantité doit tomber sur CETTE ligne, sinon une ligne
+ * orpheline au nom interminable apparaît en bas de la feuille et la ligne de
+ * Fanny reste à zéro (constaté le 11 septembre 2026).
+ *
+ * On retient la ligne la PLUS SPÉCIFIQUE (nom normalisé le plus long) quand
+ * plusieurs conviennent, et on ne traite QUE ce sens-là : l'inverse (nom du site
+ * plus court que la ligne, « Croissant » face à une ligne « Croissant amandes »)
+ * reste ambigu, et continue donc de faire sa propre ligne plutôt que d'être
+ * fondu en silence dans une autre.
+ */
+const genericRowFor = (productName: string, list: string[]): string | undefined => {
+  const n = normalizeProductName(productName);
+  if (!n) return undefined;
+  let best: string | undefined;
+  let bestLength = 0;
+  for (const known of list) {
+    const k = normalizeProductName(known);
+    if (!k || k === n) continue;
+    if (n.includes(k) && k.length > bestLength) {
+      best = known;
+      bestLength = k.length;
+    }
+  }
+  return best;
+};
+
 // Specialty pizzas don't each get their own row — they all aggregate into the
 // single "Pizza" line (La reine + La végé + L'alsacienne → Pizza = 3).
 const PIZZA_ALIASES = ["La reine", "La végé", "L'alsacienne", "La provençale"];
@@ -129,10 +159,13 @@ export function computeInventoryBuckets(
         journalierQty[journalierCanon] = (journalierQty[journalierCanon] || 0) + qty;
     } else if (matchesList(productName, fourList)) {
       // Repli flou (nom légèrement différent, pas de correspondance exacte) :
-      // Frais prioritaire, comme avant.
-      fourQty[productName] = (fourQty[productName] || 0) + qty;
+      // Frais prioritaire, comme avant. La quantité va sur la ligne existante
+      // quand celle-ci sert d'étiquette générique, sinon sur sa propre ligne.
+      const row = genericRowFor(productName, fourList) ?? productName;
+      fourQty[row] = (fourQty[row] || 0) + qty;
     } else if (matchesList(productName, journalierList)) {
-      journalierQty[productName] = (journalierQty[productName] || 0) + qty;
+      const row = genericRowFor(productName, journalierList) ?? productName;
+      journalierQty[row] = (journalierQty[row] || 0) + qty;
     }
     // else: custom/untracked product — not part of either feuille.
   }

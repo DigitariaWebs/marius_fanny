@@ -12,6 +12,7 @@ import {
   getOrderHistory,
   updateDeliveryStatus,
   getOrderStats,
+  recordChequePayment,
 } from "../controllers/order.controller.js";
 import { validateBody, validateQuery } from "../middleware/validation.js";
 import {
@@ -89,6 +90,16 @@ router.patch(
   requireRole("admin", "vendeur"),
   validateBody(updateOrderSchema),
   updateOrder,
+);
+
+// Enregistrer un paiement par cheque / virement recu apres coup (clients
+// gouvernementaux). Chemin volontairement distinct de « Marquer paye » : il
+// exige un montant et le nom de la personne qui constate la reception.
+router.post(
+  "/:id/cheque-payment",
+  requireAuth,
+  requireRole("admin", "vendeur"),
+  recordChequePayment,
 );
 
 // Delete an order (admin and vendeur)

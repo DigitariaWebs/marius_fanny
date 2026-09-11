@@ -93,6 +93,14 @@ export interface IOrder extends Document {
   }>;
   squarePaymentId?: string; // Square payment ID for tracking
   squareInvoiceId?: string; // Square invoice ID for invoice payments
+  // Chèques encaissés (clients gouvernementaux : ils règlent après coup).
+  chequePayments?: {
+    receivedAt: Date;
+    amount: number;
+    chequeNumber?: string;
+    recordedBy?: string;
+    recordedByName: string;
+  }[];
   // Déjà encaissé quand la facture en cours a été émise (0 pour une facture
   // couvrant toute la commande, le montant déjà payé pour une facture de solde).
   squareInvoiceBaselinePaid?: number;
@@ -244,6 +252,17 @@ const RefundEntrySchema = new Schema(
     refundStatus: { type: String, trim: true },
     amountCents: { type: Number, required: true, min: 0 },
     reason: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
+const ChequePaymentSchema = new Schema(
+  {
+    receivedAt: { type: Date, required: true },
+    amount: { type: Number, required: true, min: 0 },
+    chequeNumber: { type: String, trim: true },
+    recordedBy: { type: String, trim: true },
+    recordedByName: { type: String, required: true, trim: true },
   },
   { _id: false },
 );
@@ -445,6 +464,13 @@ const OrderSchema = new Schema<IOrder>(
     squareInvoiceBaselinePaid: {
       type: Number,
       default: 0,
+    },
+    // Chèques reçus après coup (clients gouvernementaux). Chaque encaissement
+    // est daté, chiffré et signé : c'est la pièce comptable qui justifie le
+    // passage à « payé », par opposition à un simple clic « Marquer payé ».
+    chequePayments: {
+      type: [ChequePaymentSchema],
+      default: undefined,
     },
     status: {
       type: String,

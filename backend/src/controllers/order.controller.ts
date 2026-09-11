@@ -2653,6 +2653,135 @@ export const getOrderHistory = async (
 };
 
 /**
+ * Enregistrer un paiement par CHÈQUE (ou virement) reçu après coup.
+ * POST /api/orders/:id/cheque-payment
+ *
+ * Les clients gouvernementaux règlent sous deux mois, une fois la commande
+ * livrée. « Marquer payé » leur a été retiré — à juste titre : deux commandes
+ * avaient été déclarées réglées alors qu'aucun chèque n'était arrivé. Mais
+ * plus rien ne permettait d'enregistrer le chèque QUAND IL ARRIVE VRAIMENT
+ * (commande 103, chèque reçu le 11 septembre 2026).
+ *
+ * D'où ce chemin distinct et volontaire : il exige un montant et le nom de la
+ * personne qui constate la réception, garde le numéro de chèque comme pièce
+ * justificative, et inscrit le tout dans l'historique de la commande. Un vrai
+ * encaissement reste un fait vérifiable, pas un clic.
+ */
+export const recordChequePayment = async (
+  req: Request<{ id: string }>,
+  res: Response<ApiResponse>,
+) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Commande non trouvée" });
+    }
+
+    const { chequeNumber, receivedAt } = req.body as {
+      chequeNumber?: string;
+      receivedAt?: string;
+    };
+    const recordedByName = String((req.body as any).recordedByName || "").trim();
+    if (!recordedByName) {
+      return res.status(400).json({
+        success: false,
+        error: "Indiquez qui enregistre la réception du chèque.",
+      });
+    }
+
+    const total = order.total || 0;
+    const alreadyPaid = order.amountPaid || 0;
+    const outstanding = Number((total - alreadyPaid).toFixed(2));
+    if (outstanding <= 0.01) {
+      return res.status(400).json({
+        success: false,
+        error: "Cette commande est déjà entièrement payée.",
+      });
+    }
+
+    // Montant : le reste dû par défaut. Un chèque partiel est accepté ; un
+    // chèque plus gros que le solde ne peut pas rendre la commande « sur-payée ».
+    const rawAmount = (req.body as any).amount;
+    const amount =
+      rawAmount === undefined || rawAmount === null || rawAmount === ""
+        ? outstanding
+        : Number(rawAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Montant du chèque invalide." });
+    }
+    const applied = Math.min(Number(amount.toFixed(2)), outstanding);
+
+    const received = receivedAt ? new Date(receivedAt) : new Date();
+    if (Number.isNaN(received.getTime())) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Date de réception invalide." });
+    }
+
+    (order as any).chequePayments = [
+      ...(((order as any).chequePayments as any[]) || []),
+      {
+        receivedAt: received,
+        amount: applied,
+        chequeNumber: String(chequeNumber || "").trim() || undefined,
+        recordedBy: req.user?.id,
+        recordedByName,
+      },
+    ];
+
+    const previousStatus = order.paymentStatus;
+    order.amountPaid = Number((alreadyPaid + applied).toFixed(2));
+    const fullyPaid = order.amountPaid >= total - 0.01;
+
+    order.depositPaid = true;
+    if (!order.depositPaidAt) order.depositPaidAt = received;
+    order.balancePaid = fullyPaid;
+    if (fullyPaid) {
+      order.balancePaidAt = received;
+      order.paymentStatus = "paid";
+    } else {
+      order.paymentStatus = "deposit_paid";
+    }
+
+    const label = chequeNumber ? `chèque n° ${String(chequeNumber).trim()}` : "chèque";
+    order.changeHistory.push({
+      changedAt: new Date(),
+      changedBy: req.user?.id,
+      field: "paymentStatus",
+      oldValue: previousStatus,
+      newValue: order.paymentStatus,
+      changeType: "payment_updated",
+      notes: fullyPaid
+        ? `Paiement par ${label} de ${applied.toFixed(2)}$ reçu, enregistré par ${recordedByName} — commande soldée.`
+        : `Paiement par ${label} de ${applied.toFixed(2)}$ reçu, enregistré par ${recordedByName} — reste ${(total - order.amountPaid).toFixed(2)}$ à percevoir.`,
+    } as any);
+
+    await order.save();
+
+    console.log(
+      `🧾 Chèque de ${applied.toFixed(2)}$ enregistré sur ${order.orderNumber} par ${recordedByName} (statut ${order.paymentStatus})`,
+    );
+
+    return res.json({
+      success: true,
+      data: order,
+      message: fullyPaid
+        ? `Paiement par ${label} enregistré — la commande est soldée.`
+        : `Paiement par ${label} enregistré — il reste ${(total - order.amountPaid).toFixed(2)}$ à percevoir.`,
+    });
+  } catch (error: any) {
+    console.error("Error recording cheque payment:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Erreur lors de l'enregistrement du paiement par chèque",
+      message: error.message,
+    });
+  }
+};
+
+/**
  * Delete an order
  * DELETE /api/orders/:id
  */

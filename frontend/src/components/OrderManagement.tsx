@@ -146,6 +146,23 @@ export function OrderManagement() {
   const [storeRefundReason, setStoreRefundReason] = useState("");
   const [isStoreRefundModalOpen, setIsStoreRefundModalOpen] = useState(false);
   const [isProcessingStoreRefund, setIsProcessingStoreRefund] = useState(false);
+  // Réception d'un chèque (clients gouvernementaux : ils règlent après coup).
+  const [chequeModal, setChequeModal] = useState<{
+    open: boolean;
+    order: OrderWithPacking | null;
+    amount: string;
+    chequeNumber: string;
+    receivedAt: string;
+    recordedByName: string;
+  }>({
+    open: false,
+    order: null,
+    amount: "",
+    chequeNumber: "",
+    receivedAt: "",
+    recordedByName: "",
+  });
+  const [isSavingCheque, setIsSavingCheque] = useState(false);
   const [isProcessingReminders, setIsProcessingReminders] = useState(false);
   const [reminderResult, setReminderResult] = useState<{
     success: boolean;
@@ -1157,6 +1174,68 @@ export function OrderManagement() {
     }
   };
 
+  // Enregistre un chèque reçu (clients gouvernementaux). Chemin distinct de
+  // « Marquer payé » : le serveur exige un montant et le nom de la personne qui
+  // constate la réception, et consigne le numéro de chèque dans l'historique.
+  const closeChequeModal = () =>
+    setChequeModal({
+      open: false,
+      order: null,
+      amount: "",
+      chequeNumber: "",
+      receivedAt: "",
+      recordedByName: "",
+    });
+
+  const submitChequePayment = async () => {
+    const order = chequeModal.order;
+    if (!order) return;
+    setIsSavingCheque(true);
+    try {
+      const response = await fetch(
+        `${normalizedApiUrl}/api/orders/${order.id}/cheque-payment`,
+        {
+          method: "POST",
+          headers: authHeaders(),
+          credentials: "include",
+          body: JSON.stringify({
+            amount: Number(chequeModal.amount),
+            chequeNumber: chequeModal.chequeNumber.trim() || undefined,
+            receivedAt: chequeModal.receivedAt || undefined,
+            recordedByName: chequeModal.recordedByName.trim(),
+          }),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Échec de l'enregistrement du chèque");
+      }
+
+      const saved = result.data || {};
+      const updated: OrderWithPacking = {
+        ...order,
+        amountPaid: saved.amountPaid ?? order.total,
+        paymentStatus: saved.paymentStatus ?? "paid",
+        depositPaid: saved.depositPaid ?? true,
+        balancePaid: saved.balancePaid ?? true,
+      } as any;
+
+      setOrders((prev) => {
+        const next = prev.map((o) => (o.id === order.id ? updated : o));
+        setFilteredOrders(applyOrderFilters(next));
+        return next;
+      });
+      if (selectedOrder?.id === order.id) setSelectedOrder(updated);
+
+      closeChequeModal();
+      alert(result.message || "Paiement par chèque enregistré.");
+    } catch (err: any) {
+      alert(getErrorMessage(err, "Impossible d'enregistrer le paiement par chèque."));
+    } finally {
+      setIsSavingCheque(false);
+    }
+  };
+
   const handleMarkPaid = async (order: OrderWithPacking) => {
     // « Marquer payé » = paiement reçu en magasin (pas via Square). Si un lien
     // Square avait été envoyé mais PAS encore payé, on l'annule pour éviter un
@@ -2086,6 +2165,29 @@ export function OrderManagement() {
               <DropdownMenuItem onClick={() => handleMarkPaid(order)}>
                 <DollarSign className="h-4 w-4 mr-2" />
                 Marquer payé
+              </DropdownMenuItem>
+            )}
+            {/* Le chèque d'un client gouvernemental arrive APRÈS la livraison :
+                voici l'endroit pour l'enregistrer quand il est encaissé. */}
+            {order.paymentStatus !== "paid" &&
+              (order as any).billingKind === "gouvernement" && (
+              <DropdownMenuItem
+                onClick={() =>
+                  setChequeModal({
+                    open: true,
+                    order,
+                    amount: Math.max(
+                      0,
+                      Number(((order.total || 0) - ((order as any).amountPaid || 0)).toFixed(2)),
+                    ).toFixed(2),
+                    chequeNumber: "",
+                    receivedAt: new Date().toISOString().split("T")[0],
+                    recordedByName: "",
+                  })
+                }
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Paiement par chèque reçu
               </DropdownMenuItem>
             )}
             {/* Available for ALL orders: paid/cancelled/gov → facture (receipt,
@@ -4349,6 +4451,123 @@ export function OrderManagement() {
                 placeholder="Ex: client a annulé sur place, produit défectueux, etc."
                 rows={2}
                 className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm resize-none"
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* RÉCEPTION D'UN CHÈQUE — clients gouvernementaux */}
+      <Modal
+        open={chequeModal.open}
+        onOpenChange={(o) => {
+          if (!o) closeChequeModal();
+        }}
+        type="form"
+        title="Paiement par chèque reçu"
+        description={
+          chequeModal.order
+            ? `Commande ${formatOrderNumber(chequeModal.order.orderNumber)} — ${chequeModal.order.client.firstName} ${chequeModal.order.client.lastName}`
+            : ""
+        }
+        icon={<DollarSign className="h-6 w-6 text-green-600" />}
+        closable={!isSavingCheque}
+        actions={{
+          primary: {
+            label: isSavingCheque ? "Enregistrement..." : "Enregistrer le paiement",
+            onClick: submitChequePayment,
+            disabled:
+              isSavingCheque ||
+              !chequeModal.recordedByName.trim() ||
+              !(Number(chequeModal.amount) > 0),
+            loading: isSavingCheque,
+          },
+          secondary: {
+            label: "Annuler",
+            onClick: closeChequeModal,
+            disabled: isSavingCheque,
+          },
+        }}
+      >
+        {chequeModal.order && (
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+              <p className="text-xs uppercase tracking-wider text-green-700 mb-1">
+                Reste à percevoir
+              </p>
+              <p className="text-3xl font-black text-green-700">
+                {formatCurrency(
+                  Math.max(
+                    0,
+                    (chequeModal.order.total || 0) -
+                      ((chequeModal.order as any).amountPaid || 0),
+                  ),
+                )}
+              </p>
+              <p className="text-xs text-green-700 mt-1">
+                Client gouvernemental : le règlement arrive par chèque après la
+                livraison. C'est ici qu'on l'enregistre, à sa réception.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                  Montant reçu *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={chequeModal.amount}
+                  onChange={(e) =>
+                    setChequeModal((m) => ({ ...m, amount: e.target.value }))
+                  }
+                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                  Date de réception
+                </label>
+                <input
+                  type="date"
+                  value={chequeModal.receivedAt}
+                  onChange={(e) =>
+                    setChequeModal((m) => ({ ...m, receivedAt: e.target.value }))
+                  }
+                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                Numéro de chèque (optionnel)
+              </label>
+              <input
+                type="text"
+                value={chequeModal.chequeNumber}
+                onChange={(e) =>
+                  setChequeModal((m) => ({ ...m, chequeNumber: e.target.value }))
+                }
+                placeholder="Ex: 001234"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                Enregistré par *
+              </label>
+              <input
+                type="text"
+                value={chequeModal.recordedByName}
+                onChange={(e) =>
+                  setChequeModal((m) => ({ ...m, recordedByName: e.target.value }))
+                }
+                placeholder="Entrez votre nom"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-sm"
               />
             </div>
           </div>
