@@ -192,28 +192,57 @@ export default function InventaireJournalier() {
   // Clé sentinelle dans MongoDB pour persister la liste cross-appareils
   const PRODUCTS_SENTINEL_KEY = "__products_config_daily";
 
+  // Marque, poste par poste, que la liste locale a rejoint la liste commune.
+  const LIST_SYNCED_FLAG = "inventaire_liste_synchronisee";
+
   // Charger la liste depuis le backend au démarrage
   useEffect(() => {
     const loadProductsFromBackend = async () => {
+      const locale = customProductsRef.current;
       try {
         const res = await dailyInventoryAPI.getByDate(PRODUCTS_SENTINEL_KEY);
-        if (res.data.entries && res.data.entries.length > 0) {
-          const rawNames = res.data.entries.map((e) => e.productName);
-          const names = migrateNames(rawNames);
-          setCustomProducts(names);
-          localStorage.setItem("inventaire_produits_personnalises", JSON.stringify(names));
-          // If a rename actually happened, persist it back so the upgrade sticks
-          // server-side (and across devices) instead of re-migrating every load.
-          if (JSON.stringify(names) !== JSON.stringify(rawNames)) {
-            saveProductsToBackend(names);
-          }
-        } else {
+        const rawNames = (res.data.entries || [])
+          .map((e) => e.productName)
+          .filter((n): n is string => typeof n === "string" && n.trim().length > 0);
+
+        if (rawNames.length === 0) {
           // Le serveur n'a aucune liste : on lui envoie celle de l'écran. Sans
           // ça, le rapprochement des commandes continuerait de se faire sur la
           // liste codée en dur jusqu'à ce que quelqu'un pense à ajouter ou
           // renommer un produit — la liste ne partait au serveur QUE sur une
           // modification.
-          saveProductsToBackend(customProductsRef.current);
+          saveProductsToBackend(locale);
+          localStorage.setItem(LIST_SYNCED_FLAG, "1");
+          return;
+        }
+
+        const names = migrateNames(rawNames);
+
+        // PREMIÈRE synchronisation de CE poste : ses lignes propres — ajoutées
+        // avant que la liste ne devienne commune, et qui ne vivaient que dans ce
+        // navigateur — rejoignent la liste partagée au lieu d'être effacées par
+        // elle. C'est exactement le cas de « Torsade pomme », ajoutée sur un
+        // poste le 11 septembre 2026 pendant qu'un autre poste déposait, lui, la
+        // liste par défaut.
+        //
+        // Ensuite, la liste du serveur fait foi : sans ce verrou, un produit
+        // retiré volontairement reviendrait à chaque ouverture depuis un poste
+        // qui l'a encore en mémoire.
+        let fusionnee = names;
+        if (localStorage.getItem(LIST_SYNCED_FLAG) !== "1") {
+          const connus = new Set(names.map(normalizeMatch));
+          const inedits = locale.filter((n) => !connus.has(normalizeMatch(n)));
+          if (inedits.length > 0) fusionnee = [...names, ...inedits];
+        }
+
+        setCustomProducts(fusionnee);
+        localStorage.setItem("inventaire_produits_personnalises", JSON.stringify(fusionnee));
+        localStorage.setItem(LIST_SYNCED_FLAG, "1");
+
+        // Renvoyer au serveur ce qu'il n'a pas encore : les renommages migrés
+        // et les lignes propres à ce poste.
+        if (JSON.stringify(fusionnee) !== JSON.stringify(rawNames)) {
+          saveProductsToBackend(fusionnee);
         }
       } catch {
         // Pas encore de liste sauvegardée côté backend — utiliser localStorage/défauts

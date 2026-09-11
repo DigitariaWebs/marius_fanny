@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   CalendarDays,
   Save,
@@ -72,25 +72,53 @@ export default function InventaireFour() {
     const saved = localStorage.getItem("produits_inventaire_four");
     return migrateNames(saved ? JSON.parse(saved) : PRODUITS_FOUR_DEFAUT);
   });
+  // Liste courante lisible depuis le chargement initial sans le relancer.
+  const productsRef = useRef(products);
+  productsRef.current = products;
   const [newProd, setNewProd] = useState("");
 
   // Clé sentinelle MongoDB pour persister la liste cross-appareils
   const PRODUCTS_SENTINEL_KEY = "__products_config_four";
+  // Marque, poste par poste, que la liste locale a rejoint la liste commune.
+  const LIST_SYNCED_FLAG = "inventaire_four_liste_synchronisee";
 
   // Charger la liste depuis le backend au démarrage
   useEffect(() => {
     const loadProductsFromBackend = async () => {
+      const locale = productsRef.current;
       try {
         const res = await dailyInventoryAPI.getByDate(PRODUCTS_SENTINEL_KEY);
-        if (res.data.entries && res.data.entries.length > 0) {
-          const rawNames = res.data.entries.map((e: any) => e.productName);
-          const names = migrateNames(rawNames);
-          setProducts(names);
-          localStorage.setItem("produits_inventaire_four", JSON.stringify(names));
-          // Persist the rename back so the upgrade sticks server-side.
-          if (JSON.stringify(names) !== JSON.stringify(rawNames)) {
-            saveProductsToBackend(names);
-          }
+        const rawNames: string[] = (res.data.entries || [])
+          .map((e: any) => e.productName)
+          .filter((n: any): n is string => typeof n === "string" && n.trim().length > 0);
+
+        if (rawNames.length === 0) {
+          // Le serveur n'a aucune liste : on y dépose celle de l'écran, sinon le
+          // rapprochement des commandes resterait sur la liste codée en dur.
+          saveProductsToBackend(locale);
+          localStorage.setItem(LIST_SYNCED_FLAG, "1");
+          return;
+        }
+
+        const names = migrateNames(rawNames);
+
+        // Première synchronisation de CE poste : ses lignes propres rejoignent
+        // la liste commune au lieu d'être effacées par elle. Ensuite la liste du
+        // serveur fait foi, sinon un produit retiré reviendrait sans cesse.
+        let fusionnee = names;
+        if (localStorage.getItem(LIST_SYNCED_FLAG) !== "1") {
+          const cle = (n: string) =>
+            (n || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+          const connus = new Set(names.map(cle));
+          const inedits = locale.filter((n) => !connus.has(cle(n)));
+          if (inedits.length > 0) fusionnee = [...names, ...inedits];
+        }
+
+        setProducts(fusionnee);
+        localStorage.setItem("produits_inventaire_four", JSON.stringify(fusionnee));
+        localStorage.setItem(LIST_SYNCED_FLAG, "1");
+        if (JSON.stringify(fusionnee) !== JSON.stringify(rawNames)) {
+          saveProductsToBackend(fusionnee);
         }
       } catch {
         // Pas encore sauvegardé côté backend — utiliser localStorage/défauts
