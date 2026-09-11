@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   CalendarDays,
   Save,
@@ -181,6 +181,10 @@ export default function InventaireJournalier() {
     const saved = localStorage.getItem("inventaire_produits_personnalises");
     return migrateNames(saved ? JSON.parse(saved) : PRODUITS_PAR_DEFAUT);
   });
+  // Liste courante lisible depuis le chargement initial (qui ne tourne qu'une
+  // fois) sans le remettre en dépendance.
+  const customProductsRef = useRef(customProducts);
+  customProductsRef.current = customProducts;
   const [newProductName, setNewProductName] = useState("");
   // Inline rename: productId of the row currently being edited (null = none).
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -203,6 +207,13 @@ export default function InventaireJournalier() {
           if (JSON.stringify(names) !== JSON.stringify(rawNames)) {
             saveProductsToBackend(names);
           }
+        } else {
+          // Le serveur n'a aucune liste : on lui envoie celle de l'écran. Sans
+          // ça, le rapprochement des commandes continuerait de se faire sur la
+          // liste codée en dur jusqu'à ce que quelqu'un pense à ajouter ou
+          // renommer un produit — la liste ne partait au serveur QUE sur une
+          // modification.
+          saveProductsToBackend(customProductsRef.current);
         }
       } catch {
         // Pas encore de liste sauvegardée côté backend — utiliser localStorage/défauts
